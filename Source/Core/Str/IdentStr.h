@@ -1,9 +1,9 @@
 #pragma once
 
+#include "Core/CoreSysMinimal.h"
+
 #include <cstdio>
 #include <cstdlib>
-#include <boost/serialization/access.hpp>
-#include <boost/assert.hpp>
 
 /**
 * TO-BE-CHECKED-COMPILED.
@@ -109,6 +109,11 @@ public:
 		InAr & Length;
 		InAr & Ptr;
 	}
+
+	/**
+	* Computes hash.
+	*/
+	size_t Hash() const { return std::hash(Ptr); }
 	
 private:
 	const char* Ptr;
@@ -138,3 +143,12 @@ template<class Strm> Strm& operator<<(Strm& Strm, const IdentStr S)
 {
 	return Strm << S;
 }
+
+namespace std
+{
+	template<>
+	struct hash<IdentStr>
+	{
+		size_t operator() (const IdentStr S) const { return S.Hash(); }
+	};
+} // std
