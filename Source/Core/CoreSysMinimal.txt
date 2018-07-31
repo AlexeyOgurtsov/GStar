@@ -1,0 +1,12 @@
+#pragma once
+
+/**
+* Contains a set of minimal often-used includes to be used by almost any header.
+*
+* WARNING!!! Never should include ever-high-level classes, ever strings
+*/
+
+#include <boost/assert.hpp>
+
+#include "CoreSysTypes.h"
+

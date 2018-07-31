@@ -1,0 +1,28 @@
+Commenting:
+1. Use the /**/ block for commenting declarations (functions, classes etc.);
+2. Comment (ever one-liners) must end with a period (.);
+
+Headers:
+1. #pragma once at the start of each include;
+
+Header includes:
+1. Consider including Core/CoreSysCommon in almost any header;
+
+Identifiers:
+1. Upper-case identifiers for classes;
+2. Simple core classes has NO prefix;
+3. "In", "Out", "InOut"  prefixes for function arguments, except very simple cases (like A, B, for equality operators, for example);
+4. Empty(), Valid() for test functions (see NO "Is" prefix);
+
+Function declarations:
+1. Consider using __FORCEINLINE by default for one-liners;  
+
+Namespaces:
+1. No namespaces for core modules;
+
+Class implementation guidelines:
+1. Use BOOST_ASSERT/BOOST_ASSERT_MSG for assertions, use assertions ever in headers;
+2. Classes should support boost::serialization "Out of box";
+
+String usage:
+1. Use IdentStr class to store constant strings;
