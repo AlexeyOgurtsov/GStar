@@ -1,0 +1,79 @@
+Project description:
+C++ game for Windows;
+
+Overall game description.
+Third-person game. Starship flies from point A to point B, confronting enemies.
+Starship constantly flies forward (independent of the player's will).
+Player can strafe the starship left/right and up/down in the given area. 
+
+Common architectural principals:
+- All modules are written to be optimized for this project, and NOT for the general use;
+- Project is NOT designed to be portable;
+- Readability over performance;
+- Less features for each module, make the essence of the product;
+
+Helper modules (typically getted from other projects):
+Stores in the Source\Helper
+1. Config - works with configuration, used by ANY module;
+2. DependencyContainer - container to be used for dependency injection
+(Should be used ONLY by the launch modules).
+
+Library modules:
+1. Core:
+Basic type typedefs, Containers, Strings, Math, Loggging, Filesystem, Helper include files.
+Used by any module;
+2. ResourceBlobManager:
+Loads resource byte blobs asynchronously;
+3. RenderCore
+Back-end render utils, shader compile utils etc.
+Knows nothing about the render scene.
+4. TextureManager;
+Manages GPU memory for textures;
+Knows how to convert the texture resource blob to a d3d11 real texture;
+Uses ResourceManager  but abstracts from it;
+4. MeshManager
+Loads both static and skeletal meshes in native format from the mesh resources;
+Defines the Mesh object internal representation;
+Knows how to convert the mesh resource blobs into the internal mesh representation;
+Uses ResourceManager  but abstracts from it;
+5. SceneRender
+Represents the render scene structure and renders it.
+Uses RenderCore.
+6. GUIRender
+Stores and draws various primitives for UI rendering (Text, Buttons, Checkboxes, menus etc.).
+Uses RenderCore.
+7. GUIFramework
+Used for rendering HUD and the main menu.
+Uses GUIRender;
+8. EngineWorld
+Represents internal engine structure to store the world of the game (i.e. current loaded level);
+Provides basic types of objects that can be stored in the game world.
+And provides a way to create objects of the world.
+9. EngineWorldLoader
+Loads contents of the given world resource into the given engine world;
+Uses EngineWorld, ResourceManager;
+10. Engine
+- Amalgamates all subsystems into a common framework;
+- Basic game object framework;
+- Stores current engine world;
+- Processes collisions;
+- Processes and dispatches input messages to other subsystems;
+- Performs scene rendering (abstracts the concrete game from doing it);
+- Performs UI rendering;
+Uses Core, SceneRender, GUIFramework;
+Typically, including this module should free you from any other dependencies of the game. 
+11. GStarGameEngine
+- Uses the Engine to implement all the GStar game logics;
+
+Application modules:
+1. GStarLauncher - amalgamates all libraries and launches, the game executible.
+
+Tools modules:
+Source/Tools contains various tools (for example, to import 3D models). 
+
+Third-party dependencies:
+1. Boost 1.67
+
+Building:
+Default repository path is considered to be C:/GStar.
+If this's not the case, you should set the paths in the visual studio projects.

@@ -1,0 +1,9 @@
+Directory contains root and system-wide working documentation and TODO files.
+Subsystem docs are to be stored in the corresponding subdirectories inside the Source directory.
+
+Doc categories to be stored here:
+- Overall project description and main features;
+- Architectural decisions;
+- Codestyle - contains the codestyle guidelines;
+- Overall project structure (which modules are included, how to compile them);
+- Common compilation process notes (notes relative to any module);
