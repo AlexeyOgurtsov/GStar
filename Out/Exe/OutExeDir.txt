@@ -1,0 +1,3 @@
+See the RootDoc/ProjectDescription.txt for info.
+
+WARNING!!! Never delete (otherwise git will skip the directory);

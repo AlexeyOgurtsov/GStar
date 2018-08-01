@@ -7,3 +7,4 @@ Doc categories to be stored here:
 - Codestyle - contains the codestyle guidelines;
 - Overall project structure (which modules are included, how to compile them);
 - Common compilation process notes (notes relative to any module);
+- Directory structure;

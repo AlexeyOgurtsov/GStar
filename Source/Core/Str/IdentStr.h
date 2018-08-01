@@ -2,14 +2,15 @@
 
 #include "Core/CoreSysMinimal.h"
 
-#include <cstdio>
 #include <cstdlib>
+#include <boost/serialization/array.hpp>
 
 /**
 * TO-BE-CHECKED-COMPILED.
 * TO-BE-TESTED.
 *
-* TODO: Provide the storage class for storing IdentStr instances and the default instance of it.
+* TODO: 
+* 1. Provide the storage class for storing IdentStr instances and the default instance of it.
 */
 
 /**
@@ -34,14 +35,30 @@ public:
 	constexpr static int MAX_LENGTH = 1024;
 
 	/**
+	* Checks whether the given CStr can be used as an identifier.
+	*/
+	static bool IsValidIdent(const char* CStr, int& OutLength);
+
+	/**
+	* Checks whether the given CStr can be used as an identifier.
+	*/
+	static bool IsValidIdent(const char* CStr) { int OutLength; return IsValidIdent(CStr, OutLength); }
+
+	/**
 	* Constructs an invalid identifier (equivalent of the nullptr).
 	*/
-	__FORCEINLINE constexpr IdentStr() : Ptr(nullptr), Length(0) {}
+	__forceinline constexpr IdentStr() : Ptr(nullptr), Length(0) {}
 
 	/**
 	* Constructs an identifier by the given C-str ptr.
 	*/
-	__FORCEINLINE explicit IdentStr(const char* InCStr) : IdentStr(InCStr), strlen(InCStr) {}
+	__forceinline explicit IdentStr(const char* InCStr) : Ptr(InCStr) 
+	{
+		int CStrLength;
+		bool const bCStrIsValidIdent = IsValidIdent(InCStr, /*out*/ CStrLength);
+		BOOST_ASSERT_MSG(bCStrIsValidIdent, "IdentStr constructor: provided string cannot be used as ident");
+		Length = static_cast<short>(CStrLength);
+	}
 
 	/**
 	* Constructs an identifier by the given pointer and length.
@@ -56,7 +73,7 @@ public:
 	/**
 	* Copy constructs by reference.
 	*/
-	IdentStr(const IdentStr InOther) : Ptr(InOther.Ptr), Length(InOther.Length) {}
+	IdentStr(const IdentStr& InOther) : Ptr(InOther.Ptr), Length(InOther.Length) {}
 
 	/**
 	* Copies by reference.
@@ -71,30 +88,38 @@ public:
 	/**
 	* Checks whether this instance represents a valid identifier.
 	*/
-	__FORCEINLINE bool Valid() const { return nullptr != Ptr; }
+	__forceinline bool Valid() const { return nullptr != Ptr; }
 
 	/**
 	* Returns length.
 	*
 	* WARNING!!! We delibarately convert to int to avoid additional compiler warnings.
 	*/
-	__FORCEINLINE constexpr int Length() const { return Length; }
+	__forceinline constexpr int Len() const { return Length; }
 
 	/**
 	* Checks for emptiness.
 	*/	
-	__FORCEINLINE constexpr bool Empty() const { return 0 == Length; }
+	__forceinline constexpr bool Empty() const { return 0 == Length; }
 
 	/**
-	* Copies the substring to buffer.
+	* Copies string to the buffer.
+	*/
+	void CopyToBuffer(char* pOutBuffer, int InMaxBufferLength)
+	{
+		CopySubstrToBuffer(pOutBuffer, InMaxBufferLength, Length);
+	}
+
+	/**
+	* Copies the substring to the buffer.
 	* WARNING!!! C-str termintator is NOT appended automatically!!!
 	*/
-	void CopySubstrToBuffer(int InStartSrcIndex, char* pOutBuffer, int InMaxBufferLength, int InLengthToCopy = Length)
+	void CopySubstrToBuffer(char* pOutBuffer, int InMaxBufferLength, int InLengthToCopy, int InStartSrcIndex = 0)
 	{
-		BOOST_ASSERT_MSG(InStartIndex >= 0, "IdentStr: SubstrToBuffer: Negative start src index");
+		BOOST_ASSERT_MSG(InStartSrcIndex >= 0, "IdentStr: SubstrToBuffer: Negative start src index");
 		BOOST_ASSERT(pOutBuffer);
 		BOOST_ASSERT_MSG(InStartSrcIndex + InLengthToCopy <= Length, "IdentStr: SubstrToBuffer: substring to copy is beyond the length");
-		BOOST_ASSERT_MSG(InLengthToCopy <= InMaxBufferLength);
+		BOOST_ASSERT(InLengthToCopy <= InMaxBufferLength);
 		memcpy(pOutBuffer, Ptr + InStartSrcIndex, InLengthToCopy);
 	}
 
@@ -106,14 +131,15 @@ public:
 	template<class Ar>
 	void serialize(Ar& InAr, const unsigned int InVersion)
 	{
-		InAr & Length;
-		InAr & Ptr;
+		InAr & boost::serialization::make_array(Ptr, Length);
 	}
 
 	/**
 	* Computes hash.
 	*/
-	size_t Hash() const { return std::hash(Ptr); }
+	size_t Hash() const;
+
+	friend bool operator==(const IdentStr A, const IdentStr B);
 	
 private:
 	const char* Ptr;
@@ -125,7 +151,7 @@ private:
 */
 inline bool operator==(const IdentStr A, const IdentStr B)
 {
-	return A.ptr == B.ptr;
+	return A.Ptr == B.Ptr;
 }
 
 /**

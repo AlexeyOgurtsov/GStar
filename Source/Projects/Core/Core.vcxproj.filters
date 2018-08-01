@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Str">
+      <UniqueIdentifier>{5d53af7d-e64b-46ec-a71f-7cd2995c6be4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Mem">
+      <UniqueIdentifier>{94e2d997-0dbc-4c45-ac4f-2d752fd9f8fd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Mem\Helper">
+      <UniqueIdentifier>{57a00a2e-11df-45c3-a5ad-43edb38722de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Mem\Helper\Priv">
+      <UniqueIdentifier>{de9c4997-3f56-4c78-929a-1752d001a94a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Str\Priv">
+      <UniqueIdentifier>{0c3a6494-c3ed-4d73-b89b-69f80036e21d}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Core\Str\IdentStr.h">
+      <Filter>Str</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\CoreSysCommon.h" />
+    <ClInclude Include="..\..\Core\CoreSysMinimal.h" />
+    <ClInclude Include="..\..\Core\CoreSysTypes.h" />
+    <ClInclude Include="..\..\Core\Mem\Helper\LinearAllocHelper.h">
+      <Filter>Mem\Helper</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\Core\Mem\Helper\Priv\LinearAllocHelper.cpp">
+      <Filter>Mem\Helper\Priv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Core\Str\Priv\IdentStr.cpp">
+      <Filter>Str\Priv</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

@@ -15,7 +15,7 @@ Identifiers:
 4. Empty(), Valid() for test functions (see NO "Is" prefix);
 
 Function declarations:
-1. Consider using __FORCEINLINE by default for one-liners;  
+1. Consider using __forceinline by default for one-liners;  
 
 Namespaces:
 1. No namespaces for core modules;
