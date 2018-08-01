@@ -30,7 +30,7 @@ public:
 	/**
 	* Appends the given bytes to the end of the allocation.
 	*/
-	void AppendBytes(const Byte* pInSrc, int InSize);
+	void AppendBytes(const void* pInSrc, int InSize);
 
 	/*
 	* Performs the allocation and returns pointer to the allocated object.

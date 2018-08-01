@@ -16,6 +16,9 @@
     <Filter Include="Str\Priv">
       <UniqueIdentifier>{0c3a6494-c3ed-4d73-b89b-69f80036e21d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Mem\Helper\Test">
+      <UniqueIdentifier>{2549aa2c-e2ad-4ef7-937e-0665a6d62781}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Core\Str\IdentStr.h">
@@ -26,6 +29,9 @@
     <ClInclude Include="..\..\Core\CoreSysTypes.h" />
     <ClInclude Include="..\..\Core\Mem\Helper\LinearAllocHelper.h">
       <Filter>Mem\Helper</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Mem\Helper\Test\LinearAllocHelperTest.h">
+      <Filter>Mem\Helper\Test</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

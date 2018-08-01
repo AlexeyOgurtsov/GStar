@@ -9,18 +9,21 @@ LinearAllocHelper::LinearAllocHelper(int InCapacity) :
 	Ptr = static_cast<Byte*>(malloc(MaxLength));
 }
 
-void LinearAllocHelper::AppendBytes(const Byte* pInSrc, int InSize)
+void LinearAllocHelper::AppendBytes(const void* pInSrc, int InSize)
 {
 	BOOST_ASSERT(pInSrc);
 	if(Slack() < InSize)
 	{
 		GrowBuffer(InSize);
 	}
-	memcpy(Ptr + Offset, pInSrc, InSize);
+	memcpy(static_cast<Byte*>(Ptr) + Offset, pInSrc, InSize);
 }
 
 void* LinearAllocHelper::CommitAlloc(bool bShrinkToFit)
 {
+	BOOST_ASSERT(Ptr);
+	BOOST_ASSERT_MSG(Offset > 0, "LinearAllocHelper::CommitAlloc: unable to commit alloc: nothing is allocated");
+
 	if(bShrinkToFit && Slack() > 0)
 	{
 		ReallocBuffer(Offset);
