@@ -1,0 +1,5 @@
+Running 2 test cases...
+unknown location(0): fatal error: in "Core/Mem/LinearAllocHelperTest/OneAlloc_SufficientBuffer": abort() has been called
+c:\gstar\source\core\mem\helper\test\linearallochelpertest.h(28): last checkpoint: Commit
+unknown location(0): fatal error: in "Core/Mem/LinearAllocHelperTest/ManyAllocs_BufferLow": abort() has been called
+c:\gstar\source\core\mem\helper\test\linearallochelpertest.h(59): last checkpoint: Commit

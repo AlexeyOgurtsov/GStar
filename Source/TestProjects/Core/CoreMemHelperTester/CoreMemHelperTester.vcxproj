@@ -70,17 +70,18 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>../../../Out/Tests/Core/Mem/</OutDir>
-    <IntDir>../../../Out/Intermediate/Test/Core/</IntDir>
-    <TargetName>TCoreMemHelper</TargetName>
+    <OutDir>../../../../Out/Test/Core/Mem/</OutDir>
+    <IntDir>../../../../Out/Test/Intermediate/Core/Mem/</IntDir>
+    <TargetName>TCoreMemHelperTester</TargetName>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);../../../;../../../ThirdParty/boost_1_67_0</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;../../../../Out/Lib/</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>../../../Out/Tests/Core/Mem</OutDir>
-    <IntDir>../../../Out/Intermediate/Test/Core</IntDir>
+    <OutDir>../../../../Out/Test/Core/Mem/</OutDir>
+    <IntDir>../../../../Out/Test/Intermediate/Core/Mem/</IntDir>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);../../../;../../../ThirdParty/boost_1_67_0</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;../../../../Out/Lib/</LibraryPath>
+    <TargetName>TCoreMemHelperTester</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -93,6 +94,9 @@
     <Link>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;DCore.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>C:\Windows\System32\cmd.exe /K "C:\GStar\Out\Test\Core\Mem\TCoreMemHelperTester.exe --log_sink=C:\GStar\Out\Test\Core\Mem\TCoreMemHelperTester.txt"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -117,6 +121,9 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;DCore.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>C:\Windows\System32\cmd.exe /K "C:\GStar\Out\Test\Core\Mem\TCoreMemHelperTester.exe --log_sink=C:\GStar\Out\Test\Core\Mem\TCoreMemHelperTester.txt"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>

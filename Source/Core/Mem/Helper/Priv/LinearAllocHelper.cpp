@@ -17,6 +17,7 @@ void LinearAllocHelper::AppendBytes(const void* pInSrc, int InSize)
 		GrowBuffer(InSize);
 	}
 	memcpy(static_cast<Byte*>(Ptr) + Offset, pInSrc, InSize);
+	Offset += InSize;
 }
 
 void* LinearAllocHelper::CommitAlloc(bool bShrinkToFit)
@@ -29,10 +30,12 @@ void* LinearAllocHelper::CommitAlloc(bool bShrinkToFit)
 		ReallocBuffer(Offset);
 	}
 
+	void* const OldPtr = Ptr;
+
 	// Prevent from using the alloc helper again
 	Ptr = nullptr;
 	
-	return Ptr;
+	return OldPtr;
 }
 
 void LinearAllocHelper::DeleteAlloc(void* pInPtr)
