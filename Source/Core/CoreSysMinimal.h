@@ -6,6 +6,8 @@
 * WARNING!!! Never should include ever-high-level classes, ever strings
 */
 
+#include <initializer_list>
+
 /**
 * Assertions are to be used everywhere.
 */

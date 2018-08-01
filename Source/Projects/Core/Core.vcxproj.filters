@@ -19,6 +19,12 @@
     <Filter Include="Mem\Helper\Test">
       <UniqueIdentifier>{2549aa2c-e2ad-4ef7-937e-0665a6d62781}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Cont">
+      <UniqueIdentifier>{112be1b3-2680-40ad-afbf-828d88b86db4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Cont\Test">
+      <UniqueIdentifier>{d995e80f-d4c5-4223-bcfd-afe62f49e34c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Core\Str\IdentStr.h">
@@ -32,6 +38,15 @@
     </ClInclude>
     <ClInclude Include="..\..\Core\Mem\Helper\Test\LinearAllocHelperTest.h">
       <Filter>Mem\Helper\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\ContainerSystem.h">
+      <Filter>Cont</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\TVector.h">
+      <Filter>Cont</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Test\TVectorTest.h">
+      <Filter>Cont\Test</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

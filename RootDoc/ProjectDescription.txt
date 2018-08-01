@@ -86,6 +86,11 @@ Source/Tools contains various tools (for example, to import 3D models).
 Third-party dependencies:
 1. Boost 1.67
 
+Testing:
+1. Boost::unittest is used for unit testing;
+2. Any submodule of module contains its own test project (e.g. tester for TVector must have its own tester project);
+3. The unit-tester is to be automatically launched as a post-build step of the unit-test project;
+
 Building:
 Default repository path is considered to be C:/GStar.
 If this's not the case, you may need to set the paths in the visual studio projects.

@@ -17,6 +17,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CoreMemHelperTester", "..\S
 		{35F04007-9558-48FA-8D43-8D77340BF122} = {35F04007-9558-48FA-8D43-8D77340BF122}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CoreContTVectorTester", "..\Source\TestProjects\Core\CoreContTVectorTester\CoreContTVectorTester.vcxproj", "{CEC2CD92-C262-4CBC-8FE8-A88953D7046E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{35F04007-9558-48FA-8D43-8D77340BF122} = {35F04007-9558-48FA-8D43-8D77340BF122}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -49,12 +54,21 @@ Global
 		{5D66DCF5-F3E5-4FF6-8A97-95985BA32965}.Release|x64.Build.0 = Release|x64
 		{5D66DCF5-F3E5-4FF6-8A97-95985BA32965}.Release|x86.ActiveCfg = Release|Win32
 		{5D66DCF5-F3E5-4FF6-8A97-95985BA32965}.Release|x86.Build.0 = Release|Win32
+		{CEC2CD92-C262-4CBC-8FE8-A88953D7046E}.Debug|x64.ActiveCfg = Debug|x64
+		{CEC2CD92-C262-4CBC-8FE8-A88953D7046E}.Debug|x64.Build.0 = Debug|x64
+		{CEC2CD92-C262-4CBC-8FE8-A88953D7046E}.Debug|x86.ActiveCfg = Debug|Win32
+		{CEC2CD92-C262-4CBC-8FE8-A88953D7046E}.Debug|x86.Build.0 = Debug|Win32
+		{CEC2CD92-C262-4CBC-8FE8-A88953D7046E}.Release|x64.ActiveCfg = Release|x64
+		{CEC2CD92-C262-4CBC-8FE8-A88953D7046E}.Release|x64.Build.0 = Release|x64
+		{CEC2CD92-C262-4CBC-8FE8-A88953D7046E}.Release|x86.ActiveCfg = Release|Win32
+		{CEC2CD92-C262-4CBC-8FE8-A88953D7046E}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{5D66DCF5-F3E5-4FF6-8A97-95985BA32965} = {2E5A6F30-4101-49D6-B935-DE36FFB66E93}
+		{CEC2CD92-C262-4CBC-8FE8-A88953D7046E} = {2E5A6F30-4101-49D6-B935-DE36FFB66E93}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F161909E-F783-4BF7-849B-787CDF39EF8F}
