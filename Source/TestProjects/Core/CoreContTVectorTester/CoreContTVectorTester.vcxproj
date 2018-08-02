@@ -72,14 +72,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>../../../../Out/Test/Core/Cont/</OutDir>
     <TargetName>TCoreContTVectorTester</TargetName>
-    <IntDir>../../../../Out/Test/Intermediate/Core/Cont/</IntDir>
+    <IntDir>../../../../Out/Test/Intermediate/Core/Cont/TVector/</IntDir>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);../../../;../../../ThirdParty/boost_1_67_0</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;../../../../Out/Lib/</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>../../../../Out/Test/Core/Cont/</OutDir>
     <TargetName>TCoreContTVectorTester</TargetName>
-    <IntDir>../../../../Out/Test/Intermediate/Core/Cont/</IntDir>
+    <IntDir>../../../../Out/Test/Intermediate/Core/Cont/TVector/</IntDir>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);../../../;../../../ThirdParty/boost_1_67_0</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;../../../../Out/Lib/</LibraryPath>
   </PropertyGroup>

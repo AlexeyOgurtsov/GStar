@@ -71,14 +71,14 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>../../../../Out/Test/Core/Mem/</OutDir>
-    <IntDir>../../../../Out/Test/Intermediate/Core/Mem/</IntDir>
+    <IntDir>../../../../Out/Test/Intermediate/Core/Mem/Helper/</IntDir>
     <TargetName>TCoreMemHelperTester</TargetName>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);../../../;../../../ThirdParty/boost_1_67_0</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;../../../../Out/Lib/</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>../../../../Out/Test/Core/Mem/</OutDir>
-    <IntDir>../../../../Out/Test/Intermediate/Core/Mem/</IntDir>
+    <IntDir>../../../../Out/Test/Intermediate/Core/Mem/Helper/</IntDir>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);../../../;../../../ThirdParty/boost_1_67_0</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;../../../../Out/Lib/</LibraryPath>
     <TargetName>TCoreMemHelperTester</TargetName>

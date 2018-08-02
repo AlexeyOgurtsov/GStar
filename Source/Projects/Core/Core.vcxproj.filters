@@ -25,6 +25,12 @@
     <Filter Include="Cont\Test">
       <UniqueIdentifier>{d995e80f-d4c5-4223-bcfd-afe62f49e34c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Mem\Priv">
+      <UniqueIdentifier>{05c3f148-15c0-4ca3-97a3-20c5e43735b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Mem\Test">
+      <UniqueIdentifier>{a1acecac-083a-4e8d-995c-40e5bd7dd115}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Core\Str\IdentStr.h">
@@ -48,6 +54,15 @@
     <ClInclude Include="..\..\Core\Cont\Test\TVectorTest.h">
       <Filter>Cont\Test</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Core\Mem\BlockHeap.h">
+      <Filter>Mem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Mem\Priv\BlockHeapImpl.h">
+      <Filter>Mem\Priv</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Mem\Test\BlockHeapTest.h">
+      <Filter>Mem\Test</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Core\Mem\Helper\Priv\LinearAllocHelper.cpp">
@@ -55,6 +70,9 @@
     </ClCompile>
     <ClCompile Include="..\..\Core\Str\Priv\IdentStr.cpp">
       <Filter>Str\Priv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Core\Mem\Priv\BlockHeapImpl.cpp">
+      <Filter>Mem\Priv</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
