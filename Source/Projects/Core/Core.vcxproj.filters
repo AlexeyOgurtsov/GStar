@@ -31,6 +31,12 @@
     <Filter Include="Mem\Test">
       <UniqueIdentifier>{a1acecac-083a-4e8d-995c-40e5bd7dd115}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Cont\Special">
+      <UniqueIdentifier>{34ef9c67-f5de-40b6-8015-76c586b30cb5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Cont\Special\Test">
+      <UniqueIdentifier>{eef7e1bd-0c97-4b89-8e21-8737b5e322da}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Core\Str\IdentStr.h">
@@ -62,6 +68,12 @@
     </ClInclude>
     <ClInclude Include="..\..\Core\Mem\Test\BlockHeapTest.h">
       <Filter>Mem\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Special\TMovBlobSet.h">
+      <Filter>Cont\Special</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Special\Test\TMovBlobSetTest.h">
+      <Filter>Cont\Special\Test</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
