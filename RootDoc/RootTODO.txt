@@ -1,0 +1,10 @@
+This TODO file may contains any TODOs 
+(tasks to be moved to module TODOs if not DONE a long time).
+
+TODAY:
+* IdentStr and its storage (make IdentStr use index, not ptr);
+
+TOMORROW:
+
+LATER:
+* Core exception (depends on String) 
