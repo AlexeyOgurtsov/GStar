@@ -140,6 +140,8 @@ public:
 	size_t Hash() const;
 
 	friend bool operator==(const IdentStr A, const IdentStr B);
+
+	friend bool operator<(const IdentStr A, const IdentStr B);
 	
 private:
 	const char* Ptr;
