@@ -63,6 +63,12 @@
     <ClInclude Include="..\..\Core\Mem\Test\BlockHeapTest.h">
       <Filter>Mem\Test</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Test\TSortedSetTest.h">
+      <Filter>Cont\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\TSortedSet.h">
+      <Filter>Cont</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Core\Mem\Helper\Priv\LinearAllocHelper.cpp">
