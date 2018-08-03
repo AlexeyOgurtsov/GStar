@@ -2,11 +2,14 @@ This TODO file may contains any TODOs
 (tasks to be moved to module TODOs if not DONE a long time).
 
 TODAY:
+* TVector: Rename resize policy to avoid name conflicts
 * TVector: Exclude from Eng namespace
-* MovBlobSet (Stores byte blobs in memory, may reallocate blobs - identifies by index)
-* IdentStr and its storage (make IdentStr use index, not ptr);
+* Create TOrderedSet class that allows to compare with external comparer
 
 TOMORROW:
+* MovBlobSet (Stores byte blobs in memory, may reallocate blobs - identifies by index)
+(Depends on TOrderedSet)
 
 LATER:
+* IdentStr and its storage (make IdentStr use index, not ptr);
 * Core exception (depends on String) 

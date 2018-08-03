@@ -142,6 +142,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Core\Cont\ContainerSystem.h" />
+    <ClInclude Include="..\..\Core\Cont\Special\Priv\TMovBlobSetImpl.h" />
     <ClInclude Include="..\..\Core\Cont\Special\Test\TMovBlobSetTest.h" />
     <ClInclude Include="..\..\Core\Cont\Special\TMovBlobSet.h" />
     <ClInclude Include="..\..\Core\Cont\Test\TVectorTest.h" />
@@ -157,6 +158,7 @@
     <ClInclude Include="..\..\Core\Str\IdentStr.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Core\Cont\Special\Priv\TMovBlobSetImpl.cpp" />
     <ClCompile Include="..\..\Core\Mem\Helper\Priv\LinearAllocHelper.cpp" />
     <ClCompile Include="..\..\Core\Mem\Priv\BlockHeapImpl.cpp" />
     <ClCompile Include="..\..\Core\Str\Priv\IdentStr.cpp" />

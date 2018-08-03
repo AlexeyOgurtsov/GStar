@@ -37,6 +37,9 @@
     <Filter Include="Cont\Special\Test">
       <UniqueIdentifier>{eef7e1bd-0c97-4b89-8e21-8737b5e322da}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Cont\Special\Priv">
+      <UniqueIdentifier>{21a42b3e-ccac-4c79-a56d-011f6d71b858}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Core\Str\IdentStr.h">
@@ -75,6 +78,9 @@
     <ClInclude Include="..\..\Core\Cont\Special\Test\TMovBlobSetTest.h">
       <Filter>Cont\Special\Test</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Special\Priv\TMovBlobSetImpl.h">
+      <Filter>Cont\Special\Priv</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Core\Mem\Helper\Priv\LinearAllocHelper.cpp">
@@ -85,6 +91,9 @@
     </ClCompile>
     <ClCompile Include="..\..\Core\Mem\Priv\BlockHeapImpl.cpp">
       <Filter>Mem\Priv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Core\Cont\Special\Priv\TMovBlobSetImpl.cpp">
+      <Filter>Cont\Special\Priv</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

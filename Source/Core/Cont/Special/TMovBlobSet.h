@@ -1,12 +1,22 @@
 #pragma once
 
-#include "../ContainerSystem.h"
-#include <set>
-#include "../TVector.h"
+#include "Priv/TMovBlobSetImpl.h"
+
+/**
+* TODO:
+* 1. Clear operation;
+* 2. Iteration;
+* 3. First/Last;
+* 4. Resize;
+* 5. LowerBound/UpperBound/Range/EqualRange
+*/
 
 struct DefaultMovBlobSetPolicy
 {
-	static constexpr float DEFAULT_CAPACITY = 1024;	
+	static constexpr float DEFAULT_CAPACITY = 1024;
+
+	template<class T>
+	using BufferResizePolicy = Eng::DefaultResizePolicy<T>;
 };
 
 /**
@@ -33,18 +43,16 @@ public:
 	* Creates a set.
 	* Buffer is initialized with default storage capacity.
 	*/
-	TMovBlobSet() 
-	{
-		BOOST_ASSERT_MSG(false, "TMovBlobSet: default constructor: NOT yet implemented");
-	}
+	TMovBlobSet() : TMovBlobSet{ MovBlobSetPolicy::DEFAULT_CAPACITY } {}
 
 	/**
 	* Creates a set.
 	* Initial buffer capacity is provided as an argument.
 	*/
-	TMovBlobSet(int InInitialBufferCapacity) 
+	explicit TMovBlobSet(int InInitialBufferCapacity) :
+		S{ /*TMovBlobSetImpl::BlobEqual{}*/ }
 	{
-		BOOST_ASSERT_MSG(false, "TMovBlobSet: constructor: NOT yet implemented");
+		Buffer.ResizeGrow(InInitialBufferCapacity);
 	}
 
 	/**
@@ -70,10 +78,7 @@ public:
 	/**
 	* Returns count of elements in the set.
 	*/
-	__forceinline int Count() const
-	{
-		BOOST_ASSERT_MSG(false, "TMovBlobSet: Count: NOT yet implemented"); return 0;
-	}
+	__forceinline int Count() const { return S.size(); }
 
 	/**
 	* Returns true if set is empty.
@@ -88,6 +93,14 @@ public:
 	int Add(const void* pInBytes, int InSize)
 	{
 		BOOST_ASSERT_MSG(false, "TMovBlobSet: Add: NOT yet implemented"); return 0;
+
+		// TODO: Check contained
+
+		// NOTE: Added index always must be getted before the Append
+		int const AddedIndex = Buffer.LastIndex();
+		Buffer.Append(static_cast<const Byte*>(pInBytes), InSize);
+
+		// TODO: Add to set
 	}
 
 	/**
@@ -108,20 +121,11 @@ public:
 	}
 
 private:
-	struct BlobHeader
-	{
-		/**
-		* Length of the Blob (excluding THE header!!!).
-		*/
-		int Length;
-
-		BlobHeader(int InLength) : Length(InLength) {}
-	};
+	Eng::TVector<Byte, DefaultMovBlobSetPolicy::BufferResizePolicy> Buffer;
 
 	/**
-	* Buffer of all blobs. 
-	* Each blob contains the header immediately followed by the blob data (of length specified in the header).
+	* Set of Blob indices into the Buffer.
 	*/
-	Eng::TVector<Byte> Buffer;
-	//std::set<const Byte*, BlobsEqual> Set;
+	// TODO: Set cannot be used
+	std::set<int> S;
 };
