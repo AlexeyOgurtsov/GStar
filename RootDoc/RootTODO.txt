@@ -2,8 +2,6 @@ This TODO file may contains any TODOs
 (tasks to be moved to module TODOs if not DONE a long time).
 
 TODAY:
-* TVector: Rename resize policy to avoid name conflicts
-* TVector: Exclude from Eng namespace
 * Create TOrderedSet class that allows to compare with external comparer
 
 TOMORROW:

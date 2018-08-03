@@ -2,20 +2,18 @@
 
 #include "ContainerSystem.h"
 
-namespace Eng
+/************************************************************************************************************
+* Default resize policy
+************************************************************************************************************/
+template<class T>
+struct DefaultVectorResizePolicy
 {
-	/************************************************************************************************************
-	* Default resize policy
-	************************************************************************************************************/
-	template<class T>
-	struct DefaultResizePolicy
+	constexpr static const char Name[] = "Default";
+
+	constexpr static int32_t SBO_LENGTH = 32;
+
+	constexpr int32_t CalcNewCapacity(int32_t Length) const
 	{
-		constexpr static const char Name[] = "Default";
-
-		constexpr static int32_t SBO_LENGTH = 32;
-
-		constexpr int32_t CalcNewCapacity(int32_t Length) const
-		{
 			// Constant is used until the capacity is reached the given value
  			const float GROW_FACTOR                = 1.5F;
 
@@ -40,7 +38,7 @@ namespace Eng
 	/************************************************************************************************************
 	* Vector
 	************************************************************************************************************/
-	template<class T, template<class> class ResizePolicy = DefaultResizePolicy>
+	template<class T, template<class> class ResizePolicy = DefaultVectorResizePolicy>
 	class TVector
 	{
 	public:
@@ -1649,877 +1647,876 @@ namespace Eng
 	template<class Strm, class T, template<class> class ResizePolicy>
 	Strm& operator<<(Strm& strm, const TVector<T, ResizePolicy>& V);
 
-	/**
-	* Returns string with extra debug info
-	*/
-	template<class T, template<class> class ResizePolicy>
-	std::string* AppendExtraDebugInfoString(std::string* pOutString, const TVector<T, ResizePolicy>& V)
+/**
+* Returns string with extra debug info
+*/
+template<class T, template<class> class ResizePolicy>
+std::string* AppendExtraDebugInfoString(std::string* pOutString, const TVector<T, ResizePolicy>& V)
+{
+	// buffer
+	pOutString->append("pBuf=");
+	pOutString->append(V.pBuf ? V.pBuf : "nullptr");
+
+	// dynamic buffer
+	pOutString->append("; pDynamicBuf=");
+	pOutString->append(V.pDynamicBuf ? V.pDynamicBuf : "nullptr");
+
+	// resize policy
+	pOutString->append("; resizePolicy=");
+	pOutString->append(ResizePolicy<T>::Name);
+
+	// info about serialization
+	int32_t const countSerializeBytes = V.CountSerializeBytes();
+	pOutString->append("; countSerializeBytes=");
+	pOutString->append(std::to_string(countSerializeBytes));
+
+	return pOutString;
+}
+
+/**
+* Conversion to string with extra debug info
+*/
+template<class T, template<class> class ResizePolicy>
+std::string ToDebugString(const TVector<T, ResizePolicy>& V, const char sep = ' ')
+{
+	std::string result;
+	result.append("{");
+
+	// Contents
+	result.append(ToString(V));
+
+	// Extra debug info
+	result.append(";");
+	AppendExtraDebugInfoString(&result, V);
+
+	result.append("}");
+	return result;
+}
+
+
+template<class Strm, class T, template<class> class ResizePolicy>
+void Write(Strm& strm, const TVector<T, ResizePolicy>& V, char sep = ' ')
+{
+	for (int i = 0; i < V.Len(); i++)
 	{
-		// buffer
-		pOutString->append("pBuf=");
-		pOutString->append(V.pBuf ? V.pBuf : "nullptr");
+		if (i > 0) { strm << " "; }
+		strm << V[i];
+	}
+}
 
-		// dynamic buffer
-		pOutString->append("; pDynamicBuf=");
-		pOutString->append(V.pDynamicBuf ? V.pDynamicBuf : "nullptr");
+template<class Strm, class T, template<class> class ResizePolicy>
+void WriteLn(Strm& strm, const TVector<T, ResizePolicy>& V, char sep = ' ')
+{
+	Write(Strm, V, sep);
+	strm << std::endl;
+}
 
-		// resize policy
-		pOutString->append("; resizePolicy=");
-		pOutString->append(ResizePolicy<T>::Name);
+template<class Strm, class T, template<class> class ResizePolicy>
+void WriteDebug(Strm& strm, const TVector<T, ResizePolicy>& V, char sep = ' ')
+{
+	strm << ToDebugString(Strm, V, sep);
+}
 
-		// info about serialization
-		int32_t countSerializeBytes = V.CountSerializeBytes();
-		pOutString->append("; countSerializeBytes=");
-		pOutString->append(std::to_string(countSerializeBytes));
+template<class Strm, class T, template<class> class ResizePolicy>
+void WriteDebugLn(Strm& strm, const TVector<T, ResizePolicy>& V, char sep = ' ')
+{
+	WriteDebug(Strm, V, sep);
+	strm << std::endl;
+}
 
-		return pOutString;
+template<class Strm, class T, template<class> class ResizePolicy>
+Strm& operator<<(Strm& strm, const TVector<T, ResizePolicy>& V)
+{
+	Write(strm, V);
+	return strm;
+}
+
+/**
+* Conversion to string
+*/
+template<class T, template<class> class ResizePolicy>
+std::string ToString(const TVector<T, ResizePolicy>& V, const char sep = ' ')
+{
+	std::string result;
+	for (int i = 0; i < V.Len(); i++)
+	{
+		if (i > 0) { result.append(sep); }
+		result.append(std::to_string(V[i]));
+	}
+	return result;
+}
+
+template<class T, template<class> class ResizePolicy>
+template<template<class> class OtherResizePolicy>
+TVector<T, ResizePolicy>::TVector(const TVector<T, OtherResizePolicy>& Other)
+{
+	if (MaxLength < Other.Len())
+	{
+		SetupBuffer_ForDesiredLength(Other.Len());
+	}
+	CopyConstructFrom(Other.Data(), Other.Len());
+}
+
+template<class T, template<class> class ResizePolicy>
+template<template<class> class OtherResizePolicy>
+TVector<T, ResizePolicy>::TVector(TVector<T, OtherResizePolicy>&& Other)
+{
+	Length = Other.Length;
+	// Other uses dynamic buf
+	if (Other.pDynamicBuf == Other.pBuf)
+	{
+		pDynamicBuf = Other.pDynamicBuf;
+		pBuf = pDynamicBuf;
+		MaxLength = Other.MaxLength;
+
+		Other.Invalidate();
+		return;
 	}
 
-	/**
-	* Conversion to string with extra debug info
-	*/
-	template<class T, template<class> class ResizePolicy>
-	std::string ToDebugString(const TVector<T, ResizePolicy>& V, const char sep = ' ')
+	// Other uses SBO:
+	// We must prepare dynamic buffer if this SBO is NOT capable to store other's length
+	if (Other.Length > ResizePolicy<T>::SBO_LENGTH)
 	{
-		std::string result;
-		result.append("{");
-
-		// Contents
-		result.append(ToString(V));
-
-		// Extra debug info
-		result.append(";");
-		AppendExtraDebugInfoString(&result, V);
-
-
-		result.append("}");
-		return result;
+		SetupDynamicBuffer_ForDesiredLength(Other.Length);
 	}
+	// Then we must move from the other buffer to this buffer
+	MoveFrom(Other.pBuf, Other.Length);
+}
 
-
-	template<class Strm, class T, template<class> class ResizePolicy>
-	void Write(Strm& strm, const TVector<T, ResizePolicy>& V, char sep = ' ')
+template<class T, template<class> class ResizePolicy>
+template<template<class> class OtherResizePolicy>
+typename TVector<T, ResizePolicy>::ThisType& TVector<T, ResizePolicy>::operator=(const TVector<T, OtherResizePolicy>& Other)
+{
+	if (Length < Other.Length)
 	{
-		for (int i = 0; i < V.Len(); i++)
+		SetupBuffer_ForDesiredLength(Other.Length);
+	}
+	CopyAssignFrom(Other);
+	return *this;
+}
+
+template<class T, template<class> class ResizePolicy>
+void TVector<T, ResizePolicy>::Invalidate()
+{
+	pDynamicBuf     = nullptr;
+	pBuf            = nullptr;
+	Length          = 0;
+}
+
+template<class T, template<class> class ResizePolicy>
+template<template<class> class OtherResizePolicy>
+typename TVector<T, ResizePolicy>::ThisType& TVector<T, ResizePolicy>::operator=(TVector<T, OtherResizePolicy>&& Other)
+{
+	// We must destruct extra elements (Before assigning new length!!!)
+	DestructRange(pBuf, Other.Length, Length);
+
+	// Other uses dynamic buf:
+	if (Other.pDynamicBuf == Other.pBuf)
+	{
+		// Destroying the rest of the elements
+		DestructRange(pBuf, 0, Length);
+		if (pDynamicBuf)
 		{
-			if (i > 0) { strm << " "; }
-			strm << V[i];
-		}
-	}
-
-	template<class Strm, class T, template<class> class ResizePolicy>
-	void WriteLn(Strm& strm, const TVector<T, ResizePolicy>& V, char sep = ' ')
-	{
-		Write(Strm, V, sep);
-		strm << std::endl;
-	}
-
-	template<class Strm, class T, template<class> class ResizePolicy>
-	void WriteDebug(Strm& strm, const TVector<T, ResizePolicy>& V, char sep = ' ')
-	{
-		strm << ToDebugString(Strm, V, sep);
-	}
-
-	template<class Strm, class T, template<class> class ResizePolicy>
-	void WriteDebugLn(Strm& strm, const TVector<T, ResizePolicy>& V, char sep = ' ')
-	{
-		WriteDebug(Strm, V, sep);
-		strm << std::endl;
-	}
-
-	template<class Strm, class T, template<class> class ResizePolicy>
-	Strm& operator<<(Strm& strm, const TVector<T, ResizePolicy>& V)
-	{
-		Write(strm, V);
-		return strm;
-	}
-
-	/**
-	* Conversion to string
-	*/
-	template<class T, template<class> class ResizePolicy>
-	std::string ToString(const TVector<T, ResizePolicy>& V, const char sep = ' ')
-	{
-		std::string result;
-		for (int i = 0; i < V.Len(); i++)
-		{
-			if (i > 0) { result.append(sep); }
-			result.append(std::to_string(V[i]));
-		}
-		return result;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	template<template<class> class OtherResizePolicy>
-	TVector<T, ResizePolicy>::TVector(const TVector<T, OtherResizePolicy>& Other)
-	{
-		if (MaxLength < Other.Len())
-		{
-			SetupBuffer_ForDesiredLength(Other.Len());
-		}
-		CopyConstructFrom(Other.Data(), Other.Len());
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	template<template<class> class OtherResizePolicy>
-	TVector<T, ResizePolicy>::TVector(TVector<T, OtherResizePolicy>&& Other)
-	{
-		Length = Other.Length;
-		// Other uses dynamic buf
-		if (Other.pDynamicBuf == Other.pBuf)
-		{
-			pDynamicBuf = Other.pDynamicBuf;
-			pBuf = pDynamicBuf;
-			MaxLength = Other.MaxLength;
-
-			Other.Invalidate();
-			return;
+			free(pDynamicBuf);
 		}
 
-		// Other uses SBO:
-		// We must prepare dynamic buffer if this SBO is NOT capable to store other's length
-		if (Other.Length > ResizePolicy<T>::SBO_LENGTH)
-		{
-			SetupDynamicBuffer_ForDesiredLength(Other.Length);
-		}
-		// Then we must move from the other buffer to this buffer
-		MoveFrom(Other.pBuf, Other.Length);
-	}
+		// Move buffer
+		pDynamicBuf      = Other.pDynamicBuf;
+		pBuf             = pDynamicBuf;
+		MaxLength        = Other.MaxLength;
 
+		// Length should be updated properly (it's still not updated for this particular case).
+		Length           = Other.Length;
 
-	template<class T, template<class> class ResizePolicy>
-	template<template<class> class OtherResizePolicy>
-	typename TVector<T, ResizePolicy>::ThisType& TVector<T, ResizePolicy>::operator=(const TVector<T, OtherResizePolicy>& Other)
-	{
-		if (Length < Other.Length)
-		{
-			SetupBuffer_ForDesiredLength(Other.Length);
-		}
-		CopyAssignFrom(Other);
+		Other.Invalidate();
 		return *this;
 	}
 
-	template<class T, template<class> class ResizePolicy>
-	void TVector<T, ResizePolicy>::Invalidate()
+	// Assign new length (we must do it after handling the "other is dynamic buffer" case,
+	// because the old length is needed there to properly destruct the buffer elements.
+	Length = Other.Length;
+
+	// We must destroy dynamic buffer if it's incapable to store its length or SBO will be used
+	const bool bUseSBO = Other.Length < ResizePolicy<T>::SBO_LENGTH;
+	if (pDynamicBuf && (bUseSBO || Other.Length <= MaxLength))
 	{
-		pDynamicBuf     = nullptr;
-		pBuf            = nullptr;
-		Length          = 0;
+		free(pDynamicBuf);
+		pDynamicBuf = nullptr;
 	}
 
-	template<class T, template<class> class ResizePolicy>
-	template<template<class> class OtherResizePolicy>
-	typename TVector<T, ResizePolicy>::ThisType& TVector<T, ResizePolicy>::operator=(TVector<T, OtherResizePolicy>&& Other)
+	// Other uses SBO:
+	// We must prepare dynamic buffer if this SBO is NOT capable to store other's length
+	if (pDynamicBuf && (false == bUseSBO))
 	{
-		// We must destruct extra elements (Before assigning new length!!!)
-		DestructRange(pBuf, Other.Length, Length);
+		SetupDynamicBuffer_ForDesiredLength(Other.Length);
+	}
+	MoveFrom(Other.pBuf, Other.Length, 0);
 
-		// Other uses dynamic buf:
-		if (Other.pDynamicBuf == Other.pBuf)
+	// Warning!!! We should NOT perform invalidation of the Other here manually,
+	// because the elements will automatically invalidated during the move operation.
+	return *this;
+}
+
+template<class T, template<class> class ResizePolicy>
+TVector<T, ResizePolicy>::TVector(int32_t InitialLength) :
+	Length(InitialLength)
+{
+	SetupBuffer_ForDesiredLength(InitialLength);
+}
+
+template<class T, template<class> class ResizePolicy>
+TVector<T, ResizePolicy>::TVector(int32_t InitialLength, EForceInit) :
+	Length(InitialLength)
+{
+	SetupBuffer_ForDesiredLength(InitialLength);
+	DefaultConstructAll();
+}
+	
+template<class T, template<class> class ResizePolicy>
+TVector<T, ResizePolicy>::TVector(int32_t InitialLength, const T& Templ) :
+	Length(InitialLength)
+{
+	SetupBuffer_ForDesiredLength(InitialLength);
+	CopyConstructTempl(Templ, Length);
+}
+
+
+template<class T, template<class> class ResizePolicy>
+TVector<T, ResizePolicy>::TVector(std::initializer_list<T> InitList) :
+	Length(InitList.size())
+{
+	SetupBuffer_ForDesiredLength(Length);
+	auto itSource = InitList.begin();
+	for (int i = 0; i < Length; i++)
+	{
+		pBuf[i] = *itSource;
+		++itSource;
+	}
+}
+
+template<class T, template<class> class ResizePolicy>
+TVector<T, ResizePolicy>::TVector(const T* Ptr, int32_t InCount) :
+	Length(InCount)
+{
+	assert(Ptr);
+	SetupBuffer_ForDesiredLength(Length);
+	CopyConstructFrom(Ptr, InCount);
+}
+
+template<class T, template<class> class ResizePolicy>
+template<template<class> class OtherResizePolicy>
+bool TVector<T, ResizePolicy>::operator==(const TVector<T, OtherResizePolicy>& Other) const
+{
+	if (Length != Other.Length)
+	{
+		return false;
+	}
+	for (int i = 0; i < Length; i++)
+	{
+		if(pBuf[i] != Other.pBuf[i]) return false;
+	}
+	return true;
+}
+
+template<class T, template<class> class ResizePolicy>
+template<template<class> class OtherResizePolicy>
+bool TVector<T,ResizePolicy>::operator!=(const TVector<T, OtherResizePolicy>& Other) const
+{
+	if (Length != Other.Length)
+	{
+		return true;
+	}
+	for (int i = 0; i < Length; i++)
+	{
+		if (pBuf[i] != Other.pBuf[i]) return true;
+	}
+	return false;
+}
+
+template<class T, template<class> class ResizePolicy>
+void TVector<T, ResizePolicy>::Clear()
+{
+	DestructAll(pBuf, Length);
+	Length = 0;
+}
+
+
+template<class T, template<class> class ResizePolicy>
+void TVector<T, ResizePolicy>::SetBufferLength(int32_t DesiredLength)
+{
+	assert(DesiredLength <= MaxLength);
+	// If desired length is bigger than current, then nothing will be destroyed,
+	// so function will work correct.
+	// The same for the DefaultConstructRange.
+	DestructRange(pBuf, DesiredLength, Length);
+	DefaultConstructRange(pBuf, Length, DesiredLength);
+	Length = DesiredLength;
+}
+
+template<class T, template<class> class ResizePolicy>
+void TVector<T, ResizePolicy>::SetBufferLengthUninitialized(int32_t DesiredLength)
+{
+	assert(DesiredLength <= MaxLength);
+	Length = DesiredLength;
+}
+	
+template<class T, template<class> class ResizePolicy>
+void TVector<T, ResizePolicy>::SetBufferLength_NoDestruct(int32_t DesiredLength)
+{
+	assert(DesiredLength <= MaxLength);
+	DefaultConstructRange(pBuf, Length, DesiredLength);
+	Length = DesiredLength;
+}
+
+template<class T, template<class> class ResizePolicy>
+void TVector<T, ResizePolicy>::SetBufferLength_NoConstruct(int32_t DesiredLength)
+{
+	assert(DesiredLength <= MaxLength);
+	DestructRange(pBuf, DesiredLength, Length);
+	Length = DesiredLength;
+}
+
+
+template<class T, template<class> class ResizePolicy>
+void TVector<T, ResizePolicy>::SetLength(int32_t DesiredLength)
+{
+	if (DesiredLength > Length)
+	{
+		ResizeGrow(DesiredLength);
+	}
+	else
+	{
+		SetBufferLength_NoConstruct(DesiredLength);
+	}
+}
+
+template<class T, template<class> class ResizePolicy>
+void TVector<T, ResizePolicy>::ResizeGrow(int32_t DesiredLength)
+{
+	int32_t const OldLen = Length;
+	ResizeGrow_Uninitialized(DesiredLength);
+	DefaultConstructRange(pBuf, OldLen, DesiredLength);
+}
+
+template<class T, template<class> class ResizePolicy>
+void TVector<T, ResizePolicy>::ResizeGrow_Uninitialized(int32_t DesiredLength)
+{
+	if (DesiredLength > MaxLength)
+	{
+		ReserveGrow(DesiredLength);
+	}
+	Length = DesiredLength;
+}
+
+template<class T, template<class> class ResizePolicy>
+void TVector<T, ResizePolicy>::ReserveGrow(int32_t DesiredCapacity)
+{
+	assert(DesiredCapacity >= Len());
+	if(DesiredCapacity > ResizePolicy<T>::SBO_LENGTH)
+	{
+		MaxLength = CalcNewCapacity(DesiredCapacity);
+		// COMMENT: We will never use small buffer again if dynamic is ever used
+		ReAllocDynamicBuffer(MaxLength);
+	}
+	// COMMENT: If MaxLength is less or equal to the small buffer length, max length is valid (no update needed).
+}
+
+template<class T, template<class> class ResizePolicy>
+void TVector<T, ResizePolicy>::ShrinkToFit()
+{
+	if (Length > ResizePolicy<T>::SBO_LENGTH)
+	{
+		MaxLength = CalcNewCapacity(Length);
+		ReAllocDynamicBuffer(MaxLength);
+	}
+	else
+	{
+		// SBO is used; 
+		// if dynamic buffer was used before, we must move its content to the SBO
+		// and switch to the small buffer
+		if (pDynamicBuf)
 		{
-			// Destroying the rest of the elements
-			DestructRange(pBuf, 0, Length);
+			MoveFrom(pDynamicBuf, Len());
+			DestructAll(pDynamicBuf, Len());
 			if (pDynamicBuf)
 			{
 				free(pDynamicBuf);
 			}
 
-			// Move buffer
-			pDynamicBuf      = Other.pDynamicBuf;
-			pBuf             = pDynamicBuf;
-			MaxLength        = Other.MaxLength;
-
-			// Length should be updated properly (it's still not updated for this particular case).
-			Length           = Other.Length;
-
-			Other.Invalidate();
-			return *this;
-		}
-
-		// Assign new length (we must do it after handling the "other is dynamic buffer" case,
-		// because the old length is needed there to properly destruct the buffer elements.
-		Length = Other.Length;
-
-		// We must destroy dynamic buffer if it's incapable to store its length or SBO will be used
-		const bool bUseSBO = Other.Length < ResizePolicy<T>::SBO_LENGTH;
-		if (pDynamicBuf && (bUseSBO || Other.Length <= MaxLength))
-		{
-			free(pDynamicBuf);
-			pDynamicBuf = nullptr;
-		}
-
-		// Other uses SBO:
-		// We must prepare dynamic buffer if this SBO is NOT capable to store other's length
-		if (pDynamicBuf && (false == bUseSBO))
-		{
-			SetupDynamicBuffer_ForDesiredLength(Other.Length);
-		}
-		MoveFrom(Other.pBuf, Other.Length, 0);
-
-		// Warning!!! We should NOT perform invalidation of the Other here manually,
-		// because the elements will automatically invalidated during the move operation.
-		return *this;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	TVector<T, ResizePolicy>::TVector(int32_t InitialLength) :
-		Length(InitialLength)
-	{
-		SetupBuffer_ForDesiredLength(InitialLength);
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	TVector<T, ResizePolicy>::TVector(int32_t InitialLength, EForceInit) :
-		Length(InitialLength)
-	{
-		SetupBuffer_ForDesiredLength(InitialLength);
-		DefaultConstructAll();
-	}
-	
-	template<class T, template<class> class ResizePolicy>
-	TVector<T, ResizePolicy>::TVector(int32_t InitialLength, const T& Templ) :
-		Length(InitialLength)
-	{
-		SetupBuffer_ForDesiredLength(InitialLength);
-		CopyConstructTempl(Templ, Length);
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	TVector<T, ResizePolicy>::TVector(std::initializer_list<T> InitList) :
-		Length(InitList.size())
-	{
-		SetupBuffer_ForDesiredLength(Length);
-		auto itSource = InitList.begin();
-		for (int i = 0; i < Length; i++)
-		{
-			pBuf[i] = *itSource;
-			++itSource;
-		}
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	TVector<T, ResizePolicy>::TVector(const T* Ptr, int32_t InCount) :
-		Length(InCount)
-	{
-		assert(Ptr);
-		SetupBuffer_ForDesiredLength(Length);
-		CopyConstructFrom(Ptr, InCount);
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	template<template<class> class OtherResizePolicy>
-	bool TVector<T, ResizePolicy>::operator==(const TVector<T, OtherResizePolicy>& Other) const
-	{
-		if (Length != Other.Length)
-		{
-			return false;
-		}
-		for (int i = 0; i < Length; i++)
-		{
-			if(pBuf[i] != Other.pBuf[i]) return false;
-		}
-		return true;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	template<template<class> class OtherResizePolicy>
-	bool TVector<T,ResizePolicy>::operator!=(const TVector<T, OtherResizePolicy>& Other) const
-	{
-		if (Length != Other.Length)
-		{
-			return true;
-		}
-		for (int i = 0; i < Length; i++)
-		{
-			if (pBuf[i] != Other.pBuf[i]) return true;
-		}
-		return false;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	void TVector<T, ResizePolicy>::Clear()
-	{
-		DestructAll(pBuf, Length);
-		Length = 0;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	void TVector<T, ResizePolicy>::SetBufferLength(int32_t DesiredLength)
-	{
-		assert(DesiredLength <= MaxLength);
-		// If desired length is bigger than current, then nothing will be destroyed,
-		// so function will work correct.
-		// The same for the DefaultConstructRange.
-		DestructRange(pBuf, DesiredLength, Length);
-		DefaultConstructRange(pBuf, Length, DesiredLength);
-		Length = DesiredLength;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	void TVector<T, ResizePolicy>::SetBufferLengthUninitialized(int32_t DesiredLength)
-	{
-		assert(DesiredLength <= MaxLength);
-		Length = DesiredLength;
-	}
-	
-	template<class T, template<class> class ResizePolicy>
-	void TVector<T, ResizePolicy>::SetBufferLength_NoDestruct(int32_t DesiredLength)
-	{
-		assert(DesiredLength <= MaxLength);
-		DefaultConstructRange(pBuf, Length, DesiredLength);
-		Length = DesiredLength;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	void TVector<T, ResizePolicy>::SetBufferLength_NoConstruct(int32_t DesiredLength)
-	{
-		assert(DesiredLength <= MaxLength);
-		DestructRange(pBuf, DesiredLength, Length);
-		Length = DesiredLength;
-	}
-
-
-	template<class T, template<class> class ResizePolicy>
-	void TVector<T, ResizePolicy>::SetLength(int32_t DesiredLength)
-	{
-		if (DesiredLength > Length)
-		{
-			ResizeGrow(DesiredLength);
-		}
-		else
-		{
-			SetBufferLength_NoConstruct(DesiredLength);
-		}
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	void TVector<T, ResizePolicy>::ResizeGrow(int32_t DesiredLength)
-	{
-		int32_t OldLen = Length;
-		ResizeGrow_Uninitialized(DesiredLength);
-		DefaultConstructRange(pBuf, OldLen, DesiredLength);
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	void TVector<T, ResizePolicy>::ResizeGrow_Uninitialized(int32_t DesiredLength)
-	{
-		if (DesiredLength > MaxLength)
-		{
-			ReserveGrow(DesiredLength);
-		}
-		Length = DesiredLength;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	void TVector<T, ResizePolicy>::ReserveGrow(int32_t DesiredCapacity)
-	{
-		assert(DesiredCapacity >= Len());
-		if(DesiredCapacity > ResizePolicy<T>::SBO_LENGTH)
-		{
-			MaxLength = CalcNewCapacity(DesiredCapacity);
-			// COMMENT: We will never use small buffer again if dynamic is ever used
-			ReAllocDynamicBuffer(MaxLength);
-		}
-		// COMMENT: If MaxLength is less or equal to the small buffer length, max length is valid (no update needed).
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	void TVector<T, ResizePolicy>::ShrinkToFit()
-	{
-		if (Length > ResizePolicy<T>::SBO_LENGTH)
-		{
-			MaxLength = CalcNewCapacity(Length);
-			ReAllocDynamicBuffer(MaxLength);
-		}
-		else
-		{
-			// SBO is used; 
-			// if dynamic buffer was used before, we must move its content to the SBO
-			// and switch to the small buffer
-			if (pDynamicBuf)
-			{
-				MoveFrom(pDynamicBuf, Len());
-				DestructAll(pDynamicBuf, Len());
-				if (pDynamicBuf)
-				{
-					free(pDynamicBuf);
-				}
-
-				MaxLength = ResizePolicy<T>::SBO_LENGTH;
-				pBuf = static_cast<T*>(static_cast<void *>(SmallBuf));
-				pDynamicBuf = nullptr;
-			}
-		}
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	T* TVector<T, ResizePolicy>::AddZeroed(int32_t Count)
-	{
-		T* const ptr = AddUninitialized(Count);
-		ZeroMemory(ptr, sizeof(T) * Count);
-		return ptr;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	T* TVector<T, ResizePolicy>::AddBufferZeroed(int32_t Count)
-	{
-		T* const ptr = AddBufferUninitialized(Count);
-		ZeroMemory(ptr, sizeof(T) * Count);
-		return ptr;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	T* TVector<T, ResizePolicy>::AddDefaulted(int32_t Count)
-	{
-		const int32_t OldLength = Length;
-		T* const ptr = AddUninitialized(Count);
-		DefaultConstructRange(ptr, OldLength, Length);
-		return ptr;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	T* TVector<T, ResizePolicy>::AddBufferDefaulted(int32_t Count)
-	{
-		const int32_t OldLength = Length;
-		T* const ptr = AddBufferUninitialized(Count);
-		DefaultConstructRange(ptr, OldLength, Length);
-		return ptr;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	T* TVector<T, ResizePolicy>::Add(const T& Val)
-	{
-		T* const ptr = AddUninitialized();
-		new(ptr) T(Val);
-		return ptr;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	T* TVector<T, ResizePolicy>::AddBuffer(const T& Val)
-	{
-		T* const ptr = AddBufferUninitialized();
-		new(ptr) T(val);
-		return ptr;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	T* TVector<T, ResizePolicy>::Add(T&& Val)
-	{
-		T* const ptr = AddUninitialized();
-		new (ptr) T(std::forward<T>(Val));
-		return ptr;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	T* TVector<T, ResizePolicy>::AddBuffer(T&& Val)
-	{
-		T* const ptr = AddBufferUninitialized();
-		new (ptr) T(std::forward<T>(Val));
-		return ptr;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	template<typename... ArgsType>
-	T* TVector<T, ResizePolicy>::Emplace(ArgsType&&... Args)
-	{
-		T* const ptr = AddUninitialized();
-		new(ptr) T(std::forward<ArgsType>(Args)...);
-		return ptr;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	template<typename... ArgsType>
-	T* TVector<T, ResizePolicy>::EmplaceBuffer(ArgsType&&... Args)
-	{
-		T* const ptr = AddBufferUninitialized();
-		new(ptr) T(std::forward<ArgsType>(Args)...);
-		return ptr;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	T* TVector<T, ResizePolicy>::AddUninitialized(int Count)
-	{
-		// Save old length
-		const int32_t OldLength = Length;
-		const int32_t DesiredLength = Length + Count;
-		ResizeGrow_Uninitialized(DesiredLength);
-		// Compute end ptr (WARNING!!! Never move this line before the ResizeGrow!!!)
-		T* const ptr = pBuf + OldLength;
-
-		return ptr;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	T* TVector<T, ResizePolicy>::AddBufferUninitialized(int Count)
-	{
-		T* const ptr = pBuf + Length;
-		SetBufferLength_NoDestruct(Length + Count);
-		return ptr;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	template<typename... ArgsType>
-	T* TVector<T, ResizePolicy>::EmplaceAt(int32_t Position, ArgsType&&... Args)
-	{
-		InsertPositionValidAssert(Position);
-		T* const ptr = InsertUninitialized(Position);
-		new(ptr) T(std::forward<Args>(val));
-		return ptr;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	template<typename... ArgsType>
-	T* TVector<T, ResizePolicy>::EmplaceBufferAt(int32_t Position, ArgsType&&... Args)
-	{
-		InsertPositionValidAssert(Position);
-		T* const ptr = InsertBufferUninitialized(Position);
-		new(ptr) T(std::forward<Args>(val));
-		return ptr;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	T* TVector<T, ResizePolicy>::Insert(int32_t Position, const T& Val)
-	{
-		InsertPositionValidAssert(Position);
-		T* const ptr = InsertUninitialized(Position);
-		new(ptr) T(Val);
-		return ptr;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	T* TVector<T, ResizePolicy>::InsertBuffer(int32_t Position, const T& Val)
-	{
-		InsertPositionValidAssert(Position);
-		T* const ptr = InsertBufferUninitialized(Position);
-		new(ptr) T(Val);
-		return ptr;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	T* TVector<T, ResizePolicy>::Insert(int32_t Position, T&& Val)
-	{
-		InsertPositionValidAssert(Position);
-		T* const ptr = InsertUninitialized(Position);
-		new(ptr) T(std::move(Val));
-		return ptr;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	T* TVector<T, ResizePolicy>::InsertBuffer(int32_t Position, T&& Val)
-	{
-		InsertPositionValidAssert(Position);
-		T* const ptr = InsertBufferUninitialized(Position);
-		new(ptr) T(std::move(Val));
-		return ptr;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	T* TVector<T, ResizePolicy>::InsertZeroed(int32_t Position, int32_t Count)
-	{
-		InsertPositionValidAssert(Position);
-		T* const ptr = InsertUninitialized(Position, Count);
-		ZeroMemory(ptr, sizeof(T) * Count);
-		return ptr;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	T* TVector<T, ResizePolicy>::InsertBufferZeroed(int32_t Position, int32_t Count)
-	{
-		InsertPositionValidAssert(Position);
-		T* const ptr = InsertBufferUninitialized(Position, Count);
-		ZeroMemory(ptr, sizeof(T) * Count);
-		return ptr;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	T* TVector<T, ResizePolicy>::InsertDefaulted(int32_t Position, int32_t Count)
-	{
-		InsertPositionValidAssert(Position);
-		T* const ptr = InsertUninitialized(Position, Count);
-		DefaultConstructRange(pBuf, Position, Position + Count);
-		return ptr;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	T* TVector<T, ResizePolicy>::InsertBufferDefaulted(int32_t Position, int32_t Count)
-	{
-		InsertPositionValidAssert(Position);
-		T* const ptr = InsertBufferUninitialized(Position, Count);
-		DefaultConstructRange(pBuf, Position, Position + Count);
-		return ptr;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	T* TVector<T, ResizePolicy>::Insert(const T* pSource, int32_t Count, int32_t Position)
-	{
-		InsertPositionValidAssert(Position);
-		T* const ptr = InsertUninitialized(Position, Count);
-		CopyConstructFrom(pSource, Count, Position);
-		return ptr;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	T* TVector<T, ResizePolicy>::InsertBuffer(const T* pSource, int32_t Count, int32_t Position)
-	{
-		InsertPositionValidAssert(Position);
-		T* const ptr = InsertBufferUninitialized(Position, Count);
-		CopyConstructFrom(pSource, Count, Position);
-		return ptr;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	template<template<class> class OtherResizePolicy>
-	T* TVector<T, ResizePolicy>::Insert(int32_t Position, TVector<T, OtherResizePolicy>&& Source)
-	{
-		InsertPositionValidAssert(Position);
-		T* const ptr = InsertUninitialized(Position, Count);
-		MoveFrom(Source.Data(), Source.Len(), Position);
-		return ptr;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	template<template<class> class OtherResizePolicy>
-	T* TVector<T, ResizePolicy>::InsertBuffer(int32_t Position, TVector<T, OtherResizePolicy>&& Source)
-	{
-		InsertPositionValidAssert(Position);
-		T* const ptr = InsertBufferUninitialized(Position, Count);
-		MoveFrom(Source.Data(), Source.Len(), Position);
-		return ptr;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	template<template<class> class OtherResizePolicy>
-	T* TVector<T, ResizePolicy>::Insert(int32_t Position, const TVector<T, OtherResizePolicy>& Source)
-	{
-		return Insert(Source.Data(), Source.Len(), Position);
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	template<template<class> class OtherResizePolicy>
-	T* TVector<T, ResizePolicy>::InsertBuffer(int32_t Position, const TVector<T, OtherResizePolicy>& Source)
-	{
-		return InsertBuffer(Source.Data(), Source.Len(), Position);
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	T* TVector<T, ResizePolicy>::Insert(int32_t Position, std::initializer_list<T> InitList)
-	{
-		InsertPositionValidAssert(Position);
-		T* const ptr = InsertUninitialized(Position, InitList.size());
-		int32_t i = 0;
-		for (const T& val : InitList)
-		{
-			new (ptr + i) T(val);
-			i++;
-		}
-		return ptr;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	T* TVector<T, ResizePolicy>::InsertBuffer(int32_t Position, std::initializer_list<T> InitList)
-	{
-		InsertPositionValidAssert(Position);
-		T* const ptr = InsertBufferUninitialized(Position, InitList.size());
-		int32_t i = 0;
-		for (const T& val : InitList)
-		{
-			new (ptr + i) T(val);
-			i++;
-		}
-		return ptr;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	T* TVector<T, ResizePolicy>::InsertUninitialized(int32_t Position, int32_t Count)
-	{
-		InsertPositionValidAssert(Position);
-
-		const int32_t ExpandedLength = Length + Count;
-
-		// Old buffer: always points to buffer that was set before the operation
-		T* pOldBuf = pBuf;
-		// Prefix of buffer that is NOT shifted
-		const int32_t UnshiftedPrefixLength = Position;
-		const bool bRealloc = (MaxLength < ExpandedLength);
-		if (bRealloc)
-		{
-			SetupDynamicBuffer_ForDesiredLength(ExpandedLength);
-
-			// Copy unshifted prefix
-			MoveFrom(pOldBuf, UnshiftedPrefixLength);
-			DestructRange(pOldBuf, 0, UnshiftedPrefixLength);
-		}
-		
-		const int32_t CountToShift = ExpandedLength - Position;
-		MoveShiftRightFrom(pOldBuf, Position, Position + Count, CountToShift);
-		
-		// Destroy postfix, if buffer was reallocated
-		if (bRealloc)
-		{
-			DestructRange(pOldBuf, UnshiftedPrefixLength, Length);
-		}
-
-		// Perform the shift
-		Length = ExpandedLength;
-		const auto pInserted = pBuf + Position;
-		return pInserted;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	T* TVector<T, ResizePolicy>::InsertBufferUninitialized(int32_t Position, int32_t Count)
-	{
-		InsertPositionValidAssert(Position);
-
-		const int32_t ExpandedLength = Length + Count;
-		assert(ExpandedLength <= MaxLength);
-
-		const int32_t CountToShift = ExpandedLength - Position;
-		MoveShiftRightFrom(pOldBuf, Position, Position + Count, CountToShift);
-
-		return pBuf + Position;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	void TVector<T, ResizePolicy>::RemoveAt(int32_t Position)
-	{
-		IndexValidAssert(Position);
-
-		const int32_t CountToShift = (Length - Position - 1);
-		MoveShiftLeftFrom(pBuf, Position + 1, Position, CountToShift);
-		--Length;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	void TVector<T, ResizePolicy>::RemoveAt(int32_t Position, int32_t Count)
-	{
-		IndexValidAssert(Position + Count - 1);
-		const int32_t CountToShift = (Length - Position - Count);
-		MoveShiftLeftFrom(pBuf, Position + Count, Position, CountToShift);
-		Length -= Count;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	void TVector<T, ResizePolicy>::RemoveAtSwap(int32_t Position)
-	{
-		IndexValidAssert(Position);
-		const int32_t iLast = LastIndex();
-		if (iLast != Position)
-		{
-			pBuf[Position] = std::move(pBuf[iLast]);
-		}
-		--Length;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	void TVector<T, ResizePolicy>::RemoveAtSwap(int32_t Position, int32_t Count)
-	{
-		const int32_t iStartToRemove = Length - Count;
-		RangeValidAssert(Position, Position + Count);
-		MoveShiftLeftFrom(pBuf, iStartToRemove, Position, Count);
-		Length -= Count;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	int32_t TVector<T, ResizePolicy>::CalcNewCapacity(int32_t DesiredLength) const
-	{
-		return Policy.CalcNewCapacity(DesiredLength);
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	void TVector<T, ResizePolicy>::ReAllocDynamicBuffer(int32_t ExactCapacity)
-	{
-		T* const pOldBuf = pBuf;
-		T* const pOldDynamicBuf = pDynamicBuf;
-		SetupDynamicBuffer(ExactCapacity);
-		MoveFrom(pOldBuf, Len());
-		DestructAll(pOldBuf, Len());
-		if (pOldDynamicBuf)
-		{
-			free(pOldDynamicBuf);
-		}
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	void TVector<T, ResizePolicy>::SetupDynamicBuffer_ForDesiredLength(int32_t DesiredLength)
-	{
-		MaxLength = CalcNewCapacity(DesiredLength);
-		return SetupDynamicBuffer(MaxLength);
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	void TVector<T, ResizePolicy>::SetupBuffer_ForDesiredLength(int32_t DesiredLength)
-	{
-		Length = DesiredLength;
-		if (DesiredLength <= ResizePolicy<T>::SBO_LENGTH)
-		{
 			MaxLength = ResizePolicy<T>::SBO_LENGTH;
-			pBuf = static_cast<T*>(static_cast<void*>(SmallBuf));
-		}
-		else
-		{
-			SetupDynamicBuffer_ForDesiredLength(DesiredLength);
-		}
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	void TVector<T, ResizePolicy>::SetupDynamicBuffer(int32_t ExactCapacity)
-	{
-		pDynamicBuf = static_cast<T*>(malloc(sizeof(T) * ExactCapacity));
-		pBuf = pDynamicBuf;
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	void TVector<T, ResizePolicy>::DestructAll(T* pBuf, int32_t Len)
-	{
-		DestructRange(pBuf, 0, Len);
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	void TVector<T, ResizePolicy>::DefaultConstructAll(T* pBuf)
-	{
-		DefaultConstructRange(0, Length);
-	}
-
-	template<class T, template<class> class ResizePolicy>
-	TVector<T, ResizePolicy>::~TVector()
-	{
-		DestructAll(pBuf, Length);
-		if (pDynamicBuf) 
-		{
-			free(pDynamicBuf);
+			pBuf = static_cast<T*>(static_cast<void *>(SmallBuf));
 			pDynamicBuf = nullptr;
 		}
 	}
+}
 
-	/**
-	* TODO:
-	* 1. Change unsigned int to int32 everywhere (to prevent signed/unsigned mismatch warning) (+FIXED)
-	* 2. Use move vs. copy everywhere, where possible.
-	* 3. POD type optimization.
-	* 3.1. Optimize copies from initializer lists.
-	* 4. Serialization: Boost::serialization
-	* 5. SBO:
-	* 5.1. Maybe it's better to pass SBO size as an extra template paramter that defaults to 32
-	* (it could be helpful to prevent stack overflows by specifying a lesser SBO size).
-	* 6. Add/Insert operations:
-	* 6.1. Provide special NON-reserve versions.
-	* 7. Handle special cases for pointer arrays.
-	* 7.1. Serialization/CountSerializeBytes/CountTotalBytes
-	* 7.2. Search
-	* 7.2. Sort
-	*  
-	* TODO Operations:
-	* 1. RemoveAtSwap (+DONE)
-	* 2. Find (+DONE)
-	* 2.1. FindNot (+DONE)
-	* 2.2. All return INDEX_NONE. Is it more efficient to return Length?
-	* 2.3. All check indices, but maybe it is more efficient to check only start < end?
-	* 3. Comparison (+DONE)
-	* 4. Insert/Remove:
-	* 4.1. It must be possible to set position equal to Len() to insert elements and the end.
-	* 5. AddUnique (+DONE)
-	* 6. Sort (+DONE)
-	* 7. BinarySearch
-	* 8. Swap
-	*/
-} // Eng
+template<class T, template<class> class ResizePolicy>
+T* TVector<T, ResizePolicy>::AddZeroed(int32_t Count)
+{
+	T* const ptr = AddUninitialized(Count);
+	ZeroMemory(ptr, sizeof(T) * Count);
+	return ptr;
+}
+
+template<class T, template<class> class ResizePolicy>
+T* TVector<T, ResizePolicy>::AddBufferZeroed(int32_t Count)
+{
+	T* const ptr = AddBufferUninitialized(Count);
+	ZeroMemory(ptr, sizeof(T) * Count);
+	return ptr;
+}
+
+template<class T, template<class> class ResizePolicy>
+T* TVector<T, ResizePolicy>::AddDefaulted(int32_t Count)
+{
+	const int32_t OldLength = Length;
+	T* const ptr = AddUninitialized(Count);
+	DefaultConstructRange(ptr, OldLength, Length);
+	return ptr;
+}
+
+template<class T, template<class> class ResizePolicy>
+T* TVector<T, ResizePolicy>::AddBufferDefaulted(int32_t Count)
+{
+	const int32_t OldLength = Length;
+	T* const ptr = AddBufferUninitialized(Count);
+	DefaultConstructRange(ptr, OldLength, Length);
+	return ptr;
+}
+
+template<class T, template<class> class ResizePolicy>
+T* TVector<T, ResizePolicy>::Add(const T& Val)
+{
+	T* const ptr = AddUninitialized();
+	new(ptr) T(Val);
+	return ptr;
+}
+
+template<class T, template<class> class ResizePolicy>
+T* TVector<T, ResizePolicy>::AddBuffer(const T& Val)
+{
+	T* const ptr = AddBufferUninitialized();
+	new(ptr) T(val);
+	return ptr;
+}
+
+template<class T, template<class> class ResizePolicy>
+T* TVector<T, ResizePolicy>::Add(T&& Val)
+{
+	T* const ptr = AddUninitialized();
+	new (ptr) T(std::forward<T>(Val));
+	return ptr;
+}
+
+template<class T, template<class> class ResizePolicy>
+T* TVector<T, ResizePolicy>::AddBuffer(T&& Val)
+{
+	T* const ptr = AddBufferUninitialized();
+	new (ptr) T(std::forward<T>(Val));
+	return ptr;
+}
+
+template<class T, template<class> class ResizePolicy>
+template<typename... ArgsType>
+T* TVector<T, ResizePolicy>::Emplace(ArgsType&&... Args)
+{
+	T* const ptr = AddUninitialized();
+	new(ptr) T(std::forward<ArgsType>(Args)...);
+	return ptr;
+}
+
+template<class T, template<class> class ResizePolicy>
+template<typename... ArgsType>
+T* TVector<T, ResizePolicy>::EmplaceBuffer(ArgsType&&... Args)
+{
+	T* const ptr = AddBufferUninitialized();
+	new(ptr) T(std::forward<ArgsType>(Args)...);
+	return ptr;
+}
+
+template<class T, template<class> class ResizePolicy>
+T* TVector<T, ResizePolicy>::AddUninitialized(int Count)
+{
+	// Save old length
+	const int32_t OldLength = Length;
+	const int32_t DesiredLength = Length + Count;
+	ResizeGrow_Uninitialized(DesiredLength);
+	// Compute end ptr (WARNING!!! Never move this line before the ResizeGrow!!!)
+	T* const ptr = pBuf + OldLength;
+
+	return ptr;
+}
+
+template<class T, template<class> class ResizePolicy>
+T* TVector<T, ResizePolicy>::AddBufferUninitialized(int Count)
+{
+	T* const ptr = pBuf + Length;
+	SetBufferLength_NoDestruct(Length + Count);
+	return ptr;
+}
+
+template<class T, template<class> class ResizePolicy>
+template<typename... ArgsType>
+T* TVector<T, ResizePolicy>::EmplaceAt(int32_t Position, ArgsType&&... Args)
+{
+	InsertPositionValidAssert(Position);
+	T* const ptr = InsertUninitialized(Position);
+	new(ptr) T(std::forward<Args>(val));
+	return ptr;
+}
+
+template<class T, template<class> class ResizePolicy>
+template<typename... ArgsType>
+T* TVector<T, ResizePolicy>::EmplaceBufferAt(int32_t Position, ArgsType&&... Args)
+{
+	InsertPositionValidAssert(Position);
+	T* const ptr = InsertBufferUninitialized(Position);
+	new(ptr) T(std::forward<Args>(val));
+	return ptr;
+}
+
+template<class T, template<class> class ResizePolicy>
+T* TVector<T, ResizePolicy>::Insert(int32_t Position, const T& Val)
+{
+	InsertPositionValidAssert(Position);
+	T* const ptr = InsertUninitialized(Position);
+	new(ptr) T(Val);
+	return ptr;
+}
+
+template<class T, template<class> class ResizePolicy>
+T* TVector<T, ResizePolicy>::InsertBuffer(int32_t Position, const T& Val)
+{
+	InsertPositionValidAssert(Position);
+	T* const ptr = InsertBufferUninitialized(Position);
+	new(ptr) T(Val);
+	return ptr;
+}
+
+template<class T, template<class> class ResizePolicy>
+T* TVector<T, ResizePolicy>::Insert(int32_t Position, T&& Val)
+{
+	InsertPositionValidAssert(Position);
+	T* const ptr = InsertUninitialized(Position);
+	new(ptr) T(std::move(Val));
+	return ptr;
+}
+
+template<class T, template<class> class ResizePolicy>
+T* TVector<T, ResizePolicy>::InsertBuffer(int32_t Position, T&& Val)
+{
+	InsertPositionValidAssert(Position);
+	T* const ptr = InsertBufferUninitialized(Position);
+	new(ptr) T(std::move(Val));
+	return ptr;
+}
+
+template<class T, template<class> class ResizePolicy>
+T* TVector<T, ResizePolicy>::InsertZeroed(int32_t Position, int32_t Count)
+{
+	InsertPositionValidAssert(Position);
+	T* const ptr = InsertUninitialized(Position, Count);
+	ZeroMemory(ptr, sizeof(T) * Count);
+	return ptr;
+}
+
+template<class T, template<class> class ResizePolicy>
+T* TVector<T, ResizePolicy>::InsertBufferZeroed(int32_t Position, int32_t Count)
+{
+	InsertPositionValidAssert(Position);
+	T* const ptr = InsertBufferUninitialized(Position, Count);
+	ZeroMemory(ptr, sizeof(T) * Count);
+	return ptr;
+}
+
+template<class T, template<class> class ResizePolicy>
+T* TVector<T, ResizePolicy>::InsertDefaulted(int32_t Position, int32_t Count)
+{
+	InsertPositionValidAssert(Position);
+	T* const ptr = InsertUninitialized(Position, Count);
+	DefaultConstructRange(pBuf, Position, Position + Count);
+	return ptr;
+}
+
+template<class T, template<class> class ResizePolicy>
+T* TVector<T, ResizePolicy>::InsertBufferDefaulted(int32_t Position, int32_t Count)
+{
+	InsertPositionValidAssert(Position);
+	T* const ptr = InsertBufferUninitialized(Position, Count);
+	DefaultConstructRange(pBuf, Position, Position + Count);
+	return ptr;
+}
+
+template<class T, template<class> class ResizePolicy>
+T* TVector<T, ResizePolicy>::Insert(const T* pSource, int32_t Count, int32_t Position)
+{
+	InsertPositionValidAssert(Position);
+	T* const ptr = InsertUninitialized(Position, Count);
+	CopyConstructFrom(pSource, Count, Position);
+	return ptr;
+}
+
+template<class T, template<class> class ResizePolicy>
+T* TVector<T, ResizePolicy>::InsertBuffer(const T* pSource, int32_t Count, int32_t Position)
+{
+	InsertPositionValidAssert(Position);
+	T* const ptr = InsertBufferUninitialized(Position, Count);
+	CopyConstructFrom(pSource, Count, Position);
+	return ptr;
+}
+
+template<class T, template<class> class ResizePolicy>
+template<template<class> class OtherResizePolicy>
+T* TVector<T, ResizePolicy>::Insert(int32_t Position, TVector<T, OtherResizePolicy>&& Source)
+{
+	InsertPositionValidAssert(Position);
+	T* const ptr = InsertUninitialized(Position, Count);
+	MoveFrom(Source.Data(), Source.Len(), Position);
+	return ptr;
+}
+
+template<class T, template<class> class ResizePolicy>
+template<template<class> class OtherResizePolicy>
+T* TVector<T, ResizePolicy>::InsertBuffer(int32_t Position, TVector<T, OtherResizePolicy>&& Source)
+{
+	InsertPositionValidAssert(Position);
+	T* const ptr = InsertBufferUninitialized(Position, Count);
+	MoveFrom(Source.Data(), Source.Len(), Position);
+	return ptr;
+}
+
+template<class T, template<class> class ResizePolicy>
+template<template<class> class OtherResizePolicy>
+T* TVector<T, ResizePolicy>::Insert(int32_t Position, const TVector<T, OtherResizePolicy>& Source)
+{
+	return Insert(Source.Data(), Source.Len(), Position);
+}
+
+template<class T, template<class> class ResizePolicy>
+template<template<class> class OtherResizePolicy>
+T* TVector<T, ResizePolicy>::InsertBuffer(int32_t Position, const TVector<T, OtherResizePolicy>& Source)
+{
+	return InsertBuffer(Source.Data(), Source.Len(), Position);
+}
+
+template<class T, template<class> class ResizePolicy>
+T* TVector<T, ResizePolicy>::Insert(int32_t Position, std::initializer_list<T> InitList)
+{
+	InsertPositionValidAssert(Position);
+	T* const ptr = InsertUninitialized(Position, InitList.size());
+	int32_t i = 0;
+	for (const T& val : InitList)
+	{
+		new (ptr + i) T(val);
+		i++;
+	}
+	return ptr;
+}
+
+template<class T, template<class> class ResizePolicy>
+T* TVector<T, ResizePolicy>::InsertBuffer(int32_t Position, std::initializer_list<T> InitList)
+{
+	InsertPositionValidAssert(Position);
+	T* const ptr = InsertBufferUninitialized(Position, InitList.size());
+	int32_t i = 0;
+	for (const T& val : InitList)
+	{
+		new (ptr + i) T(val);
+		i++;
+	}
+	return ptr;
+}
+
+template<class T, template<class> class ResizePolicy>
+T* TVector<T, ResizePolicy>::InsertUninitialized(int32_t Position, int32_t Count)
+{
+	InsertPositionValidAssert(Position);
+
+	const int32_t ExpandedLength = Length + Count;
+
+	// Old buffer: always points to buffer that was set before the operation
+	T* pOldBuf = pBuf;
+	// Prefix of buffer that is NOT shifted
+	const int32_t UnshiftedPrefixLength = Position;
+	const bool bRealloc = (MaxLength < ExpandedLength);
+	if (bRealloc)
+	{
+		SetupDynamicBuffer_ForDesiredLength(ExpandedLength);
+
+		// Copy unshifted prefix
+		MoveFrom(pOldBuf, UnshiftedPrefixLength);
+		DestructRange(pOldBuf, 0, UnshiftedPrefixLength);
+	}
+		
+	const int32_t CountToShift = ExpandedLength - Position;
+	MoveShiftRightFrom(pOldBuf, Position, Position + Count, CountToShift);
+		
+	// Destroy postfix, if buffer was reallocated
+	if (bRealloc)
+	{
+		DestructRange(pOldBuf, UnshiftedPrefixLength, Length);
+	}
+
+	// Perform the shift
+	Length = ExpandedLength;
+	const auto pInserted = pBuf + Position;
+	return pInserted;
+}
+
+template<class T, template<class> class ResizePolicy>
+T* TVector<T, ResizePolicy>::InsertBufferUninitialized(int32_t Position, int32_t Count)
+{
+	InsertPositionValidAssert(Position);
+
+	const int32_t ExpandedLength = Length + Count;
+	assert(ExpandedLength <= MaxLength);
+
+	const int32_t CountToShift = ExpandedLength - Position;
+	MoveShiftRightFrom(pOldBuf, Position, Position + Count, CountToShift);
+
+	return pBuf + Position;
+}
+
+template<class T, template<class> class ResizePolicy>
+void TVector<T, ResizePolicy>::RemoveAt(int32_t Position)
+{
+	IndexValidAssert(Position);
+
+	const int32_t CountToShift = (Length - Position - 1);
+	MoveShiftLeftFrom(pBuf, Position + 1, Position, CountToShift);
+	--Length;
+}
+
+template<class T, template<class> class ResizePolicy>
+void TVector<T, ResizePolicy>::RemoveAt(int32_t Position, int32_t Count)
+{
+	IndexValidAssert(Position + Count - 1);
+	const int32_t CountToShift = (Length - Position - Count);
+	MoveShiftLeftFrom(pBuf, Position + Count, Position, CountToShift);
+	Length -= Count;
+}
+
+template<class T, template<class> class ResizePolicy>
+void TVector<T, ResizePolicy>::RemoveAtSwap(int32_t Position)
+{
+	IndexValidAssert(Position);
+	const int32_t iLast = LastIndex();
+	if (iLast != Position)
+	{
+		pBuf[Position] = std::move(pBuf[iLast]);
+	}
+	--Length;
+}
+
+template<class T, template<class> class ResizePolicy>
+void TVector<T, ResizePolicy>::RemoveAtSwap(int32_t Position, int32_t Count)
+{
+	const int32_t iStartToRemove = Length - Count;
+	RangeValidAssert(Position, Position + Count);
+	MoveShiftLeftFrom(pBuf, iStartToRemove, Position, Count);
+	Length -= Count;
+}
+
+template<class T, template<class> class ResizePolicy>
+int32_t TVector<T, ResizePolicy>::CalcNewCapacity(int32_t DesiredLength) const
+{
+	return Policy.CalcNewCapacity(DesiredLength);
+}
+
+template<class T, template<class> class ResizePolicy>
+void TVector<T, ResizePolicy>::ReAllocDynamicBuffer(int32_t ExactCapacity)
+{
+	T* const pOldBuf = pBuf;
+	T* const pOldDynamicBuf = pDynamicBuf;
+	SetupDynamicBuffer(ExactCapacity);
+	MoveFrom(pOldBuf, Len());
+	DestructAll(pOldBuf, Len());
+	if (pOldDynamicBuf)
+	{
+		free(pOldDynamicBuf);
+	}
+}
+
+template<class T, template<class> class ResizePolicy>
+void TVector<T, ResizePolicy>::SetupDynamicBuffer_ForDesiredLength(int32_t DesiredLength)
+{
+	MaxLength = CalcNewCapacity(DesiredLength);
+	return SetupDynamicBuffer(MaxLength);
+}
+
+template<class T, template<class> class ResizePolicy>
+void TVector<T, ResizePolicy>::SetupBuffer_ForDesiredLength(int32_t DesiredLength)
+{
+	Length = DesiredLength;
+	if (DesiredLength <= ResizePolicy<T>::SBO_LENGTH)
+	{
+		MaxLength = ResizePolicy<T>::SBO_LENGTH;
+		pBuf = static_cast<T*>(static_cast<void*>(SmallBuf));
+	}
+	else
+	{	
+		SetupDynamicBuffer_ForDesiredLength(DesiredLength);
+	}
+}
+
+template<class T, template<class> class ResizePolicy>
+void TVector<T, ResizePolicy>::SetupDynamicBuffer(int32_t ExactCapacity)	
+{
+	pDynamicBuf = static_cast<T*>(malloc(sizeof(T) * ExactCapacity));
+	pBuf = pDynamicBuf;
+}
+
+template<class T, template<class> class ResizePolicy>
+void TVector<T, ResizePolicy>::DestructAll(T* pBuf, int32_t Len)
+{
+	DestructRange(pBuf, 0, Len);
+}
+
+template<class T, template<class> class ResizePolicy>
+void TVector<T, ResizePolicy>::DefaultConstructAll(T* pBuf)
+{
+	DefaultConstructRange(0, Length);
+}
+
+template<class T, template<class> class ResizePolicy>
+TVector<T, ResizePolicy>::~TVector()
+{
+	DestructAll(pBuf, Length);
+	if (pDynamicBuf) 
+	{
+		free(pDynamicBuf);
+		pDynamicBuf = nullptr;
+	}
+}
+
+/**
+* TODO:
+* 1. Change unsigned int to int32 everywhere (to prevent signed/unsigned mismatch warning) (+FIXED)
+* 2. Use move vs. copy everywhere, where possible.
+* 3. POD type optimization.
+* 3.1. Optimize copies from initializer lists.
+* 4. Serialization: Boost::serialization
+* 5. SBO:
+* 5.1. Maybe it's better to pass SBO size as an extra template paramter that defaults to 32
+* (it could be helpful to prevent stack overflows by specifying a lesser SBO size).
+* 6. Add/Insert operations:
+* 6.1. Provide special NON-reserve versions.
+* 7. Handle special cases for pointer arrays.
+* 7.1. Serialization/CountSerializeBytes/CountTotalBytes
+* 7.2. Search
+* 7.2. Sort
+*  
+* TODO Operations:
+* 1. RemoveAtSwap (+DONE)
+* 2. Find (+DONE)
+* 2.1. FindNot (+DONE)
+* 2.2. All return INDEX_NONE. Is it more efficient to return Length?
+* 2.3. All check indices, but maybe it is more efficient to check only start < end?
+* 3. Comparison (+DONE)
+* 4. Insert/Remove:
+* 4.1. It must be possible to set position equal to Len() to insert elements and the end.
+* 5. AddUnique (+DONE)
+* 6. Sort (+DONE)
+* 7. BinarySearch
+* 8. Swap
+*/

@@ -10,7 +10,7 @@ BOOST_AUTO_TEST_SUITE(TVectorTestSuite)
 
 BOOST_AUTO_TEST_CASE(MoveOnly_MainTest)
 {
-	Eng::TVector<std::unique_ptr<std::string>> V;
+	TVector<std::unique_ptr<std::string>> V;
 
 	BOOST_TEST_CHECKPOINT("Emplace empty");
 	V.Emplace(); // Insert default-constructed
@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE(MoveOnly_AppendSmallVector, *boost::unit_test::depends_on("
 	// Prepare source vectors
 	constexpr int32_t NUM_SOURCES = 2;
 	constexpr int32_t SOURCE_LEN = 3;
-	Eng::TVector<std::unique_ptr<std::string>> V_source[NUM_SOURCES];
+	TVector<std::unique_ptr<std::string>> V_source[NUM_SOURCES];
 	for (int sourceIndex = 0; sourceIndex < NUM_SOURCES; sourceIndex++)
 	{
 		for (int currSourceLen = 0; currSourceLen < SOURCE_LEN; currSourceLen++)
@@ -67,7 +67,7 @@ BOOST_AUTO_TEST_CASE(MoveOnly_AppendSmallVector, *boost::unit_test::depends_on("
 
 	// Prepare destination vector
 	const int32_t INITIALV0_LEN = 2;
-	Eng::TVector<std::unique_ptr<std::string>> V0;
+	TVector<std::unique_ptr<std::string>> V0;
 	V0.Add(std::make_unique<std::string>("A"));
 	V0.Add(std::make_unique<std::string>("B"));
 
@@ -84,7 +84,7 @@ BOOST_AUTO_TEST_CASE(MoveOnly_AppendSmallVector, *boost::unit_test::depends_on("
 
 BOOST_AUTO_TEST_CASE(SimplePod_SmallMainTest)
 {
-	Eng::TVector<int> V;
+	TVector<int> V;
 	BOOST_REQUIRE(V.Len() <= V.MaxLen());
 	BOOST_REQUIRE_EQUAL(V.Len(), 0);
 	BOOST_REQUIRE_EQUAL(V.Empty(), true);
@@ -184,8 +184,8 @@ BOOST_AUTO_TEST_CASE(SimplePod_SmallMainTest)
 }
 BOOST_AUTO_TEST_CASE(SimplePod_SmallEqualityTest, *boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallMainTest"))
 {
-	Eng::TVector<int> V_left;
-	Eng::TVector<int> V_right;
+	TVector<int> V_left;
+	TVector<int> V_right;
 	BOOST_TEST_CHECKPOINT("EqualityTest_Empty");
 	BOOST_REQUIRE(V_left == V_right);
 
@@ -213,14 +213,14 @@ BOOST_AUTO_TEST_CASE(SimplePod_SmallEqualityTest, *boost::unit_test::depends_on(
 BOOST_AUTO_TEST_CASE(SimplePod_Insert, *boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallMainTest"))
 {
 	BOOST_TEST_CHECKPOINT("Insert empty");
-	Eng::TVector<int> V_empty;
+	TVector<int> V_empty;
 	V_empty.Insert(0, { 1, 2 });
 	BOOST_REQUIRE_EQUAL(V_empty.Len(), 2);
 	BOOST_REQUIRE_EQUAL(V_empty[0], 1);
 	BOOST_REQUIRE_EQUAL(V_empty[1], 2);
 
 	BOOST_TEST_CHECKPOINT("Insert back to one");
-	Eng::TVector<int> V_one;
+	TVector<int> V_one;
 	V_one.Add(1);
 	V_one.Insert(V_one.Len(), { 2, 3 });
 	BOOST_REQUIRE_EQUAL(V_one.Len(), 3);
@@ -228,7 +228,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_Insert, *boost::unit_test::depends_on("Core/Conta
 	BOOST_REQUIRE_EQUAL(V_one[2], 3);
 
 	BOOST_TEST_CHECKPOINT("Insert one element back with capacity");
-	Eng::TVector<int> v_insertGrow;
+	TVector<int> v_insertGrow;
 	v_insertGrow.SetBufferLengthUninitialized(v_insertGrow.MaxLen());
 	const int32_t oldLen = v_insertGrow.Len();
 	v_insertGrow.Insert(v_insertGrow.Len(), 1);
@@ -239,13 +239,13 @@ BOOST_AUTO_TEST_CASE(SimplePod_Insert, *boost::unit_test::depends_on("Core/Conta
 BOOST_AUTO_TEST_CASE(SimplePod_RemoveAtSwap, *boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallMainTest"))
 {
 	BOOST_TEST_CHECKPOINT("Remove single last element");
-	Eng::TVector<int> V_1;
+	TVector<int> V_1;
 	V_1.Add(1);
 	V_1.RemoveAtSwap(0);
 	BOOST_REQUIRE_EQUAL(V_1.Len(), 0);
 
 	BOOST_TEST_CHECKPOINT("Remove last element");
-	Eng::TVector<int> V_12_remove_last;
+	TVector<int> V_12_remove_last;
 	V_12_remove_last.Add(1);
 	V_12_remove_last.Add(2);
 	V_12_remove_last.RemoveAtSwap(1);
@@ -253,7 +253,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAtSwap, *boost::unit_test::depends_on("Core
 	BOOST_REQUIRE_EQUAL(V_12_remove_last[0], 1);
 
 	BOOST_TEST_CHECKPOINT("Remove first element of two");
-	Eng::TVector<int> V_12_remove_first;
+	TVector<int> V_12_remove_first;
 	V_12_remove_first.Add(1);
 	V_12_remove_first.Add(2);
 	V_12_remove_first.RemoveAtSwap(0);
@@ -261,7 +261,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAtSwap, *boost::unit_test::depends_on("Core
 	BOOST_REQUIRE(V_12_remove_first.Contains(2));
 
 	BOOST_TEST_CHECKPOINT("Remove middle element of five");
-	Eng::TVector<int> V_12345_remove_middle;
+	TVector<int> V_12345_remove_middle;
 	V_12345_remove_middle.Add(1);
 	V_12345_remove_middle.Add(2);
 	V_12345_remove_middle.Add(3);
@@ -275,7 +275,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAtSwap, *boost::unit_test::depends_on("Core
 	BOOST_REQUIRE(V_12345_remove_middle.Contains(5));
 
 	BOOST_TEST_CHECKPOINT("Remove middle 3 elements");
-	Eng::TVector<int> V_123456789_remove_middle3;
+	TVector<int> V_123456789_remove_middle3;
 	for (int i = 0; i < 9; i++) { V_123456789_remove_middle3.Add(i + 1); }
 	V_123456789_remove_middle3.RemoveAtSwap(3, 3);
 	BOOST_REQUIRE_EQUAL(V_123456789_remove_middle3.Len(), 6);
@@ -287,7 +287,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAtSwap, *boost::unit_test::depends_on("Core
 	BOOST_REQUIRE(V_123456789_remove_middle3.Contains(9));
 
 	BOOST_TEST_CHECKPOINT("Remove end 3 elements");
-	Eng::TVector<int> V_123456_remove_last3;
+	TVector<int> V_123456_remove_last3;
 	for (int i = 0; i < 6; i++) { V_123456_remove_last3.Add(i + 1); }
 	V_123456_remove_last3.RemoveAtSwap(3, 3);
 	BOOST_REQUIRE_EQUAL(V_123456_remove_last3.Len(), 3);
@@ -299,13 +299,13 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAtSwap, *boost::unit_test::depends_on("Core
 BOOST_AUTO_TEST_CASE(SimplePod_Remove, *boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallMainTest"))
 {
 	BOOST_TEST_CHECKPOINT("Remove single last element");
-	Eng::TVector<int> V_1;
+	TVector<int> V_1;
 	V_1.Add(1);
 	V_1.RemoveAt(0);
 	BOOST_REQUIRE_EQUAL(V_1.Len(), 0);
 
 	BOOST_TEST_CHECKPOINT("Remove last element");
-	Eng::TVector<int> V_12_remove_last;
+	TVector<int> V_12_remove_last;
 	V_12_remove_last.Add(1);
 	V_12_remove_last.Add(2);
 	V_12_remove_last.RemoveAt(1);
@@ -313,7 +313,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_Remove, *boost::unit_test::depends_on("Core/Conta
 	BOOST_REQUIRE_EQUAL(V_12_remove_last[0], 1);
 
 	BOOST_TEST_CHECKPOINT("Remove first element of two");
-	Eng::TVector<int> V_12_remove_first;
+	TVector<int> V_12_remove_first;
 	V_12_remove_first.Add(1);
 	V_12_remove_first.Add(2);
 	V_12_remove_first.RemoveAt(0);
@@ -321,7 +321,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_Remove, *boost::unit_test::depends_on("Core/Conta
 	BOOST_REQUIRE(V_12_remove_first.Contains(2));
 
 	BOOST_TEST_CHECKPOINT("Remove middle 3 elements");
-	Eng::TVector<int> V_123456789_remove_middle3;
+	TVector<int> V_123456789_remove_middle3;
 	for (int i = 0; i < 9; i++) { V_123456789_remove_middle3.Add(i + 1); }
 	V_123456789_remove_middle3.RemoveAt(3, 3);
 	BOOST_REQUIRE_EQUAL(V_123456789_remove_middle3.Len(), 6);
@@ -335,7 +335,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_Remove, *boost::unit_test::depends_on("Core/Conta
 
 BOOST_AUTO_TEST_CASE(SimplePod_SmallConstructInitialSize, *boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallMainTest"))
 {
-	Eng::TVector<int> V(5);
+	TVector<int> V(5);
 	BOOST_REQUIRE_EQUAL(V.Len(), 5);
 	const int AssignValue = 3;
 	const int AssignIndex = 4;
@@ -347,7 +347,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_SmallConstructInitialSize, *boost::unit_test::dep
 
 BOOST_AUTO_TEST_CASE(SimplePod_SmallConstructInitialSize_ForceInit, *boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallMainTest"))
 {
-	Eng::TVector<int> V(5);
+	TVector<int> V(5);
 	BOOST_REQUIRE_EQUAL(V.Len(), 5);
 	BOOST_REQUIRE_EQUAL(V[0], 0);
 	BOOST_REQUIRE_EQUAL(V[1], 0);
@@ -359,7 +359,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_SmallConstructInitialSize_ForceInit, *boost::unit
 BOOST_AUTO_TEST_CASE(SimplePod_SmallConstructTempl, *boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallMainTest"))
 {
 	const int templValue = 7;
-	Eng::TVector<int> V(5, templValue);
+	TVector<int> V(5, templValue);
 	BOOST_REQUIRE_EQUAL(V.Len(), 5);
 	BOOST_REQUIRE_EQUAL(V[0], templValue);
 	BOOST_REQUIRE_EQUAL(V[1], templValue);
@@ -370,7 +370,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_SmallConstructTempl, *boost::unit_test::depends_o
 
 BOOST_AUTO_TEST_CASE(SimplePod_SmallConstructInitializerList, *boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallMainTest"))
 {
-	Eng::TVector<int> V{ 1, 2, 3, 4, 5 };
+	TVector<int> V{ 1, 2, 3, 4, 5 };
 	BOOST_REQUIRE_EQUAL(V.Len(), 5);
 	BOOST_REQUIRE_EQUAL(V[0], 1);
 	BOOST_REQUIRE_EQUAL(V[1], 2);
@@ -383,7 +383,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_SmallConstructFromArray, *boost::unit_test::depen
 {
 	constexpr int THE_ARRAY_SIZE = 5;
 	const int THE_ARRAY[THE_ARRAY_SIZE]{ 1, 2, 3, 4, 5 };
-	Eng::TVector<int> V(THE_ARRAY, THE_ARRAY_SIZE);
+	TVector<int> V(THE_ARRAY, THE_ARRAY_SIZE);
 	BOOST_REQUIRE_EQUAL(V.Len(), 5);
 	BOOST_REQUIRE_EQUAL(V[0], 1);
 	BOOST_REQUIRE_EQUAL(V[1], 2);
@@ -401,10 +401,10 @@ BOOST_AUTO_TEST_CASE
 )
 {
 	BOOST_TEST_CHECKPOINT("Source array");
-	Eng::TVector<int> V_source{ 1, 2, 3, 4, 5 };
+	TVector<int> V_source{ 1, 2, 3, 4, 5 };
 
 	BOOST_TEST_CHECKPOINT("Destination array");
-	Eng::TVector<int> V(V_source);
+	TVector<int> V(V_source);
 	BOOST_REQUIRE_EQUAL(V.Len(), V_source.Len());
 	BOOST_REQUIRE_EQUAL(V_source, V);
 }
@@ -417,11 +417,11 @@ BOOST_AUTO_TEST_CASE
 )
 {
 	BOOST_TEST_CHECKPOINT("Source array");
-	Eng::TVector<int> V_source1{ 1, 2, 3, 4, 5 };
-	Eng::TVector<int> V_source2{ 1, 2, 3, 4, 5 };
+	TVector<int> V_source1{ 1, 2, 3, 4, 5 };
+	TVector<int> V_source2{ 1, 2, 3, 4, 5 };
 
 	BOOST_TEST_CHECKPOINT("Destination array");
-	Eng::TVector<int> V(std::move(V_source1));
+	TVector<int> V(std::move(V_source1));
 	BOOST_REQUIRE_EQUAL(V.Len(), V_source2.Len());
 	BOOST_REQUIRE_EQUAL(V_source2, V);
 }
@@ -434,20 +434,20 @@ BOOST_AUTO_TEST_CASE
 )
 {
 	BOOST_TEST_CHECKPOINT("Source array");
-	Eng::TVector<int> V_source{ 1, 2, 3, 4, 5 };
+	TVector<int> V_source{ 1, 2, 3, 4, 5 };
 
 	BOOST_TEST_CHECKPOINT("Copy to empty vector");
-	Eng::TVector<int> V_assign_to_empty;
+	TVector<int> V_assign_to_empty;
 	V_assign_to_empty = V_source;
 	BOOST_REQUIRE_EQUAL(V_assign_to_empty, V_source);
 
 	BOOST_TEST_CHECKPOINT("Copy to lesser vector");
-	Eng::TVector<int> V_assign_to_3length{ 9, 6, 8 };
+	TVector<int> V_assign_to_3length{ 9, 6, 8 };
 	V_assign_to_3length = V_source;
 	BOOST_REQUIRE_EQUAL(V_assign_to_3length, V_source);
 
 	BOOST_TEST_CHECKPOINT("Copy to greater vector");
-	Eng::TVector<int> V_assign_to_7length{ 9, 6, 8, 7, 6, 5, 4 };
+	TVector<int> V_assign_to_7length{ 9, 6, 8, 7, 6, 5, 4 };
 	V_assign_to_7length = V_source;
 	BOOST_REQUIRE_EQUAL(V_assign_to_7length, V_source);
 }
@@ -462,8 +462,8 @@ BOOST_AUTO_TEST_CASE
 	BOOST_TEST_CHECKPOINT("Source arrays");
 	constexpr int32_t COUNT_SOURCE_ARRAYS = 10;
 	constexpr int32_t SOURCE_ARRAY_LEN = 100;
-	Eng::TVector<int> referenceArray;
-	Eng::TVector<int> sourceArrays[COUNT_SOURCE_ARRAYS];
+	TVector<int> referenceArray;
+	TVector<int> sourceArrays[COUNT_SOURCE_ARRAYS];
 	for (int sourceLen = 0; sourceLen < SOURCE_ARRAY_LEN; sourceLen++)
 	{
 		referenceArray.Add(sourceLen + 1);
@@ -477,21 +477,21 @@ BOOST_AUTO_TEST_CASE
 	}
 
 	BOOST_TEST_CHECKPOINT("Move to empty");
-	Eng::TVector<int> V_assign_to_empty;
+	TVector<int> V_assign_to_empty;
 	V_assign_to_empty = std::move(sourceArrays[0]);
 	BOOST_REQUIRE_EQUAL(V_assign_to_empty.Len(), SOURCE_ARRAY_LEN);
 	BOOST_REQUIRE_EQUAL(referenceArray, V_assign_to_empty);
 	BOOST_REQUIRE(false == sourceArrays[0].IsValid());
 
 	BOOST_TEST_CHECKPOINT("Move to small vector");
-	Eng::TVector<int> V_assign_to_small{ 1, 2, 3 };
+	TVector<int> V_assign_to_small{ 1, 2, 3 };
 	V_assign_to_small = std::move(sourceArrays[1]);
 	BOOST_REQUIRE_EQUAL(V_assign_to_small.Len(), SOURCE_ARRAY_LEN);
 	BOOST_REQUIRE_EQUAL(referenceArray, V_assign_to_small);
 	BOOST_REQUIRE(false == sourceArrays[1].IsValid());
 
 	BOOST_TEST_CHECKPOINT("Move to dynamic vector");
-	Eng::TVector<int> V_assign_to_dynamic_lesser;
+	TVector<int> V_assign_to_dynamic_lesser;
 	for (int i = 0; i < 60; i++)
 	{
 		V_assign_to_dynamic_lesser.Add(9);
@@ -513,29 +513,29 @@ BOOST_AUTO_TEST_CASE
 	// it's not always the case (not a requirement).
 
 	BOOST_TEST_CHECKPOINT("Source arrays");
-	Eng::TVector<int> V_source1{ 1, 2, 3, 4, 5 };
-	Eng::TVector<int> V_source2{ 1, 2, 3, 4, 5 };
-	Eng::TVector<int> V_source3{ 1, 2, 3, 4, 5 };
-	Eng::TVector<int> V_source4{ 1, 2, 3, 4, 5 };
-	Eng::TVector<int> V_source5{ 1, 2, 3, 4, 5 };
+	TVector<int> V_source1{ 1, 2, 3, 4, 5 };
+	TVector<int> V_source2{ 1, 2, 3, 4, 5 };
+	TVector<int> V_source3{ 1, 2, 3, 4, 5 };
+	TVector<int> V_source4{ 1, 2, 3, 4, 5 };
+	TVector<int> V_source5{ 1, 2, 3, 4, 5 };
 
 	BOOST_TEST_CHECKPOINT("Copy to empty vector");
-	Eng::TVector<int> V_assign_to_empty;
+	TVector<int> V_assign_to_empty;
 	V_assign_to_empty = std::move(V_source1);
 	BOOST_REQUIRE_EQUAL(V_assign_to_empty, V_source2);
 
 	BOOST_TEST_CHECKPOINT("Copy to lesser vector");
-	Eng::TVector<int> V_assign_to_3length{ 9, 6, 8 };
+	TVector<int> V_assign_to_3length{ 9, 6, 8 };
 	V_assign_to_3length = std::move(V_source2);
 	BOOST_REQUIRE_EQUAL(V_assign_to_3length, V_source3);
 
 	BOOST_TEST_CHECKPOINT("Copy to greater vector");
-	Eng::TVector<int> V_assign_to_7length{ 9, 6, 8, 7, 6, 5, 4 };
+	TVector<int> V_assign_to_7length{ 9, 6, 8, 7, 6, 5, 4 };
 	V_assign_to_7length = std::move(V_source3);
 	BOOST_REQUIRE_EQUAL(V_assign_to_7length, V_source4);
 
 	BOOST_TEST_CHECKPOINT("Copy to dynamic vector");
-	Eng::TVector<int> V_assign_to_big_dynamic;
+	TVector<int> V_assign_to_big_dynamic;
 	V_assign_to_big_dynamic.AddZeroed(100);
 	V_assign_to_big_dynamic = std::move(V_source4);
 	BOOST_REQUIRE_EQUAL(V_assign_to_big_dynamic, V_source5);
@@ -544,13 +544,13 @@ BOOST_AUTO_TEST_CASE
 BOOST_AUTO_TEST_CASE(SimplePod_ForEach, *boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallMainTest"))
 {
 	BOOST_TEST_CHECKPOINT("ForEach const empty");
-	const Eng::TVector<int> V_empty;
+	const TVector<int> V_empty;
 	int numItems_empty = 0;
 	for (const auto& elem : V_empty) { numItems_empty++; }
 	BOOST_REQUIRE_EQUAL(numItems_empty, 0);
 
 	BOOST_TEST_CHECKPOINT("ForEach Non-empty");
-	Eng::TVector<int> V{ 1, 2, 3 };
+	TVector<int> V{ 1, 2, 3 };
 	int numItems = 0;
 	for (auto& elem : V) { numItems++; }
 	BOOST_REQUIRE_EQUAL(numItems, 3);
@@ -558,7 +558,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_ForEach, *boost::unit_test::depends_on("Core/Cont
 
 BOOST_AUTO_TEST_CASE(SimplePod_SmallReserveGrow_OnEmpty, *boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallMainTest"))
 {
-	Eng::TVector<int> V;
+	TVector<int> V;
 	constexpr int RESERVED_CAPACITY = 4;
 	V.ReserveGrow(RESERVED_CAPACITY);
 	const int* pOldData = V.Data();
@@ -574,7 +574,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_SmallReserveGrow_OnEmpty, *boost::unit_test::depe
 
 BOOST_AUTO_TEST_CASE(SimplePod_ReserveGrow_ToBig_OnSmall, *boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallMainTest"))
 {
-	Eng::TVector<int> V;
+	TVector<int> V;
 	V.Add(1);
 	V.Add(2);
 	V.Add(3);
@@ -599,7 +599,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_ReserveGrow_ToBig_OnSmall, *boost::unit_test::dep
 
 BOOST_AUTO_TEST_CASE(SimplePod_SetLength_ToBig, *boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallMainTest"))
 {
-	Eng::TVector<int> V;
+	TVector<int> V;
 	V.Add(1);
 	V.Add(2);
 	V.Add(3);
@@ -624,7 +624,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_SetLength_ToBig, *boost::unit_test::depends_on("C
 BOOST_AUTO_TEST_CASE(SimplePod_SetLength_LesserSmall_FromBig, *boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallMainTest"))
 {
 	// Depends on Add with growing
-	Eng::TVector<int> V;
+	TVector<int> V;
 	const int BIG_LENGTH = 100;
 	// Adding elements (probably will grow)
 	for (int i = 0; i < BIG_LENGTH; i++)
@@ -655,7 +655,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_SetLength_LesserSmall_FromBig, *boost::unit_test:
 BOOST_AUTO_TEST_CASE(SimplePod_SetLength_LesserBigFromBig, *boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallMainTest"))
 {
 	// Depends on Add with growing
-	Eng::TVector<int> V;
+	TVector<int> V;
 	const int BIG_LENGTH = 100;
 	// Adding elements (probably will grow)
 	for (int i = 0; i < BIG_LENGTH; i++) { V.Add(i + 1); }
@@ -682,7 +682,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_SetLength_LesserBigFromBig, *boost::unit_test::de
 
 BOOST_AUTO_TEST_CASE(SimplePod_ShrinkToFit_BigToBig, *boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallMainTest"))
 {
-	Eng::TVector<int> V;
+	TVector<int> V;
 	const int BIG_LENGTH = 100;
 	// Adding elements (probably will grow)
 	for (int i = 0; i < BIG_LENGTH; i++) { V.Add(i + 1); }
@@ -713,7 +713,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_ShrinkToFit_BigToBig, *boost::unit_test::depends_
 
 BOOST_AUTO_TEST_CASE(SimplePod_ShrinkToFit_BigToSmall, *boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallMainTest"))
 {
-	Eng::TVector<int> V;
+	TVector<int> V;
 	const int BIG_LENGTH = 100;
 	// Adding elements (probably will grow)
 	for (int i = 0; i < BIG_LENGTH; i++) { V.Add(i + 1); }
@@ -744,7 +744,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_ShrinkToFit_BigToSmall, *boost::unit_test::depend
 
 BOOST_AUTO_TEST_CASE(SimplePod_SmallSetLength, *boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallMainTest"))
 {
-	Eng::TVector<int> V;
+	TVector<int> V;
 	constexpr int L = 5;
 
 	BOOST_TEST_CHECKPOINT("SetLength to zero on empty");
@@ -786,20 +786,20 @@ BOOST_AUTO_TEST_CASE(SimplePod_SmallSetLength, *boost::unit_test::depends_on("Co
 BOOST_AUTO_TEST_CASE(SimplePod_RemoveAll, *boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallMainTest"))
 {
 	BOOST_TEST_CHECKPOINT("Empty");
-	Eng::TVector<int> V_empty;
+	TVector<int> V_empty;
 	int32_t count_fromEmpty = V_empty.RemoveAll(0);
 	BOOST_REQUIRE_EQUAL(count_fromEmpty, 0);
 	BOOST_REQUIRE_EQUAL(V_empty.Len(), 0);
 
 	BOOST_TEST_CHECKPOINT("OneFound");
-	Eng::TVector<int> V_oneFound;
+	TVector<int> V_oneFound;
 	V_oneFound.Add(0);
 	int32_t count_fromOneFound = V_oneFound.RemoveAll(0);
 	BOOST_REQUIRE_EQUAL(count_fromOneFound, 1);
 	BOOST_REQUIRE_EQUAL(V_oneFound.Len(), 0);
 
 	BOOST_TEST_CHECKPOINT("OneNotFound");
-	Eng::TVector<int> V_oneNotFound;
+	TVector<int> V_oneNotFound;
 	V_oneNotFound.Add(1);
 	int32_t count_fromOneNotFound = V_oneNotFound.RemoveAll(0);
 	BOOST_REQUIRE_EQUAL(count_fromOneNotFound, 0);
@@ -807,7 +807,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAll, *boost::unit_test::depends_on("Core/Co
 	BOOST_REQUIRE_EQUAL(V_oneNotFound[0], 1);
 
 	BOOST_TEST_CHECKPOINT("0102000");
-	Eng::TVector<int> V_0102000;
+	TVector<int> V_0102000;
 	V_0102000.Add(0);
 	V_0102000.Add(1);
 	V_0102000.Add(0);
@@ -822,7 +822,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAll, *boost::unit_test::depends_on("Core/Co
 	BOOST_REQUIRE_EQUAL(V_0102000[1], 2);
 
 	BOOST_TEST_CHECKPOINT("123");
-	Eng::TVector<int> V_123;
+	TVector<int> V_123;
 	for (int i = 0; i < 3; i++) { V_123.Add(i + 1); }
 	int32_t count_123 = V_123.RemoveAll(0);
 	BOOST_REQUIRE_EQUAL(count_123, 0);
@@ -832,7 +832,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAll, *boost::unit_test::depends_on("Core/Co
 	BOOST_REQUIRE_EQUAL(V_123[2], 3);
 
 	BOOST_TEST_CHECKPOINT("010002045006007");
-	Eng::TVector<int> V_010002045006007;
+	TVector<int> V_010002045006007;
 	V_010002045006007.Add(0);
 	V_010002045006007.Add(1);
 	V_010002045006007.Add(0);
@@ -861,7 +861,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAll, *boost::unit_test::depends_on("Core/Co
 	BOOST_TEST_CHECKPOINT("12300405780");
 	// 1. We have zeroes at the end;
 	// 2. We start with non-zero
-	Eng::TVector<int> V_12300405780;
+	TVector<int> V_12300405780;
 	V_12300405780.Add(1);
 	V_12300405780.Add(2);
 	V_12300405780.Add(3);
@@ -889,20 +889,20 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAllPredicate, *boost::unit_test::depends_on
 {
 	BOOST_TEST_CHECKPOINT("Empty");
 	auto pred = [](const int& val) { return val == 0; };
-	Eng::TVector<int> V_empty;
+	TVector<int> V_empty;
 	int32_t count_fromEmpty = V_empty.RemoveAllPredicate(pred);
 	BOOST_REQUIRE_EQUAL(count_fromEmpty, 0);
 	BOOST_REQUIRE_EQUAL(V_empty.Len(), 0);
 
 	BOOST_TEST_CHECKPOINT("OneFound");
-	Eng::TVector<int> V_oneFound;
+	TVector<int> V_oneFound;
 	V_oneFound.Add(0);
 	int32_t count_fromOneFound = V_oneFound.RemoveAllPredicate(pred);
 	BOOST_REQUIRE_EQUAL(count_fromOneFound, 1);
 	BOOST_REQUIRE_EQUAL(V_oneFound.Len(), 0);
 
 	BOOST_TEST_CHECKPOINT("OneNotFound");
-	Eng::TVector<int> V_oneNotFound;
+	TVector<int> V_oneNotFound;
 	V_oneNotFound.Add(1);
 	int32_t count_fromOneNotFound = V_oneNotFound.RemoveAllPredicate(pred);
 	BOOST_REQUIRE_EQUAL(count_fromOneNotFound, 0);
@@ -910,7 +910,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAllPredicate, *boost::unit_test::depends_on
 	BOOST_REQUIRE_EQUAL(V_oneNotFound[0], 1);
 
 	BOOST_TEST_CHECKPOINT("0102000");
-	Eng::TVector<int> V_0102000;
+	TVector<int> V_0102000;
 	V_0102000.Add(0);
 	V_0102000.Add(1);
 	V_0102000.Add(0);
@@ -925,7 +925,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAllPredicate, *boost::unit_test::depends_on
 	BOOST_REQUIRE_EQUAL(V_0102000[1], 2);
 
 	BOOST_TEST_CHECKPOINT("123");
-	Eng::TVector<int> V_123;
+	TVector<int> V_123;
 	for (int i = 0; i < 3; i++) { V_123.Add(i + 1); }
 	int32_t count_123 = V_123.RemoveAllPredicate(pred);
 	BOOST_REQUIRE_EQUAL(count_123, 0);
@@ -935,7 +935,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAllPredicate, *boost::unit_test::depends_on
 	BOOST_REQUIRE_EQUAL(V_123[2], 3);
 
 	BOOST_TEST_CHECKPOINT("010002045006007");
-	Eng::TVector<int> V_010002045006007;
+	TVector<int> V_010002045006007;
 	V_010002045006007.Add(0);
 	V_010002045006007.Add(1);
 	V_010002045006007.Add(0);
@@ -964,7 +964,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAllPredicate, *boost::unit_test::depends_on
 	BOOST_TEST_CHECKPOINT("12300405780");
 	// 1. We have zeroes at the end;
 	// 2. We start with non-zero
-	Eng::TVector<int> V_12300405780;
+	TVector<int> V_12300405780;
 	V_12300405780.Add(1);
 	V_12300405780.Add(2);
 	V_12300405780.Add(3);
@@ -991,20 +991,20 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAllPredicate, *boost::unit_test::depends_on
 BOOST_AUTO_TEST_CASE(SimplePod_RemoveAllAtSwap, *boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallMainTest"))
 {
 	BOOST_TEST_CHECKPOINT("Empty");
-	Eng::TVector<int> V_empty;
+	TVector<int> V_empty;
 	int32_t count_fromEmpty = V_empty.RemoveAllSwap(0);
 	BOOST_REQUIRE_EQUAL(count_fromEmpty, 0);
 	BOOST_REQUIRE_EQUAL(V_empty.Len(), 0);
 
 	BOOST_TEST_CHECKPOINT("OneFound");
-	Eng::TVector<int> V_oneFound;
+	TVector<int> V_oneFound;
 	V_oneFound.Add(0);
 	int32_t count_fromOneFound = V_oneFound.RemoveAllSwap(0);
 	BOOST_REQUIRE_EQUAL(count_fromOneFound, 1);
 	BOOST_REQUIRE_EQUAL(V_oneFound.Len(), 0);
 
 	BOOST_TEST_CHECKPOINT("OneNotFound");
-	Eng::TVector<int> V_oneNotFound;
+	TVector<int> V_oneNotFound;
 	V_oneNotFound.Add(1);
 	int32_t count_fromOneNotFound = V_oneNotFound.RemoveAllSwap(0);
 	BOOST_REQUIRE_EQUAL(count_fromOneNotFound, 0);
@@ -1012,7 +1012,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAllAtSwap, *boost::unit_test::depends_on("C
 	BOOST_REQUIRE_EQUAL(V_oneNotFound[0], 1);
 
 	BOOST_TEST_CHECKPOINT("00");
-	Eng::TVector<int> V_00;
+	TVector<int> V_00;
 	V_00.Add(0);
 	V_00.Add(0);
 	int32_t count_from00 = V_00.RemoveAllSwap(0);
@@ -1020,7 +1020,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAllAtSwap, *boost::unit_test::depends_on("C
 	BOOST_REQUIRE_EQUAL(V_00.Len(), 0);
 
 	BOOST_TEST_CHECKPOINT("11");
-	Eng::TVector<int> V_11;
+	TVector<int> V_11;
 	V_11.Add(1);
 	V_11.Add(1);
 	int32_t count_from11 = V_11.RemoveAllSwap(0);
@@ -1029,7 +1029,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAllAtSwap, *boost::unit_test::depends_on("C
 	BOOST_REQUIRE(V_11.Contains(1));
 
 	BOOST_TEST_CHECKPOINT("01");
-	Eng::TVector<int> V_01;
+	TVector<int> V_01;
 	V_01.Add(0);
 	V_01.Add(1);
 	int32_t count_from01 = V_01.RemoveAllSwap(0);
@@ -1038,7 +1038,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAllAtSwap, *boost::unit_test::depends_on("C
 	BOOST_REQUIRE(V_01.Contains(1));
 
 	BOOST_TEST_CHECKPOINT("012");
-	Eng::TVector<int> V_012;
+	TVector<int> V_012;
 	V_012.Add(0);
 	V_012.Add(1);
 	V_012.Add(2);
@@ -1049,7 +1049,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAllAtSwap, *boost::unit_test::depends_on("C
 	BOOST_REQUIRE(V_012.Contains(2));
 
 	BOOST_TEST_CHECKPOINT("0012");
-	Eng::TVector<int> V_0012;
+	TVector<int> V_0012;
 	V_0012.Add(0);
 	V_0012.Add(0);
 	V_0012.Add(1);
@@ -1061,7 +1061,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAllAtSwap, *boost::unit_test::depends_on("C
 	BOOST_REQUIRE(V_0012.Contains(2));
 
 	BOOST_TEST_CHECKPOINT("12034");
-	Eng::TVector<int> V_12034;
+	TVector<int> V_12034;
 	V_12034.Add(1);
 	V_12034.Add(2);
 	V_12034.Add(0);
@@ -1076,7 +1076,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAllAtSwap, *boost::unit_test::depends_on("C
 	BOOST_REQUIRE(V_12034.Contains(4));
 
 	BOOST_TEST_CHECKPOINT("120034");
-	Eng::TVector<int> V_120034;
+	TVector<int> V_120034;
 	V_120034.Add(1);
 	V_120034.Add(2);
 	V_120034.Add(0);
@@ -1092,7 +1092,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAllAtSwap, *boost::unit_test::depends_on("C
 	BOOST_REQUIRE(V_120034.Contains(4));
 
 	BOOST_TEST_CHECKPOINT("0102000");
-	Eng::TVector<int> V_0102000;
+	TVector<int> V_0102000;
 	V_0102000.Add(0);
 	V_0102000.Add(1);
 	V_0102000.Add(0);
@@ -1107,7 +1107,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAllAtSwap, *boost::unit_test::depends_on("C
 	BOOST_REQUIRE(V_0102000.Contains(2));
 
 	BOOST_TEST_CHECKPOINT("010002045006007");
-	Eng::TVector<int> V_010002045006007;
+	TVector<int> V_010002045006007;
 	V_010002045006007.Add(0);
 	V_010002045006007.Add(1);
 	V_010002045006007.Add(0);
@@ -1134,7 +1134,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAllAtSwap, *boost::unit_test::depends_on("C
 	BOOST_REQUIRE(V_010002045006007.Contains(7));
 
 	BOOST_TEST_CHECKPOINT("SuperTest");
-	Eng::TVector<int> V_super;
+	TVector<int> V_super;
 	V_super.Add(1);
 	V_super.Add(0);
 	V_super.Add(0);
@@ -1167,20 +1167,20 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAllSwapPredicate, *boost::unit_test::depend
 {
 	BOOST_TEST_CHECKPOINT("Empty");
 	const auto pred = [](const int& val) { return val == 0; };
-	Eng::TVector<int> V_empty;
+	TVector<int> V_empty;
 	int32_t count_fromEmpty = V_empty.RemoveAllSwapPredicate(pred);
 	BOOST_REQUIRE_EQUAL(count_fromEmpty, 0);
 	BOOST_REQUIRE_EQUAL(V_empty.Len(), 0);
 
 	BOOST_TEST_CHECKPOINT("OneFound");
-	Eng::TVector<int> V_oneFound;
+	TVector<int> V_oneFound;
 	V_oneFound.Add(0);
 	int32_t count_fromOneFound = V_oneFound.RemoveAllSwapPredicate(pred);
 	BOOST_REQUIRE_EQUAL(count_fromOneFound, 1);
 	BOOST_REQUIRE_EQUAL(V_oneFound.Len(), 0);
 
 	BOOST_TEST_CHECKPOINT("OneNotFound");
-	Eng::TVector<int> V_oneNotFound;
+	TVector<int> V_oneNotFound;
 	V_oneNotFound.Add(1);
 	int32_t count_fromOneNotFound = V_oneNotFound.RemoveAllSwapPredicate(pred);
 	BOOST_REQUIRE_EQUAL(count_fromOneNotFound, 0);
@@ -1188,7 +1188,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAllSwapPredicate, *boost::unit_test::depend
 	BOOST_REQUIRE_EQUAL(V_oneNotFound[0], 1);
 
 	BOOST_TEST_CHECKPOINT("0102000");
-	Eng::TVector<int> V_0102000;
+	TVector<int> V_0102000;
 	V_0102000.Add(0);
 	V_0102000.Add(1);
 	V_0102000.Add(0);
@@ -1203,7 +1203,7 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAllSwapPredicate, *boost::unit_test::depend
 	BOOST_REQUIRE(V_0102000.Contains(2));
 
 	BOOST_TEST_CHECKPOINT("010002045006007");
-	Eng::TVector<int> V_010002045006007;
+	TVector<int> V_010002045006007;
 	V_010002045006007.Add(0);
 	V_010002045006007.Add(1);
 	V_010002045006007.Add(0);

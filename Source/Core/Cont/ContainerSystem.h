@@ -16,10 +16,8 @@
 #include <string>
 #include <iomanip>
 
-namespace Eng
-{
-	/**
-	* Value typically to be returned by container functions to indicate that element does not exist.
-	*/
-	constexpr int32_t INDEX_NONE = -1;
-} // Eng
+
+/**
+* Value typically to be returned by container functions to indicate that element does not exist.
+*/
+constexpr int32_t INDEX_NONE = -1;
