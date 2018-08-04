@@ -7,6 +7,9 @@
 #include <cstdlib> // memcmp
 #include <string>
 
+namespace
+{
+
 BOOST_AUTO_TEST_SUITE(Core)
 BOOST_AUTO_TEST_SUITE(Mem)
 BOOST_AUTO_TEST_SUITE(BlockHeapTest)
@@ -45,3 +48,5 @@ BOOST_AUTO_TEST_CASE(ManyAllocs_InsufficientBuffer)
 BOOST_AUTO_TEST_SUITE_END() // BlockHeapTest 
 BOOST_AUTO_TEST_SUITE_END() // Mem
 BOOST_AUTO_TEST_SUITE_END() // Core
+
+} // anonymous

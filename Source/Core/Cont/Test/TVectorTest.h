@@ -4,6 +4,9 @@
 #include "Core/Cont/TVector.h"
 #include <memory> // std::unique_ptr
 
+namespace
+{
+
 BOOST_AUTO_TEST_SUITE(Core)
 BOOST_AUTO_TEST_SUITE(Container)
 BOOST_AUTO_TEST_SUITE(TVectorTestSuite)
@@ -1233,3 +1236,5 @@ BOOST_AUTO_TEST_CASE(SimplePod_RemoveAllSwapPredicate, *boost::unit_test::depend
 BOOST_AUTO_TEST_SUITE_END() // Container
 BOOST_AUTO_TEST_SUITE_END() // TVectorTestSuite
 BOOST_AUTO_TEST_SUITE_END() // Core
+
+} // anonymous

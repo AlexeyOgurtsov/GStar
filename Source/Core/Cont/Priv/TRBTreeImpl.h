@@ -1,21 +1,31 @@
 #pragma once
 
 #include "../ContainerSystem.h"
+#include "../UT/TKeyValue.h"
 
 namespace TRBTreeImpl
 {
-	template<class KeyType, class ValueType>
+	template<class KVTypeArg>
 	struct Node
 	{
+		using KeyValueType = typename TKeyValue<KVTypeArg>;	
+		using KeyType = typename KeyValueType::KeyType;
+		using ValueType = typename KeyValueType::ValueType;
+
+		/**
+		* Key/Value.
+		*/
+		KeyValueType KV;
+
 		/**
 		* Key to be used for comparisons.
 		*/
-		KeyType Key;
+		__forceinline KeyType GetKey() const { return KV.Key; }
 
 		/**
 		* Payload data.
 		*/
-		ValueType Value;
+		__forceinline ValueType GetValue() const { return KV.Value; }
 
 		/**
 		* Both children of the red node are blacks.
@@ -82,9 +92,8 @@ namespace TRBTreeImpl
 		/**
 		* Constructs a RED node with a given key and value.
 		*/
-		Node(const KeyType& InKey, const ValueType& InValue, int InParentIdx) :
-			Key{ InKey }
-		,	Value{ InValue }
+		Node(const KeyValueType& InKV, int InParentIdx) :
+			KV{InKV}
 		,	ParentIdx{ InParentIdx } {}
 	};
 } // TRBTreeImpl

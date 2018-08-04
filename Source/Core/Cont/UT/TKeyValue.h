@@ -7,6 +7,7 @@
 /**
 * TODO:
 * 1. Serialization
+* 1.1. Do NOT provide serialization member if either key or value are pointers.
 */
 
 /**

@@ -7,6 +7,9 @@
 #include <cstdlib> // memcmp
 #include <string>
 
+namespace
+{
+
 BOOST_AUTO_TEST_SUITE(Core)
 BOOST_AUTO_TEST_SUITE(Mem)
 
@@ -71,5 +74,4 @@ BOOST_AUTO_TEST_SUITE_END() // LinearAllocHelperTest
 BOOST_AUTO_TEST_SUITE_END() // Mem
 BOOST_AUTO_TEST_SUITE_END() // Core
 
-
-
+} // anonymous

@@ -34,28 +34,28 @@
 */
 
 /**
-* Pass instead of value for key-only container.
-*/
-struct EmptyRBTreePayload {};
-
-/**
 * Red-black tree.
 *
 * WARNING!!! This implementation does NOT automatically frees the node memory.
 */
-template<class KeyTypeArg, class ValueTypeArg = EmptyRBTreePayload>
+template<class KVTypeArg>
 class TRBTree
 {
 public:
 	/**
+	* KeyValue
+	*/
+	using KeyValueType = TKeyValue<KVTypeArg>;
+
+	/**
 	* Key type.
 	*/
-	using KeyType = KeyTypeArg;
+	using KeyType = typename KeyValueType::KeyType;
 
 	/**
 	* Value type.
 	*/
-	using ValueType = ValueTypeArg;
+	using ValueType = typename KeyValueType::ValueType;
 
 	/**
 	* Capacity to be used for the buffer by default.
@@ -115,7 +115,7 @@ public:
 	*/
 
 private:
-	using NodeType = TRBTreeImpl::Node<KeyType, ValueType>;
+	using NodeType = TRBTreeImpl::Node<KVTypeArg>;
 
 	/**
 	* Returns true if left key less than right according to the used compare function.
@@ -156,7 +156,7 @@ private:
 		{
 			BOOST_ASSERT_MSG(CurrIdx != INDEX_NONE, "AddNewNode: We never should encounter INDEX_NONE at this point");
 			NodeType* Curr = GetNode(OutIdx);
-			if (KeyLess(InKey, Curr->Key))
+			if (KeyLess(InKey, Curr->GetKey()))
 			{
 				/*
 				if (TryInsertLeftChild(OutIdx, InKey, InValue))
@@ -167,7 +167,7 @@ private:
 				OutIdx = Curr->LeftChildIdx;
 				continue;
 			}
-			else if (KeyLess(Curr->Key, InKey))
+			else if (KeyLess(Curr->GetKey(), InKey))
 			{
 				/*
 				if (TryInsertRightChild(OutIdx, InKey, InValue))
@@ -178,7 +178,7 @@ private:
 				OutIdx = Curr->RightChildIdx;
 				continue;
 			}
-			BOOST_ASSERT_MSG(KeyEqual(Curr->Key, Key), "TRBTree: AddNewNode: At this point current node key must equal to the key we search for");
+			BOOST_ASSERT_MSG(KeyEqual(Curr->GetKey(), Key), "TRBTree: AddNewNode: At this point current node key must equal to the key we search for");
 			return false;
 		}
 	}
