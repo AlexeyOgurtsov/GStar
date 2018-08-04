@@ -10,7 +10,9 @@ BOOST_AUTO_TEST_SUITE(TRBTreeTestSuite)
 BOOST_AUTO_TEST_CASE(MainTest)
 {
 	BOOST_TEST_CHECKPOINT("Construction");
-	TRBTree<int> S;
+	TRBTree<int> T;
+	BOOST_REQUIRE_EQUAL(0, T.Num());
+	BOOST_REQUIRE(T.Empty());
 }
 
 BOOST_AUTO_TEST_SUITE_END() // TRBTree

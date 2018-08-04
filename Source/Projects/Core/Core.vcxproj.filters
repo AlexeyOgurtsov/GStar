@@ -31,6 +31,15 @@
     <Filter Include="Mem\Test">
       <UniqueIdentifier>{a1acecac-083a-4e8d-995c-40e5bd7dd115}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Cont\Priv">
+      <UniqueIdentifier>{f90829b7-3ead-4282-a14d-a56546dcf94b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Cont\UT">
+      <UniqueIdentifier>{37f6745f-04d2-48b3-8fbc-5ddf5c154d83}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Cont\UT\Test">
+      <UniqueIdentifier>{3e80beaf-5851-4e4c-9241-2bcd02775d25}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Core\Str\IdentStr.h">
@@ -75,6 +84,15 @@
     <ClInclude Include="..\..\Core\Cont\Test\TRBTreeTest.h">
       <Filter>Cont\Test</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Priv\TRBTreeImpl.h">
+      <Filter>Cont\Priv</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\UT\TKeyValue.h">
+      <Filter>Cont\UT</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\UT\Test\TKeyValueTester.h">
+      <Filter>Cont\UT\Test</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Core\Mem\Helper\Priv\LinearAllocHelper.cpp">
@@ -85,6 +103,9 @@
     </ClCompile>
     <ClCompile Include="..\..\Core\Mem\Priv\BlockHeapImpl.cpp">
       <Filter>Mem\Priv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Core\Cont\Priv\TRBTreeImpl.cpp">
+      <Filter>Cont\Priv</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
