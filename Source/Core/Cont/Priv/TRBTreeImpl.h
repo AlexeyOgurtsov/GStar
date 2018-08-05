@@ -32,10 +32,14 @@ namespace TRBTreeImpl
 		*/
 		NodeChildIndex ChildIdx;
 
+	private:
+		bool bValid;
+
+	public:
 		/**
 		* Returns true if this reference does point to a node.
 		*/
-		bool IsValid() const { return ParentIdx != INDEX_NONE; }
+		bool IsValid() const { return bValid; }
 
 		/**
 		* Returns true if this reference represents a null pointer.
@@ -47,18 +51,43 @@ namespace TRBTreeImpl
 		*/
 		bool IsRoot() const { return ParentIdx == INDEX_NONE; }
 
-		/**
-		* Default ctor: initialize and invalid reference.
-		*/
-		ChildNodeRef() :
-			ParentIdx(INDEX_NONE) {}
-
+	public:
 		/**
 		* Creates a reference to the node by parent and child index.
 		*/
 		ChildNodeRef(NodeIndex InParentIdx, NodeChildIndex InChildIdx) :
 			ParentIdx(InParentIdx)
-		,	ChildIdx(InChildIdx) {}
+		,	ChildIdx(InChildIdx)
+		,	bValid{true} {}
+
+	public:
+		/**
+		* returns invalid reference.
+		*/
+		static ChildNodeRef Invalid()
+		{
+			static const ChildNodeRef InvalidRef; return InvalidRef;
+		}
+
+		/**
+		* returns root.
+		*/
+		static ChildNodeRef RootNode()
+		{
+			static const ChildNodeRef RootRef { INDEX_NONE, 0 }; return RootRef;
+		}
+	
+	private:
+		/**
+		* Default ctor: initialize and invalid reference.
+		*/
+		ChildNodeRef() :
+			/**
+			* We delibarately set parent idx to valid value,
+			* So IsRoot() will NOT return true, if the reference is invalid.
+			*/
+			ParentIdx(0)
+		,	bValid{ false } {}
 	};
 
 	/**
@@ -79,7 +108,7 @@ namespace TRBTreeImpl
 		/**
 		* Key to be used for comparisons.
 		*/
-		__forceinline KeyType GetKey() const { return KV.Key; }
+		__forceinline const KeyType& GetKey() const { return KV.Key; }
 
 		/**
 		* Payload data.
@@ -182,6 +211,6 @@ namespace TRBTreeImpl
 		/**
 		* Children.
 		*/
-		NodeIndex Chilren[2];
+		NodeIndex Children[2];
 	};
 } // TRBTreeImpl

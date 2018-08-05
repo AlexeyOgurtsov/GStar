@@ -4,21 +4,12 @@
 #include "../Cont/TVector.h"
 
 /**
-* TODO errors:
-* 1. BUG: TRBTreeImpl::ChildNodeRef: RootNode representation is the same as Invalid node.
-*
 * TODO Helper accessors:
-* 1. GetChild(ChildNodeRef)
-* 2. GetNode(ChildNodeRef)
-* 3. GetParentNode()
-* 3.1. Should we check if we reference to Root?
+* 1. GetParentNode()
+* 1.1. Should we check if we reference to Root?
 *
 * TODO Iterator:
 * 1. Make const-correct
-*
-* TODO Minimal test:
-* 1. Contains operation;
-* 2. First
 *
 * TODO CopyTo operation.
 * 1. NoValue for absent value of a key.
@@ -127,7 +118,18 @@ public:
 	*/
 	const KeyValueType* Find(const KeyType& InKey) const
 	{
-		BOOST_ASSERT_MSG(false, "TRBTree::Find: NOT YET IMPL"); return nullptr;
+		if (Empty())
+		{
+			return nullptr;
+		}
+
+		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
+		bool bFound = FindNode(InKey, /*OutNodeRef*/ NodeRef);
+		if ( ! bFound )
+		{
+			return nullptr;
+		}
+		return &GetNode(NodeRef)->KV;
 	}
 
 	/**
@@ -135,10 +137,7 @@ public:
 	*
 	* @Returns: Pointer to the Value (or nullptr, if NOT found).
 	*/
-	const ValueType* FindValue(const KeyType& InKey) const
-	{
-		BOOST_ASSERT_MSG(false, "TRBTree::FindValue: NOT YET IMPL"); return nullptr;
-	}
+	const ValueType* FindValue(const KeyType& InKey) const { return FindValueImpl(InKey); }
 
 	/**
 	* Searches Value by the given key (mutable version).
@@ -146,10 +145,7 @@ public:
 	* @returns: Pointer to the Value (or nullptr, if NOT found).
 	* @see: Non-const version
 	*/
-	ValueType* FindValue(const KeyType& InKey)
-	{
-		BOOST_ASSERT_MSG(false, "TRBTree::FindValue: NOT YET IMPL"); return nullptr;
-	}
+	ValueType* FindValue(const KeyType& InKey) { return const_cast<ValueType*>(FindValueImpl(InKey)); }
 
 	/**
 	* Adds a new node to the tree.
@@ -193,6 +189,8 @@ public:
 	}
 
 private:
+	friend class NodeIterator;
+
 	using NodeType = TRBTreeImpl::Node<KVTypeArg>;
 
 	/**
@@ -204,9 +202,9 @@ private:
 		/**
 		* Constructor
 		*/
-		NodeIterator(TRBTree *pInTree, TRBTreeImpl::ChildNodeRef InChildRef) :
+		NodeIterator(const TRBTree *pInTree, TRBTreeImpl::ChildNodeRef InNodeRef) :
 			pTree(pInTree)
-		,	ChildRef(InChildRef) 
+		,	NodeRef(InNodeRef) 
 		{
 			BOOST_ASSERT(pTree);
 		}
@@ -216,55 +214,56 @@ private:
 		*/
 		__forceinline bool IsNull() const
 		{
-			return ChildRef.IsNull();
+			return NodeRef.IsNull();
 		}
 
 		/**
 		* Reference to node relative to parent 
 		* (null in the case of the root node).
 		*/
-		__forceinline TRBTreeImpl::ChildNodeRef GetChildRef() const { return ChildRef; }
+		__forceinline TRBTreeImpl::ChildNodeRef GetNodeRef() const { return NodeRef; }
 
 		/**
 		* Parent node.
 		*/
-		__forceinline NodeType* GetParentNode() const { return pTree->GetNode(ChildRef.ParentIdx); }
+		__forceinline const NodeType* GetParentNode() const { return pTree->GetNode(ChildRef.ParentIdx); }
 
 		/**
 		* Node.
 		*/
-		__forceinline NodeType* GetNode() const { return pTree->GetNode(ChildRef); }
+		__forceinline const NodeType* GetNode() const { return pTree->GetNode(NodeRef); }
 
 		/**
 		* Returns child node reference.
 		*/
-		__forceinline TRBTreeImpl::ChildNodeRef GetChildRef(TRBTreeImpl::NodeChildIndex ChildIdx)	
+		__forceinline TRBTreeImpl::ChildNodeRef GetChildRef(TRBTreeImpl::NodeChildIndex ChildIdx) const	
 		{
-			return pTree->GetChildNodeRef(ChildRef, ChildIdx);
+			return pTree->GetChildNodeRef(NodeRef, ChildIdx);
 		}
 
 		/**
 		* Returns iterator to left.
 		*/
-		NodeIterator GetLeft() const { return Iterator{pTree, GetChildRef(0)}; }
+		NodeIterator GetLeft() const { return NodeIterator{ pTree, GetChildRef(0) }; }
 	
 		/**
 		* Returns iterator to right.
 		*/
-		NodeIterator GetRight() const { return Iterator{pTree, GetChildRef(1)}; }
+		NodeIterator GetRight() const { return NodeIterator{pTree, GetChildRef(1) };
+	}
 
 	private:
 		/**
 		* Pointer to tree.
 		*/
-		TRBTree *pTree;
-		TRBTreeImpl::ChildNodeRef ChildRef;
+		const TRBTree *pTree;
+		TRBTreeImpl::ChildNodeRef NodeRef;
 	};
 
 	/**
 	* Returns true if left key less than right according to the used compare function.
 	*/
-	static bool KeyLess(const KeyType& A, const KeyType& const B)
+	static bool KeyLess(const KeyType& A, const KeyType& B)
 	{
 		// TODO: Provide the means to customize the compare function.
 		return A < B;
@@ -279,41 +278,59 @@ private:
 	}
 
 	/**
+	* Searches Value by the given key.
+	*
+	* @Returns: Pointer to the Value (or nullptr, if NOT found).
+	*/
+	const ValueType* FindValueImpl(const KeyType& InKey) const
+	{
+		const KeyValueType* KeyValue = Find(InKey);
+		if (KeyValue == nullptr)
+		{
+			return nullptr;
+		}
+		return &KeyValue->Value;
+	}
+
+	/**
 	* Searches node with the given key in NON-EMPTY (!) container.
 	*
 	* Returns true, if the node is found.
 	*/
-	bool FindNode(const KeyType& InKey, TRBTreeImpl::ChildNodeRef& OutNodeRef )
+	bool FindNode(const KeyType& InKey, TRBTreeImpl::ChildNodeRef& OutNodeRef ) const
 	{
-		BOOST_ASSERT_MSG(false, "TRBTree: FindNode: Not Yet impl"); return false;
 		BOOST_ASSERT_MSG( ! Empty(), "TRBTree: FindNode: Container must be non-empty" );
 
-		OutNodeRef = GetRootNodeRef();
+		OutNodeRef = TRBTreeImpl::ChildNodeRef::RootNode();
 		NodeIterator It { this, OutNodeRef };
-		while(true)
+
+		while (true)
 		{
-			const KeyType* CurrKey = &(It.GetNode()->GetKey());
-			if(KeyEquals(CurrKey, InKey))
+			const KeyType* pCurrKey = &(It.GetNode()->GetKey());
+			if(KeyEqual(*pCurrKey, InKey))
 			{
 				return true;
 			}
 
-			if(KeyLess(CurrKey, InKey)) 
+			if(KeyLess(*pCurrKey, InKey)) 
 			{
 				It = It.GetLeft();
 			}
-			else if(KeyLess(InKey, CurrKey))
+			else if(KeyLess(InKey, *pCurrKey))
 			{
 				It = It.GetRight();
 			}
 
-			OutNodeRef = It->GetChildRef();
+			OutNodeRef = It.GetNodeRef();
 
 			if(It.IsNull())
 			{
 				return false;
 			}
 		}
+
+		BOOST_ASSERT_MSG(false, "Should NOT get here");
+		return false;
 	}
 
 	/**
@@ -323,46 +340,44 @@ private:
 	*/
 	bool AddNewNode(const KeyType& InKey, const ValueType& InValue, int& OutIdx)
 	{
-		BOOST_ASSERT_MSG(false, "TRBTree: AddNewNode: Not yet impl.");
+		BOOST_ASSERT_MSG(false, "TRBTree: AddNewNode: Not yet impl."); return false;
 
+		/*
 		OutIdx = RootIdx;
 		if (INDEX_NONE == RootIdx)
 		{
-			Buffer.Add(NodeType{InKey, InValue, /*ParentIdx*/INDEX_NONE});
+			Buffer.Add(NodeType{ KeyValueType {InKey, InValue}, INDEX_NONE });
 			RootIdx = 0;
 			return true;
 		}
 
-		int OutIdx = RootIdx;
+		OutIdx = RootIdx;
 		while (true)
 		{
 			BOOST_ASSERT_MSG(CurrIdx != INDEX_NONE, "AddNewNode: We never should encounter INDEX_NONE at this point");
 			NodeType* Curr = GetNode(OutIdx);
 			if (KeyLess(InKey, Curr->GetKey()))
 			{
-				/*
 				if (TryInsertLeftChild(OutIdx, InKey, InValue))
 				{
 					return true;
 				}
-				*/
 				OutIdx = Curr->LeftChildIdx;
 				continue;
 			}
 			else if (KeyLess(Curr->GetKey(), InKey))
 			{
-				/*
 				if (TryInsertRightChild(OutIdx, InKey, InValue))
 				{
 					return true;
 				}
-				*/
 				OutIdx = Curr->RightChildIdx;
 				continue;
 			}
-			BOOST_ASSERT_MSG(KeyEqual(Curr->GetKey(), Key), "TRBTree: AddNewNode: At this point current node key must equal to the key we search for");
+			BOOST_ASSERT_MSG(KeyEqual(Curr->GetKey(), InKey), "TRBTree: AddNewNode: At this point current node key must equal to the key we search for");
 			return false;
 		}
+		*/
 	}
 
 	/**
@@ -439,7 +454,7 @@ private:
 	/**
 	* Gets child node by index.
 	*/
-	__forceinline const NodeType* GetChildNode(const NodeType* pInParent, TRBTreeImpl::NodeChildIndex InChildIdx)
+	__forceinline const NodeType* GetChildNode(const NodeType* pInParent, TRBTreeImpl::NodeChildIndex InChildIdx) const
 	{
 		BOOST_ASSERT(pInParent);
 		return GetNode(pInParent->GetChild(InChildIdx));
@@ -451,17 +466,15 @@ private:
 	__forceinline TRBTreeImpl::ChildNodeRef GetChildNodeRef(TRBTreeImpl::ChildNodeRef NodeRef, TRBTreeImpl::NodeChildIndex InChildIdx) const
 	{
 		BOOST_ASSERT(NodeRef.IsValid());
-		return TRBTreeImpl::ChildNodeRef { GetParentNode(NodeRef)->GetChild(NodeRef.ChildIdx), InChildIdx };
-	}
-
-	/**
-	* Returns reference to the root node.
-	* WARNING!!! Container must be NON-empty.
-	*/
-	__forceinline TRBTreeImpl::ChildNodeRef GetRootNodeRef() const
-	{
-		BOOST_ASSERT_MSG( ! Empty(), "TRBTree::GetRootNodeRef(): Container must be NON-empty" );
-		return TRBTreeImpl::ChildNodeRef { INDEX_NONE, 0 };
+		int const NodeIndexForChild = GetParentNode(NodeRef)->GetChild(NodeRef.ChildIdx);
+		if (NodeIndexForChild != INDEX_NONE)
+		{
+			return TRBTreeImpl::ChildNodeRef{ NodeIndexForChild, InChildIdx };
+		}
+		else
+		{
+			return TRBTreeImpl::ChildNodeRef::Invalid();
+		}
 	}
 	
 	/**
