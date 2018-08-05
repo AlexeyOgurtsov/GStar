@@ -279,13 +279,41 @@ private:
 	}
 
 	/**
-	* Searches node with the given key.
+	* Searches node with the given key in NON-EMPTY (!) container.
 	*
 	* Returns true, if the node is found.
 	*/
-	bool FindNode(const KeyType& InKey, int& OutIdx, int& OutChildIndex)
+	bool FindNode(const KeyType& InKey, TRBTreeImpl::ChildNodeRef& OutNodeRef )
 	{
 		BOOST_ASSERT_MSG(false, "TRBTree: FindNode: Not Yet impl"); return false;
+		BOOST_ASSERT_MSG( ! Empty(), "TRBTree: FindNode: Container must be non-empty" );
+
+		OutNodeRef = GetRootNodeRef();
+		NodeIterator It { this, OutNodeRef };
+		while(true)
+		{
+			const KeyType* CurrKey = &(It.GetNode()->GetKey());
+			if(KeyEquals(CurrKey, InKey))
+			{
+				return true;
+			}
+
+			if(KeyLess(CurrKey, InKey)) 
+			{
+				It = It.GetLeft();
+			}
+			else if(KeyLess(InKey, CurrKey))
+			{
+				It = It.GetRight();
+			}
+
+			OutNodeRef = It->GetChildRef();
+
+			if(It.IsNull())
+			{
+				return false;
+			}
+		}
 	}
 
 	/**
@@ -424,6 +452,16 @@ private:
 	{
 		BOOST_ASSERT(NodeRef.IsValid());
 		return TRBTreeImpl::ChildNodeRef { GetParentNode(NodeRef)->GetChild(NodeRef.ChildIdx), InChildIdx };
+	}
+
+	/**
+	* Returns reference to the root node.
+	* WARNING!!! Container must be NON-empty.
+	*/
+	__forceinline TRBTreeImpl::ChildNodeRef GetRootNodeRef() const
+	{
+		BOOST_ASSERT_MSG( ! Empty(), "TRBTree::GetRootNodeRef(): Container must be NON-empty" );
+		return TRBTreeImpl::ChildNodeRef { INDEX_NONE, 0 };
 	}
 	
 	/**
