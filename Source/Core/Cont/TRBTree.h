@@ -4,6 +4,10 @@
 #include "../Cont/TVector.h"
 
 /**
+* TODO Minimal test:
+* 1. Contains operation;
+* 2. First
+*
 * TODO CopyTo operation.
 * 1. NoValue for absent value of a key.
 * 2. Use KVType as argument (instead of separate Key and Value);
@@ -88,6 +92,54 @@ public:
 	__forceinline bool Empty() const { return 0 == Count; }
 
 	/**
+	* First.
+	*/
+	__forceinline const KeyValueType& First() const
+	{
+		BOOST_ASSERT( ! Empty() );
+		return GetNode(RootIdx)->KV;
+	}
+
+	/**
+	* Returns true, if contains the given key.
+	*/
+	bool Contains(const KeyType& InKey) const
+	{
+		return nullptr != Find(InKey);
+	}
+
+	/**
+	* Searches Key-Value pair by the given key.
+	*
+	* @Returns: Pointer to the Key-Value pair (or nullptr, if NOT found).
+	*/
+	const KeyValueType* Find(const KeyType& InKey) const
+	{
+		BOOST_ASSERT_MSG(false, "TRBTree::Find: NOT YET IMPL"); return nullptr;
+	}
+
+	/**
+	* Searches Value by the given key.
+	*
+	* @Returns: Pointer to the Value (or nullptr, if NOT found).
+	*/
+	const ValueType* FindValue(const KeyType& InKey) const
+	{
+		BOOST_ASSERT_MSG(false, "TRBTree::FindValue: NOT YET IMPL"); return nullptr;
+	}
+
+	/**
+	* Searches Value by the given key (mutable version).
+	*
+	* @returns: Pointer to the Value (or nullptr, if NOT found).
+	* @see: Non-const version
+	*/
+	ValueType* FindValue(const KeyType& InKey)
+	{
+		BOOST_ASSERT_MSG(false, "TRBTree::FindValue: NOT YET IMPL"); return nullptr;
+	}
+
+	/**
 	* Adds a new node to the tree.
 	*
 	* @Returns: true if was added (or false if already was in the tree).
@@ -105,17 +157,57 @@ public:
 	*/
 
 	/**
-	* Finds a node by the given criteria.
-	*
-	* @Returns: Pointer to the found node data (or nullptr, if NOT found).
-	*/
-
-	/**
 	* Copies all key-value pairs to the given Buffer.
 	*/
 
+	/*
+	* Copies all key-value pairs to the given Buffer without preserving order.
+	*
+	* Buffer must be capable to store all the values.
+	*/
+	void CopyUnorderedTo(KeyValueType* pInBuffer)
+	{
+		// TODO Optimization: 
+		// Iteration over all the nodes may be not the best way.
+		BOOST_ASSERT(pInBuffer);
+		for (int i = 0; i < Count; i++)
+		{
+			const NodeType* pSrcNode = GetNode(i);
+			if (pSrcNode->bExists)
+			{
+				pInBuffer[i] = pSrcNode->KV;
+			}
+		}
+	}
+
 private:
 	using NodeType = TRBTreeImpl::Node<KVTypeArg>;
+
+	/**
+	* Iterates nodes.
+	*/
+	class NodeIterator
+	{
+	public:
+		/**
+		* Constructor
+		*/
+		NodeIterator(TRBTree *pInTree, TRBTreeImpl::ChildNodeRef InChildRef) :
+			pTree(pInTree)
+		,	ChildRef(InChildRef) {}
+
+	private:
+		/**
+		* Pointer to tree.
+		*/
+		TRBTree *pTree;
+
+		/**
+		* Reference to node relative to parent 
+		* (null in the case of the root node).
+		*/
+		TRBTreeImpl::ChildNodeRef ChildRef;
+	};
 
 	/**
 	* Returns true if left key less than right according to the used compare function.
@@ -132,6 +224,16 @@ private:
 	static bool KeyEqual(const KeyType& A, const KeyType& B)
 	{
 		return ( ! KeyLess(A,B) ) && ( ! KeyLess(B, A) );
+	}
+
+	/**
+	* Searches node with the given key.
+	*
+	* Returns true, if the node is found.
+	*/
+	bool FindNode(const KeyType& InKey, int& OutIdx, int& OutChildIndex)
+	{
+		BOOST_ASSERT_MSG(false, "TRBTree: FindNode: Not Yet impl"); return false;
 	}
 
 	/**

@@ -5,6 +5,60 @@
 
 namespace TRBTreeImpl
 {
+	/**
+	* Index of the Node in the buffer.
+	*/
+	using NodeIndex = int;
+
+	/**
+	* Index of the child of the node 
+	* (0 = left; 1 = right).
+	*/
+	using NodeChildIndex = int;
+
+	/**
+	* Unically identifies node relative to its parent.
+	*/
+	struct ChildNodeRef
+	{
+		/**
+		* Parent index (see NodeIndex).
+		*/
+		NodeIndex ParentIdx;
+
+		/**
+		* Child index (see NodeChildIndex).
+		* Undefined if this reference is null.
+		*/
+		NodeChildIndex ChildIdx;
+
+		/**
+		* Returns true if this reference does point to a node.
+		*/
+		bool IsValid() const { return ParentIdx != INDEX_NONE; }
+
+		/**
+		* Returns true if this reference represents a null pointer.
+		*/
+		bool IsNull() const { return ! IsValid(); }
+
+		/**
+		* Default ctor: initialize and invalid reference.
+		*/
+		ChildNodeRef() :
+			ParentIdx(INDEX_NONE) {}
+
+		/**
+		* Creates a reference to the node by parent and child index.
+		*/
+		ChildNodeRef(NodeIndex InParentIdx, NodeChildIndex InChildIdx) :
+			ParentIdx(InParentIdx)
+		,	ChildIdx(InChildIdx) {}
+	};
+
+	/**
+	* Represents a node of the tree.
+	*/
 	template<class KVTypeArg>
 	struct Node
 	{
@@ -33,19 +87,39 @@ namespace TRBTreeImpl
 		bool bRed = true;
 
 		/**
+		* If false, the node was removed.
+		*/
+		bool bExists = true;
+
+		/**
 		* Index of the parent pointer (INDEX_NONE in the case of the root).
 		*/
-		int ParentIdx;
+		NodeIndex ParentIdx;
 
 		/**
-		* Index of the left child (INDEX_NONE if NO left child).
+		* Index of the child node (0=left; 1=right).
+		*
+		* @returns: child node index, or INDEX_NONE if NO given child.
 		*/
-		int LeftChildIdx = INDEX_NONE;
+		int GetChild(NodeChildIndex InChildIndex) const
+		{
+			BOOST_ASSERT_MSG(InChildIndex >= 0, "TRBTreeImpl::Node: GetChild: ChildIndex must be non-negative");
+			BOOST_ASSERT_MSG(InChildIndex <= 1, "TRBTreeImpl::Node: GetChild: ChildIndex is greater than maximal");
+			return Children[InChildIndex];
+		}
 
 		/**
-		* Index of the right child (INDEX_NONE if NO left child).
+		* Sets the given child index.
+		*
+		* @see: GetChild
 		*/
-		int RightChildIdx = INDEX_NONE;
+		void SetChild(NodeChildIndex InChildIndex, NodeIndex InIdx)
+		{
+
+			BOOST_ASSERT_MSG(InChildIndex >= 0, "TRBTreeImpl::Node: SetChild: ChildIndex must be non-negative");
+			BOOST_ASSERT_MSG(InChildIndex <= 1, "TRBTreeImpl::Node: SetChild: ChildIndex is greater than maximal");
+			Children[InChildIndex] = InIdx;
+		}
 
 		/**
 		* Returns true if the node is black.
@@ -68,7 +142,7 @@ namespace TRBTreeImpl
 		/**
 		* Sets parent.
 		*/
-		__forceinline void SetParent(int InIdx)
+		__forceinline void SetParent(NodeIndex InIdx)
 		{
 			ParentIdx = InIdx;
 		}
@@ -76,24 +150,33 @@ namespace TRBTreeImpl
 		/**
 		* Sets left child.
 		*/
-		__forceinline void SetLeftChild(int InIdx)
+		__forceinline void SetLeftChild(NodeIndex InIdx)
 		{
-			LeftChildIdx = InIdx;
+			SetChild(0, InIdx);
 		}
 
 		/**
 		* Sets right child.
 		*/
-		__forceinline void SetRightChild(int InIdx)
+		__forceinline void SetRightChild(NodeIndex InIdx)
 		{
-			RightChildIdx = InIdx;
+			SetChild(1, InIdx);
 		}
 
 		/**
 		* Constructs a RED node with a given key and value.
 		*/
-		Node(const KeyValueType& InKV, int InParentIdx) :
+		Node(const KeyValueType& InKV, NodeIndex InParentIdx) :
 			KV{InKV}
-		,	ParentIdx{ InParentIdx } {}
+		,	ParentIdx{ InParentIdx } 
+		{
+			Children[0] = Children[1] = INDEX_NONE;
+		}
+
+	private:	
+		/**
+		* Children.
+		*/
+		NodeIndex Chilren[2];
 	};
 } // TRBTreeImpl

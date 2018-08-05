@@ -12,3 +12,4 @@ TOMORROW:
 LATER:
 * IdentStr and its storage (make IdentStr use index, not ptr);
 * Core exception (depends on String)
+* Typed index (cannot be explicitly converted to int)
