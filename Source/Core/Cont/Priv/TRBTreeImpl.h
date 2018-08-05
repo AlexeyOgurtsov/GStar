@@ -43,6 +43,11 @@ namespace TRBTreeImpl
 		bool IsNull() const { return ! IsValid(); }
 
 		/**
+		* Returns true if root node.
+		*/
+		bool IsRoot() const { return ParentIdx == INDEX_NONE; }
+
+		/**
 		* Default ctor: initialize and invalid reference.
 		*/
 		ChildNodeRef() :

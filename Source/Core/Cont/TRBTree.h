@@ -4,6 +4,18 @@
 #include "../Cont/TVector.h"
 
 /**
+* TODO errors:
+* 1. BUG: TRBTreeImpl::ChildNodeRef: RootNode representation is the same as Invalid node.
+*
+* TODO Helper accessors:
+* 1. GetChild(ChildNodeRef)
+* 2. GetNode(ChildNodeRef)
+* 3. GetParentNode()
+* 3.1. Should we check if we reference to Root?
+*
+* TODO Iterator:
+* 1. Make const-correct
+*
 * TODO Minimal test:
 * 1. Contains operation;
 * 2. First
@@ -194,18 +206,58 @@ private:
 		*/
 		NodeIterator(TRBTree *pInTree, TRBTreeImpl::ChildNodeRef InChildRef) :
 			pTree(pInTree)
-		,	ChildRef(InChildRef) {}
+		,	ChildRef(InChildRef) 
+		{
+			BOOST_ASSERT(pTree);
+		}
+
+		/**
+		* Returns true if node is null.
+		*/
+		__forceinline bool IsNull() const
+		{
+			return ChildRef.IsNull();
+		}
+
+		/**
+		* Reference to node relative to parent 
+		* (null in the case of the root node).
+		*/
+		__forceinline TRBTreeImpl::ChildNodeRef GetChildRef() const { return ChildRef; }
+
+		/**
+		* Parent node.
+		*/
+		__forceinline NodeType* GetParentNode() const { return pTree->GetNode(ChildRef.ParentIdx); }
+
+		/**
+		* Node.
+		*/
+		__forceinline NodeType* GetNode() const { return pTree->GetNode(ChildRef); }
+
+		/**
+		* Returns child node reference.
+		*/
+		__forceinline TRBTreeImpl::ChildNodeRef GetChildRef(TRBTreeImpl::NodeChildIndex ChildIdx)	
+		{
+			return pTree->GetChildNodeRef(ChildRef, ChildIdx);
+		}
+
+		/**
+		* Returns iterator to left.
+		*/
+		NodeIterator GetLeft() const { return Iterator{pTree, GetChildRef(0)}; }
+	
+		/**
+		* Returns iterator to right.
+		*/
+		NodeIterator GetRight() const { return Iterator{pTree, GetChildRef(1)}; }
 
 	private:
 		/**
 		* Pointer to tree.
 		*/
 		TRBTree *pTree;
-
-		/**
-		* Reference to node relative to parent 
-		* (null in the case of the root node).
-		*/
 		TRBTreeImpl::ChildNodeRef ChildRef;
 	};
 
@@ -295,6 +347,85 @@ private:
 	*/
 	__forceinline NodeType* GetNode(int InIdx) { return &Buffer[InIdx]; };
 
+	/**
+	* Gets parent node by reference.
+	*/
+	__forceinline const NodeType* GetParentNode(TRBTreeImpl::ChildNodeRef InRef) const
+	{
+		BOOST_ASSERT_MSG(InRef.IsValid(), "TRBTree::GetParentNode(ChildNodeRef): reference must be valid");
+		if(INDEX_NONE == InRef.ParentIdx)
+		{
+			return nullptr;
+		}
+		return GetNode(InRef.ParentIdx);
+	}
+
+	/**
+	* Gets parent node by reference.
+	*/
+	__forceinline NodeType* GetParentNode(TRBTreeImpl::ChildNodeRef InRef)
+	{
+		BOOST_ASSERT_MSG(InRef.IsValid(), "TRBTree::GetParentNode(ChildNodeRef): reference must be valid");
+		if(INDEX_NONE == InRef.ParentIdx)
+		{
+			return nullptr;
+		}
+		return GetNode(InRef.ParentIdx);
+	}
+
+	/**
+	* Gets node by reference.
+	*/
+	__forceinline const NodeType* GetNode(TRBTreeImpl::ChildNodeRef InRef) const
+	{
+		BOOST_ASSERT_MSG(InRef.IsValid(), "TRBTree::GetNode(ChildNodeRef): reference must be valid");
+		if(InRef.IsRoot())
+		{
+			return GetNode(RootIdx);
+		}
+		return GetChildNode(GetParentNode(InRef), InRef.ChildIdx);
+	}
+
+	/**
+	* Gets node by reference.
+	*/
+	__forceinline NodeType* GetNode(TRBTreeImpl::ChildNodeRef InRef)
+	{
+		BOOST_ASSERT_MSG(InRef.IsValid(), "TRBTree::GetNode(ChildNodeRef): reference must be valid");
+		if(InRef.IsRoot())
+		{
+			return GetNode(RootIdx);
+		}
+		return GetChildNode(GetParentNode(InRef), InRef.ChildIdx);
+	}
+
+	/**
+	* Gets child node by index.
+	*/
+	__forceinline NodeType* GetChildNode(NodeType* pInParent, TRBTreeImpl::NodeChildIndex InChildIdx)
+	{
+		BOOST_ASSERT(pInParent);
+		return GetNode(pInParent->GetChild(InChildIdx));
+	}
+
+	/**
+	* Gets child node by index.
+	*/
+	__forceinline const NodeType* GetChildNode(const NodeType* pInParent, TRBTreeImpl::NodeChildIndex InChildIdx)
+	{
+		BOOST_ASSERT(pInParent);
+		return GetNode(pInParent->GetChild(InChildIdx));
+	}
+
+	/**
+	* Gets child node reference.
+	*/
+	__forceinline TRBTreeImpl::ChildNodeRef GetChildNodeRef(TRBTreeImpl::ChildNodeRef NodeRef, TRBTreeImpl::NodeChildIndex InChildIdx) const
+	{
+		BOOST_ASSERT(NodeRef.IsValid());
+		return TRBTreeImpl::ChildNodeRef { GetParentNode(NodeRef)->GetChild(NodeRef.ChildIdx), InChildIdx };
+	}
+	
 	/**
 	* Buffer for storing nodes.
 	* Each slot of the buffer may store a node or may not.
