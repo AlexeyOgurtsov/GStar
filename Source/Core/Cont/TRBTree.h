@@ -4,8 +4,11 @@
 #include "../Cont/TVector.h"
 
 /**
-* TODO Traverse ordered operation:
-* 1. Get deepest left/right from node identified by ChildNodeRef;
+* TODO:
+* 1. Separate CheckNodeRef::Invalid and non-existing node state 
+* (for non-existing node we must keep the parent info).
+*
+* 1. Get deepest left/right from node identified by ChildNodeRef (+DONE)
 * 2. Create the Stack-overflow unit-test for traverse;
 *
 * TODO Helper accessors:
@@ -149,8 +152,8 @@ public:
 	*/
 	bool Add(const KeyType& InKey, const ValueType& InValue)
 	{
-		int NewNodeIdx;
-		return AddNewNode(InKey, InValue, /*Out*/ NewNodeIdx);
+		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
+		return AddNewNode(KeyValueType{InKey,InValue}, /*Out*/ NodeRef);
 	}
 
 	/**
@@ -384,10 +387,19 @@ private:
 	*
 	* @Returns: true if was added (or false if already was in the tree).
 	*/
-	bool AddNewNode(const KeyType& InKey, const ValueType& InValue, int& OutIdx)
+	bool AddNewNode(const KeyValueType& InKV, TRBTreeImpl::ChildNodeRef& OutChildNodeRef)
 	{
 		BOOST_ASSERT_MSG(false, "TRBTree: AddNewNode: Not yet impl."); return false;
 
+		// TODO: Handle empty case specially!!!
+
+		if ( FindNode(InKV.Key, /*OutNodeRef*/OutChildNodeRef) )
+		{
+			return false;
+		}
+
+		// TODO: Insert node at child node ref
+		
 		/*
 		OutIdx = RootIdx;
 		if (INDEX_NONE == RootIdx)
