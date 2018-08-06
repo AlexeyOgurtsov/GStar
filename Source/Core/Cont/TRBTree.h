@@ -5,11 +5,7 @@
 
 /**
 * TODO:
-* 1. Separate CheckNodeRef::Invalid and non-existing node state 
-* (for non-existing node we must keep the parent info).
-*
-* 1. Get deepest left/right from node identified by ChildNodeRef (+DONE)
-* 2. Create the Stack-overflow unit-test for traverse;
+* 1. Create the Stack-overflow unit-test for traverse;
 *
 * TODO Helper accessors:
 * 1. GetParentNode()
@@ -59,7 +55,7 @@ public:
 	/**
 	* KeyValue
 	*/
-	using KeyValueType = TKeyValue<KVTypeArg>;
+	using KeyValueType = typename TKeyValue<KVTypeArg>;
 
 	/**
 	* Key type.
@@ -168,7 +164,6 @@ public:
 	*/
 	void CopyTo(KeyValueType* pInBuffer)
 	{
-		BOOST_ASSERT_MSG(false, "TRBTree::CopyTo: NOT YET IMPL");
 		KeyValueType* pCurr = pInBuffer;
 		Traverse
 		(
@@ -234,11 +229,11 @@ private:
 		}
 
 		/**
-		* Returns true if node is null.
+		* Returns true if node does NOT exist.
 		*/
-		__forceinline bool IsNull() const
+		__forceinline bool DoesNotExist() const
 		{
-			return NodeRef.IsNull();
+			return ( ! pTree->NodeExists(NodeRef) );
 		}
 
 		/**
@@ -326,8 +321,10 @@ private:
 	{
 		BOOST_ASSERT_MSG( ! Empty(), "TRBTree::TraverseSubtree: the subtree must be NON-empty" );
 		
+		// TODO: May this implementation overflow the stack?
+
 		TRBTreeImpl::ChildNodeRef const LeftRef = GetChildNodeRef(InRootRef, TRBTreeImpl::LEFT_CHILD_IDX);
-		if ( ! LeftRef.IsNull() )
+		if ( ! NodeExists(LeftRef) )
 		{
 			TraverseSubtree(LeftRef, Func);
 		}
@@ -335,7 +332,7 @@ private:
 		Func(GetNode(InRootRef)->KV);
 
 		TRBTreeImpl::ChildNodeRef const RightRef = GetChildNodeRef(InRootRef, TRBTreeImpl::RIGHT_CHILD_IDX);
-		if ( ! RightRef.IsNull() )
+		if ( ! NodeExists(RightRef))
 		{
 			TraverseSubtree(RightRef, Func);
 		}
@@ -372,7 +369,7 @@ private:
 
 			OutNodeRef = It.GetNodeRef();
 
-			if(It.IsNull())
+			if(It.DoesNotExist())
 			{
 				return false;
 			}
@@ -389,53 +386,46 @@ private:
 	*/
 	bool AddNewNode(const KeyValueType& InKV, TRBTreeImpl::ChildNodeRef& OutChildNodeRef)
 	{
-		BOOST_ASSERT_MSG(false, "TRBTree: AddNewNode: Not yet impl."); return false;
-
-		// TODO: Handle empty case specially!!!
+		if (Empty())
+		{
+			OutChildNodeRef = TRBTreeImpl::ChildNodeRef::RootNode();
+			RootIdx = CreateNewNode(InKV, INDEX_NONE);
+			return true;
+		}
 
 		if ( FindNode(InKV.Key, /*OutNodeRef*/OutChildNodeRef) )
 		{
 			return false;
 		}
 
-		// TODO: Insert node at child node ref
-		
-		/*
-		OutIdx = RootIdx;
-		if (INDEX_NONE == RootIdx)
-		{
-			Buffer.Add(NodeType{ KeyValueType {InKey, InValue}, INDEX_NONE });
-			RootIdx = 0;
-			return true;
-		}
+		AddNewNodeAtRef(InKV, OutChildNodeRef);
+		return true;
+	}
 
-		OutIdx = RootIdx;
-		while (true)
-		{
-			BOOST_ASSERT_MSG(CurrIdx != INDEX_NONE, "AddNewNode: We never should encounter INDEX_NONE at this point");
-			NodeType* Curr = GetNode(OutIdx);
-			if (KeyLess(InKey, Curr->GetKey()))
-			{
-				if (TryInsertLeftChild(OutIdx, InKey, InValue))
-				{
-					return true;
-				}
-				OutIdx = Curr->LeftChildIdx;
-				continue;
-			}
-			else if (KeyLess(Curr->GetKey(), InKey))
-			{
-				if (TryInsertRightChild(OutIdx, InKey, InValue))
-				{
-					return true;
-				}
-				OutIdx = Curr->RightChildIdx;
-				continue;
-			}
-			BOOST_ASSERT_MSG(KeyEqual(Curr->GetKey(), InKey), "TRBTree: AddNewNode: At this point current node key must equal to the key we search for");
-			return false;
-		}
-		*/
+	/**
+	* Creates a new node.
+	* Automatically increments the count of nodes.
+	*/
+	TRBTreeImpl::NodeIndex CreateNewNode(const KeyValueType& InKV, TRBTreeImpl::NodeIndex InParentIdx)
+	{
+		TRBTreeImpl::NodeIndex const NewNodeIndex = TRBTreeImpl::NodeIndex { Buffer.Len() };
+		NodeType NewNode { InKV, InParentIdx };
+		Buffer.Add(std::move(NewNode));
+		Count++;
+		return NewNodeIndex;
+	}
+
+	/**
+	* Creates and appends a node by the specific reference.
+	*/
+	void AddNewNodeAtRef(const KeyValueType& InKV, TRBTreeImpl::ChildNodeRef Where)
+	{
+		BOOST_ASSERT_MSG( ! Empty(), "TRBTree::AddNewNodeAtRef: the container must contain at least one node");
+		BOOST_ASSERT_MSG( ! Where.IsRoot(), "TRBTree::AddNewNodeAtRef: we cannot append at the root node position" );
+		BOOST_ASSERT_MSG( ! NodeExists(Where), "TRBTree::AddNewNodeAtRef: the position must be not occupied" );
+		TRBTreeImpl::NodeIndex const NewNodeIdx = CreateNewNode(InKV, Where.ParentIdx);
+		NodeType* const pParentNode = GetParentNode(Where);
+		pParentNode->SetChild(Where.ChildIdx, NewNodeIdx);
 	}
 
 	/**
@@ -475,16 +465,25 @@ private:
 	}
 
 	/**
-	* Gets node by reference.
+	* Gets node by reference impl.
 	*/
-	__forceinline const NodeType* GetNode(TRBTreeImpl::ChildNodeRef InRef) const
+	__forceinline const NodeType* GetNodeImpl(TRBTreeImpl::ChildNodeRef InRef) const
 	{
-		BOOST_ASSERT_MSG(InRef.IsValid(), "TRBTree::GetNode(ChildNodeRef): reference must be valid");
+		BOOST_ASSERT_MSG(InRef.IsValid(), "TRBTree::GetNodeImpl(ChildNodeRef): reference must be valid");
+		BOOST_ASSERT_MSG(NodeExists(InRef), "TRBTree::GetNodeImpl(ChildNodeRef): the node must exist");
 		if(InRef.IsRoot())
 		{
 			return GetNode(RootIdx);
 		}
-		return GetChildNode(GetParentNode(InRef), InRef.ChildIdx);
+		return GetNode(GetParentNode(InRef)->GetChild(InRef.ChildIdx));
+	}
+
+	/**
+	* Gets node by reference.
+	*/
+	__forceinline const NodeType* GetNode(TRBTreeImpl::ChildNodeRef InRef) const
+	{
+		return GetNodeImpl(InRef);
 	}
 
 	/**
@@ -492,12 +491,7 @@ private:
 	*/
 	__forceinline NodeType* GetNode(TRBTreeImpl::ChildNodeRef InRef)
 	{
-		BOOST_ASSERT_MSG(InRef.IsValid(), "TRBTree::GetNode(ChildNodeRef): reference must be valid");
-		if(InRef.IsRoot())
-		{
-			return GetNode(RootIdx);
-		}
-		return GetChildNode(GetParentNode(InRef), InRef.ChildIdx);
+		return const_cast<NodeType*>(GetNodeImpl(InRef));
 	}
 
 	/**
@@ -519,20 +513,26 @@ private:
 	}
 
 	/**
+	* Returns true if node that the given ref references exists.
+	*/
+	bool NodeExists(TRBTreeImpl::ChildNodeRef NodeRef) const
+	{
+		if(NodeRef.IsRoot())
+		{
+			return ! Empty();
+		}
+		return INDEX_NONE != (GetNode(NodeRef.ParentIdx)->GetChild(NodeRef.ChildIdx));			
+	}
+
+	/**
 	* Gets child node reference.
+	* The node reference is always returned, ever if the referenced node does not exist.
 	*/
 	__forceinline TRBTreeImpl::ChildNodeRef GetChildNodeRef(TRBTreeImpl::ChildNodeRef NodeRef, TRBTreeImpl::NodeChildIndex InChildIdx) const
 	{
-		BOOST_ASSERT(NodeRef.IsValid());
-		int const NodeIndexForChild = GetParentNode(NodeRef)->GetChild(NodeRef.ChildIdx);
-		if (NodeIndexForChild != INDEX_NONE)
-		{
-			return TRBTreeImpl::ChildNodeRef{ NodeIndexForChild, InChildIdx };
-		}
-		else
-		{
-			return TRBTreeImpl::ChildNodeRef::Invalid();
-		}
+		BOOST_ASSERT( NodeExists(NodeRef) );
+		int const NodeIndexForChild = GetNode(NodeRef)->GetChild(NodeRef.ChildIdx);
+		return TRBTreeImpl::ChildNodeRef{ NodeIndexForChild, InChildIdx };
 	}
 
 	/**
@@ -544,7 +544,7 @@ private:
 		while (true)
 		{
 			TRBTreeImpl::ChildNodeRef NextNodeRef = GetChildNodeRef(NodeRef, InChildIdx);
-			if (NextNodeRef.IsNull())
+			if ( ! NodeExists(NextNodeRef) )
 			{
 				return NodeRef;
 			}

@@ -25,20 +25,16 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CoreMemBlockHeapTester", "..\Source\TestProjects\Core\CoreMemBlockHeapTester\CoreMemBlockHeapTester.vcxproj", "{96311F0C-229D-40B5-98CD-C720DE39EABE}"
 	ProjectSection(ProjectDependencies) = postProject
 		{35F04007-9558-48FA-8D43-8D77340BF122} = {35F04007-9558-48FA-8D43-8D77340BF122}
-		{5D66DCF5-F3E5-4FF6-8A97-95985BA32965} = {5D66DCF5-F3E5-4FF6-8A97-95985BA32965}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CoreContTSortedSetTester", "..\Source\TestProjects\Core\CoreContTSortedSetTester\CoreContTSortedSetTester.vcxproj", "{66EEC51B-25EB-4A2D-867F-EB99DB3D6BF0}"
 	ProjectSection(ProjectDependencies) = postProject
 		{35F04007-9558-48FA-8D43-8D77340BF122} = {35F04007-9558-48FA-8D43-8D77340BF122}
-		{19599926-D03D-465F-B02C-3FC7B737F207} = {19599926-D03D-465F-B02C-3FC7B737F207}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CoreContRBTreeTester", "..\Source\TestProjects\Core\CoreContRBTreeTester\CoreContRBTreeTester.vcxproj", "{19599926-D03D-465F-B02C-3FC7B737F207}"
 	ProjectSection(ProjectDependencies) = postProject
 		{35F04007-9558-48FA-8D43-8D77340BF122} = {35F04007-9558-48FA-8D43-8D77340BF122}
-		{4C5C4073-A9B9-47FE-8DA5-A3C66206ADF3} = {4C5C4073-A9B9-47FE-8DA5-A3C66206ADF3}
-		{CEC2CD92-C262-4CBC-8FE8-A88953D7046E} = {CEC2CD92-C262-4CBC-8FE8-A88953D7046E}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CoreContUTTester", "..\Source\TestProjects\Core\CoreContUTTester\CoreContUTTester.vcxproj", "{4C5C4073-A9B9-47FE-8DA5-A3C66206ADF3}"
