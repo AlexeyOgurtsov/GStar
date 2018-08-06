@@ -4,6 +4,10 @@
 #include "../Cont/TVector.h"
 
 /**
+* TODO Traverse ordered operation:
+* 1. Get deepest left/right from node identified by ChildNodeRef;
+* 2. Create the Stack-overflow unit-test for traverse;
+*
 * TODO Helper accessors:
 * 1. GetParentNode()
 * 1.1. Should we check if we reference to Root?
@@ -95,15 +99,6 @@ public:
 	__forceinline bool Empty() const { return 0 == Count; }
 
 	/**
-	* First.
-	*/
-	__forceinline const KeyValueType& First() const
-	{
-		BOOST_ASSERT( ! Empty() );
-		return GetNode(RootIdx)->KV;
-	}
-
-	/**
 	* Returns true, if contains the given key.
 	*/
 	bool Contains(const KeyType& InKey) const
@@ -166,7 +161,17 @@ public:
 
 	/**
 	* Copies all key-value pairs to the given Buffer.
+	* Preserves order.
 	*/
+	void CopyTo(KeyValueType* pInBuffer)
+	{
+		BOOST_ASSERT_MSG(false, "TRBTree::CopyTo: NOT YET IMPL");
+		KeyValueType* pCurr = pInBuffer;
+		Traverse
+		(
+			[&pCurr](const KeyValueType& KV) { *pCurr = KV; pCurr++; }
+		);
+	}
 
 	/*
 	* Copies all key-value pairs to the given Buffer without preserving order.
@@ -186,6 +191,22 @@ public:
 				pInBuffer[i] = pSrcNode->KV;
 			}
 		}
+	}
+
+	/**
+	* Traverses in the order of the keys.
+	*
+	* @param TraverseFunc: function that takes reference to key-value pair.
+	*/
+	template<class TraverseFunc>
+	void Traverse(TraverseFunc Func)
+	{
+		if ( Empty() )
+		{
+			return;
+		}
+
+		return TraverseSubtree(TRBTreeImpl::ChildNodeRef::RootNode(), Func);
 	}
 
 private:
@@ -290,6 +311,31 @@ private:
 			return nullptr;
 		}
 		return &KeyValue->Value;
+	}
+
+	/**
+	* Traverses subtree in the order of the keys.
+	*
+	* @param TraverseFunc: function that takes reference to key-value pair.
+	*/
+	template<class TraverseFunc>
+	void TraverseSubtree(TRBTreeImpl::ChildNodeRef InRootRef, TraverseFunc Func)
+	{
+		BOOST_ASSERT_MSG( ! Empty(), "TRBTree::TraverseSubtree: the subtree must be NON-empty" );
+		
+		TRBTreeImpl::ChildNodeRef const LeftRef = GetChildNodeRef(InRootRef, TRBTreeImpl::LEFT_CHILD_IDX);
+		if ( ! LeftRef.IsNull() )
+		{
+			TraverseSubtree(LeftRef, Func);
+		}
+
+		Func(GetNode(InRootRef)->KV);
+
+		TRBTreeImpl::ChildNodeRef const RightRef = GetChildNodeRef(InRootRef, TRBTreeImpl::RIGHT_CHILD_IDX);
+		if ( ! RightRef.IsNull() )
+		{
+			TraverseSubtree(RightRef, Func);
+		}
 	}
 
 	/**
@@ -474,6 +520,23 @@ private:
 		else
 		{
 			return TRBTreeImpl::ChildNodeRef::Invalid();
+		}
+	}
+
+	/**
+	* Get the deepest left or right child node.
+	*/
+	TRBTreeImpl::ChildNodeRef GetDeepestNodeRef(TRBTreeImpl::ChildNodeRef InSearchRoot, TRBTreeImpl::NodeChildIndex InChildIdx)
+	{
+		TRBTreeImpl::ChildNodeRef NodeRef = InSearchRoot;
+		while (true)
+		{
+			TRBTreeImpl::ChildNodeRef NextNodeRef = GetChildNodeRef(NodeRef, InChildIdx);
+			if (NextNodeRef.IsNull())
+			{
+				return NodeRef;
+			}
+			NodeRef = NextNodeRef;
 		}
 	}
 	

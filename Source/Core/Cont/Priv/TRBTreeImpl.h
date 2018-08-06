@@ -17,6 +17,16 @@ namespace TRBTreeImpl
 	using NodeChildIndex = int;
 
 	/**
+	* Left child index.
+	*/
+	constexpr NodeChildIndex LEFT_CHILD_IDX = 0;
+
+	/**
+	* Right child index.
+	*/
+	constexpr NodeChildIndex RIGHT_CHILD_IDX = 0;
+
+	/**
 	* Unically identifies node relative to its parent.
 	*/
 	struct ChildNodeRef
