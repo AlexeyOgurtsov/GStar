@@ -128,7 +128,14 @@ TKeyValue<KVType<KeyType, ValueType>> MakeKeyValue(const KeyType& K, const Value
 template<class Strm, class KVTypeArg>
 Strm& operator<<(Strm& S, const TKeyValue<KVTypeArg>& KV)
 {
-	return S << KV.Key << ":" << KV.Value;
+	if constexpr (std::is_base_of_v<NoValue, typename KVTypeArg::ValueType>)
+	{
+		return S << KV.Key;
+	}
+	else
+	{
+		return S << KV.Key << ":" << KV.Value;
+	}
 }
 
 template<class KVTypeArg>

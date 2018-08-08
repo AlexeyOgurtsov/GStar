@@ -102,7 +102,397 @@ BOOST_AUTO_TEST_CASE(FirstMinimal)
 	BOOST_REQUIRE_EQUAL(3, T.Num());
 }
 
-BOOST_AUTO_TEST_CASE(Iteration, *boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/FirstMinimal"))
+BOOST_AUTO_TEST_CASE
+(
+	MinMax,
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/FirstMinimal")
+)
+{
+	/**
+	* WARNING!!! This keys are ordered (see test).
+	*/
+	const int KEY_ONE = 1;
+	const int KEY_TWO = 2;
+	const int KEY_THREE = 3;
+	const int KEY_FOUR = 4;
+	const int KEY_FIVE = 5;
+	const int KEY_SIX = 6;
+	const int KEY_SEVEN = 7;
+
+	BOOST_TEST_CHECKPOINT("Construction");
+	IntRBTree T;
+	
+	BOOST_TEST_CHECKPOINT("Add");
+	BOOST_REQUIRE(T.Add(KEY_FIVE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_SEVEN, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_SIX, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_FOUR, NoValue{}));
+	BOOST_REQUIRE_EQUAL(T.Num(), KEY_SEVEN);
+
+	BOOST_TEST_CHECKPOINT("MinMax");
+	BOOST_REQUIRE_EQUAL(KEY_ONE, T.Min().Key);
+	BOOST_REQUIRE_EQUAL(KEY_SEVEN, T.Max().Key);
+}
+
+BOOST_AUTO_TEST_SUITE
+(
+	IterationSuite, 
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/FirstMinimal")
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/MinMax")
+)
+BOOST_AUTO_TEST_CASE(IterationEmpty)
+{
+	IntRBTree T;
+	BOOST_REQUIRE(T.Iterator().IsEnd());
+}
+BOOST_AUTO_TEST_CASE(IterationRootOnly)
+{
+	// WARNING!!! Key values matter!
+	constexpr int KEY_ONE = 1;
+
+	BOOST_TEST_CHECKPOINT("Construction");
+	IntRBTree T;
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
+
+	BOOST_TEST_CHECKPOINT("Iteration");
+	IntRBTree::IteratorType It = T.Iterator();
+	BOOST_REQUIRE( ! It.IsEnd() );
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType( KEY_ONE, NoValue{} ));
+	It++;
+	BOOST_REQUIRE( It.IsEnd() );
+}
+BOOST_AUTO_TEST_CASE(IterationEqual)
+{
+	// WARNING!!! Key values matter!
+	constexpr int KEY_ONE = 1;
+	constexpr int KEY_TWO = 2;
+
+	BOOST_TEST_CHECKPOINT("Construction");
+	IntRBTree T;
+	// WARNING!!! Addition order matters!!
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
+
+	BOOST_TEST_CHECKPOINT("Iteration");
+	IntRBTree::IteratorType It = T.Iterator();
+	IntRBTree::IteratorType It_next = T.Iterator();
+	BOOST_REQUIRE(It == It_next);
+
+	BOOST_REQUIRE( ! It.IsEnd() );
+	BOOST_REQUIRE( It_next == It_next );
+	BOOST_REQUIRE( It == It );
+	It_next++;
+	BOOST_REQUIRE( ! (It == It_next));
+
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_ONE, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It_next == It);
+	It_next++;
+
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_TWO, NoValue{}));
+	It++;
+	It_next++;
+	BOOST_REQUIRE(It.IsEnd());
+	BOOST_REQUIRE(It_next == It);
+}
+BOOST_AUTO_TEST_CASE(IterationLeftToParent)
+{
+	// WARNING!!! Key values matter!
+	constexpr int KEY_ONE = 1;
+	constexpr int KEY_TWO = 2;
+
+	BOOST_TEST_CHECKPOINT("Construction");
+	IntRBTree T;
+	// WARNING!!! Addition order matters!!
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
+
+	BOOST_TEST_CHECKPOINT("Iteration");
+	IntRBTree::IteratorType It = T.Iterator();
+	BOOST_REQUIRE(!It.IsEnd());
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_ONE, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_TWO, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.IsEnd());
+}
+BOOST_AUTO_TEST_CASE
+(
+	IterationLeftToParent_ThreeLevels,
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/IterationSuite/IterationLeftToParent")
+)
+{
+	// WARNING!!! Key values matter!
+	constexpr int KEY_ONE = 1;
+	constexpr int KEY_TWO = 2;
+	constexpr int KEY_THREE = 3;
+
+	BOOST_TEST_CHECKPOINT("Construction");
+	IntRBTree T;
+	// WARNING!!! Addition order matters!!
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
+
+	BOOST_TEST_CHECKPOINT("Iteration");
+	IntRBTree::IteratorType It = T.Iterator();
+	BOOST_REQUIRE(!It.IsEnd());
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_ONE, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_TWO, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_THREE, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.IsEnd());
+}
+BOOST_AUTO_TEST_CASE
+(
+	IterationLeftToParent_ManyLevels, 
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/IterationSuite/IterationLeftToParent_ThreeLevels")
+)
+{
+	// WARNING!!! Key values matter!
+	constexpr int KEY_ONE = 1;
+	constexpr int KEY_TWO = 2;
+	constexpr int KEY_THREE = 3;
+	constexpr int KEY_FOUR = 4;
+
+	BOOST_TEST_CHECKPOINT("Construction");
+	IntRBTree T;
+	// WARNING!!! Addition order matters!!
+	BOOST_REQUIRE(T.Add(KEY_FOUR, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
+
+	BOOST_TEST_CHECKPOINT("Iteration");
+	IntRBTree::IteratorType It = T.Iterator();
+	BOOST_REQUIRE(!It.IsEnd());
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_ONE, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_TWO, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_THREE, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_FOUR, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.IsEnd());
+}
+BOOST_AUTO_TEST_CASE
+(
+	IterationRightToParent_ManyLevels,
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/IterationSuite/IterationRightToParent_ThreeLevels")
+)
+{
+	// WARNING!!! Key values matter!
+	constexpr int KEY_ONE = 1;
+	constexpr int KEY_TWO = 2;
+	constexpr int KEY_THREE = 3;
+	constexpr int KEY_FOUR = 4;
+
+	BOOST_TEST_CHECKPOINT("Construction");
+	IntRBTree T;
+	// WARNING!!! Addition order matters!!
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_FOUR, NoValue{}));
+
+	BOOST_TEST_CHECKPOINT("Iteration");
+	IntRBTree::IteratorType It = T.Iterator();
+	BOOST_REQUIRE(!It.IsEnd());
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_ONE, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_TWO, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_THREE, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_FOUR, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.IsEnd());
+}
+BOOST_AUTO_TEST_CASE
+(
+	IterationRightToParent_ThreeLevels,
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/IterationSuite/IterationRightToParent")
+)
+{
+	// WARNING!!! Key values matter!
+	constexpr int KEY_ONE = 1;
+	constexpr int KEY_TWO = 2;
+	constexpr int KEY_THREE = 3;
+
+	BOOST_TEST_CHECKPOINT("Construction");
+	IntRBTree T;
+	// WARNING!!! Addition order matters!!
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+
+	BOOST_TEST_CHECKPOINT("Iteration");
+	IntRBTree::IteratorType It = T.Iterator();
+	BOOST_REQUIRE(!It.IsEnd());
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_ONE, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_TWO, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_THREE, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.IsEnd());
+}
+BOOST_AUTO_TEST_CASE(IterationRightToParent)
+{
+	// WARNING!!! Key values matter!
+	constexpr int KEY_ONE = 1;
+	constexpr int KEY_TWO = 2;
+
+	BOOST_TEST_CHECKPOINT("Construction");
+	IntRBTree T;
+	// WARNING!!! Addition order matters!!
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+
+	BOOST_TEST_CHECKPOINT("Iteration");
+	IntRBTree::IteratorType It = T.Iterator();
+	BOOST_REQUIRE(!It.IsEnd());
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_ONE, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_TWO, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.IsEnd());
+}
+
+BOOST_AUTO_TEST_CASE(IterationBothLeftAndRight)
+{
+	// WARNING!!! Key values matter!!
+	constexpr int KEY_ONE = 1;
+	constexpr int KEY_TWO = 2;
+	constexpr int KEY_THREE = 3;
+
+	BOOST_TEST_CHECKPOINT("Construction");
+	IntRBTree T;
+	// WARNING!!! Addition order matters!!
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+
+	BOOST_TEST_CHECKPOINT("Iteration");
+	IntRBTree::IteratorType It = T.Iterator();
+	BOOST_REQUIRE(!It.IsEnd());
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_ONE, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_TWO, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_THREE, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.IsEnd());
+}
+
+BOOST_AUTO_TEST_CASE(IterationLevelTwo)
+{
+	// WARNING!!! Key values matter!!
+	constexpr int KEY_ONE = 1;
+	constexpr int KEY_TWO = 2;
+	constexpr int KEY_THREE = 3;
+	constexpr int KEY_FOUR = 4;
+	constexpr int KEY_FIVE = 5;
+	constexpr int KEY_SIX = 6;
+	constexpr int KEY_SEVEN = 7;
+
+	BOOST_TEST_CHECKPOINT("Construction");
+	IntRBTree T;
+	// WARNING!!! Addition order matters!!
+	BOOST_REQUIRE(T.Add(KEY_FOUR, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_SIX, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_FIVE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_SEVEN, NoValue{}));
+
+	BOOST_TEST_CHECKPOINT("Iteration");
+	IntRBTree::IteratorType It = T.Iterator();
+	BOOST_REQUIRE(!It.IsEnd());
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_ONE, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_TWO, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_THREE, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_FOUR, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_FIVE, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_SIX, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_SEVEN, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.IsEnd());
+}
+
+BOOST_AUTO_TEST_CASE
+(
+	IterationComplexCase, 
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/IterationSuite/IterationEmpty")
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/IterationSuite/IterationRootOnly")
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/IterationSuite/Iteration")
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/IterationSuite/IterationRightToParent_ManyLevels")
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/IterationSuite/IterationLeftToParent_ManyLevels")
+)
+{
+	BOOST_REQUIRE(false); // TODO
+
+	constexpr int KEY_ONE = 1;
+	constexpr int KEY_TWO = 2;
+	constexpr int KEY_THREE = 3;
+	constexpr int KEY_FOUR = 4;
+	constexpr int KEY_FIVE = 5;	
+	constexpr int KEY_SIX = 6;
+	constexpr int KEY_SEVEN = 7;
+	constexpr int KEY_EIGHT = 8;
+	constexpr int KEY_NINE = 9;
+
+	BOOST_TEST_CHECKPOINT("Construction");
+	IntRBTree T;
+	BOOST_REQUIRE(T.Add(KEY_SIX, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_EIGHT, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_SEVEN, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_NINE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_FIVE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_FOUR, NoValue{}));
+
+	BOOST_TEST_CHECKPOINT("Iteration");
+	IntRBTree::IteratorType It = T.Iterator();
+	BOOST_REQUIRE(!It.IsEnd());
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_ONE, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_TWO, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_THREE, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_FOUR, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_FIVE, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_SIX, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_SEVEN, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_EIGHT, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_NINE, NoValue{}));
+	It++;
+	BOOST_REQUIRE(It.IsEnd());
+}
+
+
+BOOST_AUTO_TEST_CASE(Iteration)
 {
 	constexpr int NUM = 5;
 
@@ -133,10 +523,13 @@ BOOST_AUTO_TEST_CASE(Iteration, *boost::unit_test::depends_on("Core/Container/TR
 	IntRBTree::IteratorType It = T.Iterator();
 	for (int Index = 0; Index < T.Num(); Index++)
 	{
-		BOOST_REQUIRE(It.GetKeyValue() == REFERENCE_SEQUENCE[Index]);
+		BOOST_REQUIRE( ! It.IsEnd() );
+		BOOST_REQUIRE_EQUAL(It.GetKeyValue(), REFERENCE_SEQUENCE[Index]);
+		It++;
 	}
 	BOOST_REQUIRE(It.IsEnd());
 }
+BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_AUTO_TEST_CASE(CopyToTest, *boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/FirstMinimal"))
 {

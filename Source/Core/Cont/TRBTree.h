@@ -79,21 +79,6 @@ public:
 	TRBTree() : TRBTree{ DEFAULT_CAPACITY } {}
 
 	/**
-	* Returns iterator to the first Key/Value pair.
-	*/
-	TIterator Iterator()
-	{
-		if (Empty())
-		{
-			return TIterator(this, TRBTreeImpl::ChildNodeRef::Invalid());
-		}
-		else
-		{
-			return TIterator(this, GetDeepestNodeRef(TRBTreeImpl::ChildNodeRef::RootNode(), TRBTreeImpl::LEFT_CHILD_IDX));
-		}
-	}
-
-	/**
 	* Constructs with the given capacity.
 	*/
 	explicit TRBTree(int InCapacity) :
@@ -112,6 +97,42 @@ public:
 	* Returns true if buffer is empty.
 	*/
 	__forceinline bool Empty() const { return 0 == Count; }
+
+
+	/**
+	* Returns iterator to the first Key/Value pair.
+	*/
+	TIterator Iterator()
+	{
+		if (Empty())
+		{
+			return TIterator(this, TRBTreeImpl::ChildNodeRef::Invalid());
+		}
+		else
+		{
+			return TIterator(this, GetDeepestNodeRef(TRBTreeImpl::ChildNodeRef::RootNode(), TRBTreeImpl::LEFT_CHILD_IDX));
+		}
+	}
+
+	/**
+	* Returns KeyValue with a minimal key.
+	* Container must be NON-empty.
+	*/
+	const KeyValueType& Min() const
+	{
+		BOOST_ASSERT_MSG( ! Empty(), "TRBTree::Min: Container must be NON-empty");
+		return GetNode(GetDeepestNodeRef(TRBTreeImpl::ChildNodeRef::RootNode(), TRBTreeImpl::LEFT_CHILD_IDX))->KV;
+	}
+
+	/**
+	* Returns KeyValue with a maximal key.
+	* Container must be NON-empty.
+	*/
+	const KeyValueType& Max() const
+	{
+		BOOST_ASSERT_MSG( ! Empty(), "TRBTree::Max: Container must be NON-empty");
+		return GetNode(GetDeepestNodeRef(TRBTreeImpl::ChildNodeRef::RootNode(), TRBTreeImpl::RIGHT_CHILD_IDX))->KV;
+	}
 
 	/**
 	* Returns true, if contains the given key.
@@ -286,7 +307,7 @@ public:
 		TIterator operator++(int)
 		{
 			TIterator OldIt = *this;
-			OldIt::operator++();
+			TIterator::operator++();
 			return OldIt;
 		}
 
@@ -684,7 +705,7 @@ private:
 	/**
 	* Get the deepest left or right child node.
 	*/
-	TRBTreeImpl::ChildNodeRef GetDeepestNodeRef(TRBTreeImpl::ChildNodeRef InSearchRoot, TRBTreeImpl::NodeChildIndex InChildIdx)
+	TRBTreeImpl::ChildNodeRef GetDeepestNodeRef(TRBTreeImpl::ChildNodeRef InSearchRoot, TRBTreeImpl::NodeChildIndex InChildIdx) const
 	{
 		TRBTreeImpl::ChildNodeRef NodeRef = InSearchRoot;
 		while (true)
@@ -725,3 +746,16 @@ private:
 	*/
 	int Count;
 };
+template<class KVTypeArg>
+bool operator==(const typename TRBTree<KVTypeArg>::IteratorType& A, const typename TRBTree<KVTypeArg>::IteratorType& B)
+{
+	BOOST_ASSERT_MSG(A.pTree == B.pTree, "TRBTree: Iterator equality: iterators must belong to the same container to be comparable");
+	if (A.IsEnd() && B.IsEnd()) { return true; }
+	return A.GetKeyValue().Key == B.GetKeyValue().Key;
+}
+
+template<class KVTypeArg>
+bool operator!=(const typename TRBTree<KVTypeArg>::IteratorType& A, const typename TRBTree<KVTypeArg>::IteratorType& B)
+{
+	return !(operator==(A, B));
+}
