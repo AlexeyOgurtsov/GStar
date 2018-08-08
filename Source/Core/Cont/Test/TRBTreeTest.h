@@ -194,7 +194,6 @@ BOOST_AUTO_TEST_CASE(IterationEqual)
 
 	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_TWO, NoValue{}));
 	It++;
-	It_next++;
 	BOOST_REQUIRE(It.IsEnd());
 	BOOST_REQUIRE(It_next == It);
 }
@@ -443,8 +442,6 @@ BOOST_AUTO_TEST_CASE
 	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/IterationSuite/IterationLeftToParent_ManyLevels")
 )
 {
-	BOOST_REQUIRE(false); // TODO
-
 	constexpr int KEY_ONE = 1;
 	constexpr int KEY_TWO = 2;
 	constexpr int KEY_THREE = 3;

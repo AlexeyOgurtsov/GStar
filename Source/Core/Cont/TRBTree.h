@@ -5,12 +5,8 @@
 
 /**
 * TODO Key/Value iterator:
-* 1. Create iterator accessor (Iterator())
+* 1. Key and Value helpers
 * 2. Create C-style iterator accessor (begin, end, cbegin, cend)
-*
-* TODO Key/Value iterator:
-* 1. Test FindDeepest
-* 2. Key and Value helpers
 * 3. Const-correctness
 *
 * TODO:
@@ -19,16 +15,10 @@
 * TODO Node Iterator:
 * 1. Make const-correct
 *
-* TODO Operations:
-* 1.
-*
 * TODO First:
 * 1. Add.
 * 2. Remove.
 * 3. Find
-*
-* TODO Second:
-* 1. Iteration (begin/end etc.)
 *
 * TODO Third:
 * 1. Clear()
@@ -321,17 +311,61 @@ public:
 		*/
 		TIterator operator--(int);
 
-		/**
-		* equality operators
-		*/
-		friend bool operator==(const TIterator& A, const TIterator& B);
+		bool operator==(TIterator B)
+		{
+			if (IsEnd() && B.IsEnd()) { return true; }
+			return GetKeyValue().Key == B.GetKeyValue().Key;
+		}
+
+		bool operator!=(TIterator B)
+		{
+			return !(operator==(*this, B));
+		}
 
 	private:
 		const NodeType* GetNode() const { return pTree->GetNode(NodeRef); }
 
 		void AdvanceNext()
 		{
-			BOOST_ASSERT_MSG(false, "TRBTree::Iterator:: NOT yet implemented.");
+			if (GetNode()->HasChild(TRBTreeImpl::RIGHT_CHILD_IDX))
+			{
+				// Find the minimal value in the right subtree;
+				NodeRef = pTree->GetDeepestNodeRef(pTree->GetChildNodeRef(NodeRef, TRBTreeImpl::RIGHT_CHILD_IDX), TRBTreeImpl::LEFT_CHILD_IDX);
+			}
+			else
+			{
+				// we have no right child, so getting up
+				if (NodeRef.IsRoot())
+				{
+					// We reached the root and have no right child, so stop the iteration
+					NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
+				}
+				else
+				{
+					// we have NOT reached the root yet
+					if (NodeRef.ChildIdx == TRBTreeImpl::LEFT_CHILD_IDX)
+					{
+						// We are on the node that is the left child of its parent,
+						// and it has no right child itself (left subtree is already iterated). 
+						// That's why our parent is the next in order for iteration.
+						NodeRef = pTree->GetParentNodeRef(NodeRef);
+					}
+					else
+					{
+						// We are on the node that is the right child of its parent,
+						// and it has no right child itself (left subtree is already iterated).
+						// So, we have no other way than backtrack.
+						bool bEndIteration = pTree->BacktrackRightSubtreeIteration(/*Out*/NodeRef);
+
+						// We may end up iteration by climbing from right parent to the root node. 
+						// That would mean that the iteration is over.
+						if (bEndIteration)
+						{
+							NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
+						}
+					}
+				}
+			}
 		}
 
 		TRBTree *pTree;
@@ -570,6 +604,7 @@ private:
 	*/
 	TRBTreeImpl::ChildNodeRef GetParentNodeRef(const TRBTreeImpl::ChildNodeRef InNodeRef) const
 	{
+		const TRBTreeImpl::NodeChildIndex ParentIdx = InNodeRef.ParentIdx;
 		const NodeType* const pParent = GetParentNode(InNodeRef);
 		if (pParent->ParentIdx == INDEX_NONE) 
 		{
@@ -579,8 +614,8 @@ private:
 		else
 		{
 			// if parent of parent is an ordinary node
-			const TRBTreeImpl::NodeIndex ParentIdx = pParent->ParentIdx;
-			const NodeType* const pParentParent = GetNode(ParentIdx);
+			const TRBTreeImpl::NodeIndex ParentParentIdx = pParent->ParentIdx;
+			const NodeType* const pParentParent = GetNode(ParentParentIdx);
 			TRBTreeImpl::NodeChildIndex ChildOfParentParentIndex = INDEX_NONE;
 			if (ParentIdx == pParentParent->GetChild(TRBTreeImpl::LEFT_CHILD_IDX))
 			{
@@ -588,10 +623,10 @@ private:
 			}
 			else
 			{
-				BOOST_ASSERT(ParentIdx == pParentParent->GetChild(RIGHT_CHILD_IDX));
+				BOOST_ASSERT(ParentIdx == pParentParent->GetChild(TRBTreeImpl::RIGHT_CHILD_IDX));
 				ChildOfParentParentIndex = TRBTreeImpl::RIGHT_CHILD_IDX;
 			}
-			return TRBTreeImpl::ChildNodeRef{ ParentIdx, ChildOfParentParentIndex };
+			return TRBTreeImpl::ChildNodeRef{ ParentParentIdx, ChildOfParentParentIndex };
 		}
 	}
 
@@ -720,14 +755,40 @@ private:
 	}
 
 	/**
-	* Walks by parent links until current parent is not the left child (or the root).
+	* Walks by parent links skipping all right childs and the first left child.
+	*
+	* Returns true, if we should end up iteration.
 	*/
-	void BacktrackRightChilds(TRBTreeImpl::ChildNodeRef& InOutNodeRef) const
+	bool BacktrackRightSubtreeIteration(TRBTreeImpl::ChildNodeRef& InOutNodeRef) const
 	{
-		while ( ! InOutNodeRef.IsRoot() && InOutNodeRef.ChildIdx == TRBTreeImpl::RIGHT_CHILD_IDX )
+		BOOST_ASSERT_MSG( ! InOutNodeRef.IsRoot(), "TRBTree: BacktrackRightSubtreeIteration: must be called on NON-root node only");
+		BOOST_ASSERT_MSG( InOutNodeRef.ChildIdx == TRBTreeImpl::RIGHT_CHILD_IDX, "TRBTree: BacktrackRightSubtreeIteration: must start on the node that is a right child of its parent");
+		while (true)
 		{
+			// We must climb up by the first left child.
+			bool bFromLeftChild = (InOutNodeRef.ChildIdx == TRBTreeImpl::LEFT_CHILD_IDX);
 			InOutNodeRef = GetParentNodeRef(InOutNodeRef);
+			
+			if (InOutNodeRef.IsRoot())
+			{
+				// We may end up iteration by climbing from right child to the root parent node.
+				// That would mean that we need to end up iteration.
+				return ! bFromLeftChild;
+			}
+			else
+			{
+				if (bFromLeftChild)
+				{
+					// We may end up iteration by climbing from left child to the root parent node.
+					// That would mean that we need to end up iteration.
+					return InOutNodeRef.IsRoot();
+				}
+				// At this point we climbed the right child, so we must proceed iteration further.
+				BOOST_ASSERT_MSG( ! bFromLeftChild, "TRBTree: BacktrackRightSubtreeIteration: At this point we must be climbed from the right child");
+			}
 		}
+		BOOST_ASSERT_MSG(false, "TRBTree: BacktrackRightSubtreeIteration: Should NOT get here");
+		return false;
 	}
 	
 	/**
@@ -746,16 +807,4 @@ private:
 	*/
 	int Count;
 };
-template<class KVTypeArg>
-bool operator==(const typename TRBTree<KVTypeArg>::IteratorType& A, const typename TRBTree<KVTypeArg>::IteratorType& B)
-{
-	BOOST_ASSERT_MSG(A.pTree == B.pTree, "TRBTree: Iterator equality: iterators must belong to the same container to be comparable");
-	if (A.IsEnd() && B.IsEnd()) { return true; }
-	return A.GetKeyValue().Key == B.GetKeyValue().Key;
-}
 
-template<class KVTypeArg>
-bool operator!=(const typename TRBTree<KVTypeArg>::IteratorType& A, const typename TRBTree<KVTypeArg>::IteratorType& B)
-{
-	return !(operator==(A, B));
-}
