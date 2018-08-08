@@ -102,6 +102,42 @@ BOOST_AUTO_TEST_CASE(FirstMinimal)
 	BOOST_REQUIRE_EQUAL(3, T.Num());
 }
 
+BOOST_AUTO_TEST_CASE(Iteration, *boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/FirstMinimal"))
+{
+	constexpr int NUM = 5;
+
+	constexpr int KEY_TWO = 2;
+	constexpr int KEY_THREE = 3;
+	constexpr int KEY_FIVE = 5;
+	constexpr int KEY_SEVEN = 7;
+	constexpr int KEY_EIGHT = 8;
+
+	const IntRBTree::KeyValueType REFERENCE_SEQUENCE[] =
+	{
+		IntRBTree::KeyValueType(KEY_TWO, NoValue{}),
+		IntRBTree::KeyValueType(KEY_THREE, NoValue{}),
+		IntRBTree::KeyValueType(KEY_FIVE, NoValue{}),
+		IntRBTree::KeyValueType(KEY_SEVEN, NoValue{}),
+		IntRBTree::KeyValueType(KEY_EIGHT, NoValue{})
+	};
+
+	BOOST_TEST_CHECKPOINT("Construction");
+	IntRBTree T;
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_FIVE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_SEVEN, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_EIGHT, NoValue{}));
+
+	BOOST_TEST_CHECKPOINT("Iteration");
+	IntRBTree::IteratorType It = T.Iterator();
+	for (int Index = 0; Index < T.Num(); Index++)
+	{
+		BOOST_REQUIRE(It.GetKeyValue() == REFERENCE_SEQUENCE[Index]);
+	}
+	BOOST_REQUIRE(It.IsEnd());
+}
+
 BOOST_AUTO_TEST_CASE(CopyToTest, *boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/FirstMinimal"))
 {
 	constexpr int NUM = 5;

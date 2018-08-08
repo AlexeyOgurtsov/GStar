@@ -4,11 +4,19 @@
 #include "../Cont/TVector.h"
 
 /**
+* TODO Key/Value iterator:
+* 1. Create iterator accessor (Iterator())
+* 2. Create C-style iterator accessor (begin, end, cbegin, cend)
+*
+* TODO Key/Value iterator:
+* 1. Test FindDeepest
+* 2. Key and Value helpers
+* 3. Const-correctness
+*
 * TODO:
 * 1. Create the Stack-overflow unit-test for traverse;
 *
-*
-* TODO Iterator:
+* TODO Node Iterator:
 * 1. Make const-correct
 *
 * TODO Operations:
@@ -55,6 +63,12 @@ public:
 	using ValueType = typename KeyValueType::ValueType;
 
 	/**
+	* Iterator type.
+	*/
+	class TIterator;
+	using IteratorType = typename TIterator;
+
+	/**
 	* Capacity to be used for the buffer by default.
 	*/
 	constexpr static int DEFAULT_CAPACITY = 1024;
@@ -63,6 +77,21 @@ public:
 	* Constructs with the default capacity.
 	*/
 	TRBTree() : TRBTree{ DEFAULT_CAPACITY } {}
+
+	/**
+	* Returns iterator to the first Key/Value pair.
+	*/
+	TIterator Iterator()
+	{
+		if (Empty())
+		{
+			return TIterator(this, TRBTreeImpl::ChildNodeRef::Invalid());
+		}
+		else
+		{
+			return TIterator(this, GetDeepestNodeRef(TRBTreeImpl::ChildNodeRef::RootNode(), TRBTreeImpl::LEFT_CHILD_IDX));
+		}
+	}
 
 	/**
 	* Constructs with the given capacity.
@@ -199,6 +228,96 @@ private:
 
 	using NodeType = TRBTreeImpl::Node<KVTypeArg>;
 
+public:
+	/**
+	* Iterates KeyValue pairs in the order of their keys.
+	*/
+	class TIterator
+	{
+	public:
+		/**
+		* Constructs from reference to the given node of the tree.
+		*
+		* If node reference is invalid, End iterator is created.
+		*/
+		TIterator(TRBTree *pInTree, TRBTreeImpl::ChildNodeRef InNodeRef) :
+			pTree{ pInTree }
+		,	NodeRef{ InNodeRef }
+		{
+			BOOST_ASSERT(pTree);
+		}
+
+		/**
+		* Returns current Key/Value pair.
+		* Iterator must be a non-end iterator.
+		*/
+		__forceinline const KeyValueType& GetKeyValue() const
+		{
+			BOOST_ASSERT(!IsEnd());
+			return pTree->GetNode(NodeRef)->KV;
+		}
+
+		/**
+		* Is end iterator.
+		*/
+		__forceinline bool IsEnd() const
+		{
+			return NodeRef.IsNull();
+		}
+
+		/**
+		* Dereference operator.
+		* Iterator must be a non-end iterator.
+		*/
+		__forceinline const KeyValueType& operator*() const { return GetKeyValue(); }
+
+		/**
+		* Advances iterator to the next KeyValue pair.
+		*/
+		TIterator& operator++()
+		{
+			AdvanceNext();
+			return *this;
+		}
+
+		/**
+		* Advances iterator to the next KeyValue pair.
+		*/
+		TIterator operator++(int)
+		{
+			TIterator OldIt = *this;
+			OldIt::operator++();
+			return OldIt;
+		}
+
+		/**
+		* Advances an iterator to previous KeyValue pair.
+		*/
+		TIterator& operator--();
+
+		/**
+		* Advances iterator to the previus KeyValue pair.
+		*/
+		TIterator operator--(int);
+
+		/**
+		* equality operators
+		*/
+		friend bool operator==(const TIterator& A, const TIterator& B);
+
+	private:
+		const NodeType* GetNode() const { return pTree->GetNode(NodeRef); }
+
+		void AdvanceNext()
+		{
+			BOOST_ASSERT_MSG(false, "TRBTree::Iterator:: NOT yet implemented.");
+		}
+
+		TRBTree *pTree;
+		TRBTreeImpl::ChildNodeRef NodeRef;
+	};
+
+private:
 	/**
 	* Iterates nodes.
 	*/
@@ -299,14 +418,14 @@ private:
 	}
 
 	/**
-	* Traverses subtree in the order of the keys.
+	* Traverses non-empty subtree in the order of the keys.
 	*
 	* @param TraverseFunc: function that takes reference to key-value pair.
 	*/
 	template<class TraverseFunc>
 	void TraverseSubtree(TRBTreeImpl::ChildNodeRef InRootRef, TraverseFunc Func)
 	{
-		BOOST_ASSERT_MSG( ! Empty(), "TRBTree::TraverseSubtree: the subtree must be NON-empty" );
+		BOOST_ASSERT_MSG( NodeExists(InRootRef), "TRBTree::TraverseSubtree: subtree must be non-empty" );
 		
 		// TODO: May this implementation overflow the stack?
 
@@ -424,6 +543,36 @@ private:
 	* Gets node by index.
 	*/
 	__forceinline NodeType* GetNode(int InIdx) { return &Buffer[InIdx]; };
+
+	/**
+	* Gets parent node reference.
+	*/
+	TRBTreeImpl::ChildNodeRef GetParentNodeRef(const TRBTreeImpl::ChildNodeRef InNodeRef) const
+	{
+		const NodeType* const pParent = GetParentNode(InNodeRef);
+		if (pParent->ParentIdx == INDEX_NONE) 
+		{
+			// If parent of parent is root, we return the root 
+			return TRBTreeImpl::ChildNodeRef::RootNode();
+		}
+		else
+		{
+			// if parent of parent is an ordinary node
+			const TRBTreeImpl::NodeIndex ParentIdx = pParent->ParentIdx;
+			const NodeType* const pParentParent = GetNode(ParentIdx);
+			TRBTreeImpl::NodeChildIndex ChildOfParentParentIndex = INDEX_NONE;
+			if (ParentIdx == pParentParent->GetChild(TRBTreeImpl::LEFT_CHILD_IDX))
+			{
+				ChildOfParentParentIndex = TRBTreeImpl::LEFT_CHILD_IDX;
+			}
+			else
+			{
+				BOOST_ASSERT(ParentIdx == pParentParent->GetChild(RIGHT_CHILD_IDX));
+				ChildOfParentParentIndex = TRBTreeImpl::RIGHT_CHILD_IDX;
+			}
+			return TRBTreeImpl::ChildNodeRef{ ParentIdx, ChildOfParentParentIndex };
+		}
+	}
 
 	/**
 	* Gets parent node by reference.
@@ -546,6 +695,17 @@ private:
 				return NodeRef;
 			}
 			NodeRef = NextNodeRef;
+		}
+	}
+
+	/**
+	* Walks by parent links until current parent is not the left child (or the root).
+	*/
+	void BacktrackRightChilds(TRBTreeImpl::ChildNodeRef& InOutNodeRef) const
+	{
+		while ( ! InOutNodeRef.IsRoot() && InOutNodeRef.ChildIdx == TRBTreeImpl::RIGHT_CHILD_IDX )
+		{
+			InOutNodeRef = GetParentNodeRef(InOutNodeRef);
 		}
 	}
 	
