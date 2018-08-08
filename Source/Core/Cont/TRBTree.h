@@ -7,25 +7,12 @@
 * TODO:
 * 1. Create the Stack-overflow unit-test for traverse;
 *
-* TODO Helper accessors:
-* 1. GetParentNode()
-* 1.1. Should we check if we reference to Root?
 *
 * TODO Iterator:
 * 1. Make const-correct
 *
-* TODO CopyTo operation.
-* 1. NoValue for absent value of a key.
-* 2. Use KVType as argument (instead of separate Key and Value);
-* 3. Create the KeyValue structure, change the Node to use it.
-* 4. Create tests;
-* 5. Create the operation;
-*
-* TODO Add operation:
-* 1. Create the ToArray function.
-* 2. Write the tests for the Add operation;
-* 3. Parametrize the Node, so that children are represented as an array;
-* 4. Create the TryInsertChild(ParentIdx, bool bRight, Key, Value) function;
+* TODO Operations:
+* 1.
 *
 * TODO First:
 * 1. Add.
@@ -37,7 +24,7 @@
 *
 * TODO Third:
 * 1. Clear()
-* 2. 
+* 2. CopyTo(TArray) function.
 *
 * TODO Generalize:
 * 1. Provide the means to select the key comparison function.
@@ -324,7 +311,7 @@ private:
 		// TODO: May this implementation overflow the stack?
 
 		TRBTreeImpl::ChildNodeRef const LeftRef = GetChildNodeRef(InRootRef, TRBTreeImpl::LEFT_CHILD_IDX);
-		if ( ! NodeExists(LeftRef) )
+		if ( NodeExists(LeftRef) )
 		{
 			TraverseSubtree(LeftRef, Func);
 		}
@@ -332,7 +319,7 @@ private:
 		Func(GetNode(InRootRef)->KV);
 
 		TRBTreeImpl::ChildNodeRef const RightRef = GetChildNodeRef(InRootRef, TRBTreeImpl::RIGHT_CHILD_IDX);
-		if ( ! NodeExists(RightRef))
+		if ( NodeExists(RightRef))
 		{
 			TraverseSubtree(RightRef, Func);
 		}
@@ -353,23 +340,23 @@ private:
 		while (true)
 		{
 			const KeyType* pCurrKey = &(It.GetNode()->GetKey());
-			if(KeyEqual(*pCurrKey, InKey))
+			if(KeyEqual(InKey, *pCurrKey))
 			{
 				return true;
 			}
 
-			if(KeyLess(*pCurrKey, InKey)) 
+			if(KeyLess(InKey, *pCurrKey)) 
 			{
 				It = It.GetLeft();
 			}
-			else if(KeyLess(InKey, *pCurrKey))
+			else if(KeyLess(*pCurrKey, InKey))
 			{
 				It = It.GetRight();
 			}
 
 			OutNodeRef = It.GetNodeRef();
 
-			if(It.DoesNotExist())
+			if (It.DoesNotExist())
 			{
 				return false;
 			}
@@ -526,13 +513,23 @@ private:
 
 	/**
 	* Gets child node reference.
-	* The node reference is always returned, ever if the referenced node does not exist.
+	* The node itself and the corresponding child must exist.
 	*/
 	__forceinline TRBTreeImpl::ChildNodeRef GetChildNodeRef(TRBTreeImpl::ChildNodeRef NodeRef, TRBTreeImpl::NodeChildIndex InChildIdx) const
 	{
 		BOOST_ASSERT( NodeExists(NodeRef) );
-		int const NodeIndexForChild = GetNode(NodeRef)->GetChild(NodeRef.ChildIdx);
-		return TRBTreeImpl::ChildNodeRef{ NodeIndexForChild, InChildIdx };
+		int NextChildParentIdx = INDEX_NONE;
+		if (NodeRef.IsRoot())
+		{
+			NextChildParentIdx = RootIdx;
+		}
+		else
+		{
+			NextChildParentIdx = GetParentNode(NodeRef)->GetChild(NodeRef.ChildIdx);
+		}
+		BOOST_ASSERT_MSG(INDEX_NONE != NextChildParentIdx, "TRBTree::GetChildNodeRef: the given child must exist");
+		
+		return TRBTreeImpl::ChildNodeRef{ NextChildParentIdx, InChildIdx };
 	}
 
 	/**

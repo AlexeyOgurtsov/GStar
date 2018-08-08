@@ -24,7 +24,7 @@ namespace TRBTreeImpl
 	/**
 	* Right child index.
 	*/
-	constexpr NodeChildIndex RIGHT_CHILD_IDX = 0;
+	constexpr NodeChildIndex RIGHT_CHILD_IDX = 1;
 
 	/**
 	* Unically identifies node relative to its parent.
@@ -141,11 +141,19 @@ namespace TRBTreeImpl
 		NodeIndex ParentIdx;
 
 		/**
+		* Has child.
+		*/
+		__forceinline bool HasChild(NodeChildIndex InChildIndex) const
+		{
+			return INDEX_NONE != GetChild(InChildIndex);
+		}
+
+		/**
 		* Index of the child node (0=left; 1=right).
 		*
 		* @returns: child node index, or INDEX_NONE if NO given child.
 		*/
-		int GetChild(NodeChildIndex InChildIndex) const
+		__forceinline int GetChild(NodeChildIndex InChildIndex) const
 		{
 			BOOST_ASSERT_MSG(InChildIndex >= 0, "TRBTreeImpl::Node: GetChild: ChildIndex must be non-negative");
 			BOOST_ASSERT_MSG(InChildIndex <= 1, "TRBTreeImpl::Node: GetChild: ChildIndex is greater than maximal");
