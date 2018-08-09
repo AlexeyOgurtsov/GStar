@@ -3,11 +3,13 @@
 #include <boost/test/included/unit_test.hpp>
 #include "Core/Cont/TRBTree.h"
 #include <algorithm>
+#include <string>
 
 namespace
 {
 
 using IntRBTree = TRBTree<KVType<int, NoValue>>;
+using StringToIntRBTree = TRBTree<KVType<std::string, int>>;
 
 bool ArrayEquals
 (
@@ -167,6 +169,8 @@ BOOST_AUTO_TEST_CASE(IterationRootOnly)
 	IntRBTree::IteratorType It = T.Iterator();
 	BOOST_REQUIRE( ! It.IsEnd() );
 	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType( KEY_ONE, NoValue{} ));
+	BOOST_REQUIRE(It.GetKey() == IntRBTree::KeyType(KEY_ONE));
+	BOOST_REQUIRE(It.GetValue() == IntRBTree::ValueType());
 	It++;
 	BOOST_REQUIRE( It.IsEnd() );
 
@@ -196,11 +200,11 @@ BOOST_AUTO_TEST_CASE(IterationEqual)
 	IntRBTree::IteratorType It_next = T.Iterator();
 	BOOST_REQUIRE(It == It_next);
 
-	BOOST_REQUIRE( ! It.IsEnd() );
-	BOOST_REQUIRE( It_next == It_next );
-	BOOST_REQUIRE( It == It );
+	BOOST_REQUIRE(!It.IsEnd());
+	BOOST_REQUIRE(It_next == It_next);
+	BOOST_REQUIRE(It == It);
 	It_next++;
-	BOOST_REQUIRE( ! (It == It_next));
+	BOOST_REQUIRE(!(It == It_next));
 
 	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_ONE, NoValue{}));
 	It++;
@@ -211,6 +215,34 @@ BOOST_AUTO_TEST_CASE(IterationEqual)
 	It++;
 	BOOST_REQUIRE(It.IsEnd());
 	BOOST_REQUIRE(It_next == It);
+}
+BOOST_AUTO_TEST_CASE(IterNonConst, *boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/IterationSuite/IterationEqual"))
+{
+	StringToIntRBTree T;
+
+	const std::string KEY_ONE = std::string("one");
+	const std::string KEY_TWO = std::string("two");
+	const std::string KEY_THREE = std::string("three");	
+
+	const int VALUE_NEG_ONE = -1;
+
+	BOOST_REQUIRE(T.Add(KEY_ONE, 1));
+	BOOST_REQUIRE(T.Add(KEY_TWO, 2));
+	BOOST_REQUIRE(T.Add(KEY_THREE, 3));
+
+	const std::string KEY_TO_SEARCH = KEY_TWO;
+	const int VALUE_TO_SEARCH = 2;
+	auto It = T.Iterator();
+	while(It.GetKey() != KEY_TO_SEARCH)
+	{
+		++It;
+	}
+	BOOST_REQUIRE(It.GetKey() == KEY_TO_SEARCH);
+	BOOST_REQUIRE(It.GetValue() == VALUE_TO_SEARCH);
+	
+	BOOST_TEST_CHECKPOINT("Modifying where iterator points to");
+	It.SetValue(VALUE_NEG_ONE);
+	BOOST_REQUIRE_EQUAL(It.GetValue(), VALUE_NEG_ONE);
 }
 BOOST_AUTO_TEST_CASE(IterationLeftToParent)
 {

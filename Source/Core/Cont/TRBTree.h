@@ -55,9 +55,16 @@ public:
 	using ValueType = typename KeyValueType::ValueType;
 
 	/**
+	* Type of this tree
+	*/
+	using ThisType = typename TRBTree<KVType<KeyType,ValueType>>;
+
+	/**
 	* Iterator type.
 	*/
-	class TIterator;
+	template<class TreeTypeArg>
+	class TIteratorBase;
+	using TIterator = TIteratorBase<ThisType>;
 	using IteratorType = typename TIterator;
 
 	/**
@@ -255,15 +262,31 @@ public:
 	/**
 	* Iterates KeyValue pairs in the order of their keys.
 	*/
-	class TIterator
+	template<class TreeTypeArg>
+	class TIteratorBase
 	{
 	public:
+		/**
+		* Key/Value type of this iterator.
+		*/
+		using KeyValueType = typename TreeTypeArg::KeyValueType;
+
+		/**
+		* Key that this iterator iterates.
+		*/
+		using KeyType = const typename KeyValueType::KeyType;
+
+		/**
+		* Value that this iterator iterates.
+		*/
+		using ValueType = typename KeyValueType::ValueType;
+
 		/**
 		* Constructs from reference to the given node of the tree.
 		*
 		* If node reference is invalid, End iterator is created.
 		*/
-		TIterator(TRBTree *pInTree, TRBTreeImpl::ChildNodeRef InNodeRef) :
+		TIteratorBase(TreeTypeArg *pInTree, TRBTreeImpl::ChildNodeRef InNodeRef) :
 			pTree{ pInTree }
 		,	NodeRef{ InNodeRef }
 		{
@@ -281,6 +304,16 @@ public:
 		}
 
 		/**
+		* Returns key.
+		*/
+		__forceinline const KeyType& GetKey() const { return GetKeyValue().Key; }
+
+		/**
+		* Returns value.
+		*/
+		__forceinline const ValueType& GetValue() const { return GetKeyValue().Value; }
+
+		/**
 		* Is end iterator.
 		*/
 		__forceinline bool IsEnd() const
@@ -295,9 +328,17 @@ public:
 		__forceinline const KeyValueType& operator*() const { return GetKeyValue(); }
 
 		/**
+		* Sets current value
+		*/
+		void SetValue(const ValueType& InValue)
+		{
+			GetNode()->KV.Value = InValue;
+		}
+
+		/**
 		* Advances iterator to the next KeyValue pair.
 		*/
-		TIterator& operator++()
+		TIteratorBase& operator++()
 		{
 			AdvanceNext();
 			return *this;
@@ -306,43 +347,44 @@ public:
 		/**
 		* Advances iterator to the next KeyValue pair.
 		*/
-		TIterator operator++(int)
+		TIteratorBase operator++(int)
 		{
-			TIterator OldIt = *this;
-			TIterator::operator++();
+			TIteratorBase OldIt = *this;
+			TIteratorBase::operator++();
 			return OldIt;
 		}
 
 		/**
 		* Advances an iterator to previous KeyValue pair.
 		*/
-		TIterator& operator--();
+		TIteratorBase& operator--();
 
 		/**
 		* Advances iterator to the previus KeyValue pair.
 		*/
-		TIterator operator--(int);
+		TIteratorBase operator--(int);
 
-		bool operator==(TIterator B)
+		bool operator==(TIteratorBase B)
 		{
-			if (IsEnd() && B.IsEnd()) 
+			if (IsEnd() && B.IsEnd())
 			{
 				return true;
 			}
-			else if(IsEnd() || B.IsEnd()) 
+			else if (IsEnd() || B.IsEnd())
 			{
 				return false;
 			}
 			return GetKeyValue().Key == B.GetKeyValue().Key;
 		}
 
-		bool operator!=(TIterator B)
+		bool operator!=(TIteratorBase B)
 		{
 			return !(operator==(B));
 		}
 
-	private:
+	protected:
 		const NodeType* GetNode() const { return pTree->GetNode(NodeRef); }
+		NodeType* GetNode() { return pTree->GetNode(NodeRef); }
 
 		void AdvanceNext()
 		{
@@ -387,6 +429,7 @@ public:
 			}
 		}
 
+	private:
 		TRBTree *pTree;
 		TRBTreeImpl::ChildNodeRef NodeRef;
 	};
