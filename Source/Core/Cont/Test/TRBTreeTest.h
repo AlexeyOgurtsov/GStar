@@ -147,6 +147,12 @@ BOOST_AUTO_TEST_CASE(IterationEmpty)
 {
 	IntRBTree T;
 	BOOST_REQUIRE(T.Iterator().IsEnd());
+	int numRangeIterated = 0;
+	for (const IntRBTree::KeyValueType& KV : T)
+	{
+		numRangeIterated++;
+	}
+	BOOST_REQUIRE_EQUAL(0, numRangeIterated);
 }
 BOOST_AUTO_TEST_CASE(IterationRootOnly)
 {
@@ -163,6 +169,15 @@ BOOST_AUTO_TEST_CASE(IterationRootOnly)
 	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType( KEY_ONE, NoValue{} ));
 	It++;
 	BOOST_REQUIRE( It.IsEnd() );
+
+	BOOST_TEST_CHECKPOINT("RangeIteration");
+	std::vector<IntRBTree::KeyValueType> RangeIterated;
+	for (const IntRBTree::KeyValueType& KV : T)
+	{
+		RangeIterated.push_back(KV);
+	}
+	BOOST_REQUIRE_EQUAL(1, RangeIterated.size());
+	BOOST_REQUIRE_EQUAL(RangeIterated[0].Key, KEY_ONE);
 }
 BOOST_AUTO_TEST_CASE(IterationEqual)
 {
@@ -217,6 +232,16 @@ BOOST_AUTO_TEST_CASE(IterationLeftToParent)
 	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_TWO, NoValue{}));
 	It++;
 	BOOST_REQUIRE(It.IsEnd());
+
+	BOOST_TEST_CHECKPOINT("RangeIteration");
+	std::vector<IntRBTree::KeyValueType> RangeIterated;
+	for (const IntRBTree::KeyValueType& KV : T)
+	{
+		RangeIterated.push_back(KV);
+	}
+	BOOST_REQUIRE_EQUAL(2, RangeIterated.size());
+	BOOST_REQUIRE_EQUAL(RangeIterated[0].Key, KEY_ONE);
+	BOOST_REQUIRE_EQUAL(RangeIterated[1].Key, KEY_TWO);
 }
 BOOST_AUTO_TEST_CASE
 (
@@ -246,6 +271,17 @@ BOOST_AUTO_TEST_CASE
 	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType(KEY_THREE, NoValue{}));
 	It++;
 	BOOST_REQUIRE(It.IsEnd());
+
+	BOOST_TEST_CHECKPOINT("RangeIteration");
+	std::vector<IntRBTree::KeyValueType> RangeIterated;
+	for (const IntRBTree::KeyValueType& KV : T)
+	{
+		RangeIterated.push_back(KV);
+	}
+	BOOST_REQUIRE_EQUAL(3, RangeIterated.size());
+	BOOST_REQUIRE_EQUAL(RangeIterated[0].Key, KEY_ONE);
+	BOOST_REQUIRE_EQUAL(RangeIterated[1].Key, KEY_TWO);
+	BOOST_REQUIRE_EQUAL(RangeIterated[2].Key, KEY_THREE);
 }
 BOOST_AUTO_TEST_CASE
 (

@@ -6,8 +6,10 @@
 /**
 * TODO Key/Value iterator:
 * 1. Key and Value helpers
-* 2. Create C-style iterator accessor (begin, end, cbegin, cend)
+* 2. Create C-style iterator accessor (begin, end, cbegin, cend) (+DONE)
 * 3. Const-correctness
+* 4. Insertion whilte iterating
+* 5. Backward iteration
 *
 * TODO:
 * 1. Create the Stack-overflow unit-test for traverse;
@@ -103,6 +105,16 @@ public:
 			return TIterator(this, GetDeepestNodeRef(TRBTreeImpl::ChildNodeRef::RootNode(), TRBTreeImpl::LEFT_CHILD_IDX));
 		}
 	}
+
+	/**
+	* C++ range iteration support.
+	*/
+	TIterator begin() { return Iterator(); }
+
+	/**
+	* C++ range iteration support.
+	*/
+	TIterator end() { return TIterator(this, TRBTreeImpl::ChildNodeRef::Invalid()); }
 
 	/**
 	* Returns KeyValue with a minimal key.
@@ -313,13 +325,20 @@ public:
 
 		bool operator==(TIterator B)
 		{
-			if (IsEnd() && B.IsEnd()) { return true; }
+			if (IsEnd() && B.IsEnd()) 
+			{
+				return true;
+			}
+			else if(IsEnd() || B.IsEnd()) 
+			{
+				return false;
+			}
 			return GetKeyValue().Key == B.GetKeyValue().Key;
 		}
 
 		bool operator!=(TIterator B)
 		{
-			return !(operator==(*this, B));
+			return !(operator==(B));
 		}
 
 	private:
