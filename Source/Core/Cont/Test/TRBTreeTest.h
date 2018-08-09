@@ -11,6 +11,13 @@ namespace
 using IntRBTree = TRBTree<KVType<int, NoValue>>;
 using StringToIntRBTree = TRBTree<KVType<std::string, int>>;
 
+
+const std::string STR_KEY_ONE = std::string("one");
+const std::string STR_KEY_TWO = std::string("two");
+const std::string STR_KEY_THREE = std::string("three");
+
+const int VALUE_NEG_ONE = -1;
+
 bool ArrayEquals
 (
 	const TKeyValue<KVType<int, NoValue>>* A, 
@@ -171,7 +178,10 @@ BOOST_AUTO_TEST_CASE(IterationRootOnly)
 	BOOST_REQUIRE(It.GetKeyValue() == IntRBTree::KeyValueType( KEY_ONE, NoValue{} ));
 	BOOST_REQUIRE(It.GetKey() == IntRBTree::KeyType(KEY_ONE));
 	BOOST_REQUIRE(It.GetValue() == IntRBTree::ValueType());
-	It++;
+	auto OldIt = It;
+	auto OldIt2 = It++;
+	// We must test the postfix increment
+	BOOST_REQUIRE(OldIt == OldIt2);
 	BOOST_REQUIRE( It.IsEnd() );
 
 	BOOST_TEST_CHECKPOINT("RangeIteration");
@@ -183,6 +193,79 @@ BOOST_AUTO_TEST_CASE(IterationRootOnly)
 	BOOST_REQUIRE_EQUAL(1, RangeIterated.size());
 	BOOST_REQUIRE_EQUAL(RangeIterated[0].Key, KEY_ONE);
 }
+
+void ConstIteratorTest_ConstContext(const StringToIntRBTree& T)
+{
+	// WARNING!!! Never check keys or value (it's string - we do not know order of its iteration intuitively)
+	StringToIntRBTree::ConstIteratorType cit = T.ConstIterator();
+	BOOST_REQUIRE( ! cit.IsEnd() );
+	++cit;
+	BOOST_REQUIRE(!cit.IsEnd());
+	++cit;
+	BOOST_REQUIRE(!cit.IsEnd());
+	++cit;
+	BOOST_REQUIRE(cit.IsEnd());
+
+	// Checking range loop:
+	std::vector<StringToIntRBTree::KeyValueType> IteratedPairs;
+	for (const StringToIntRBTree::KeyValueType& KV : T)
+	{
+		IteratedPairs.push_back(KV);
+	}
+	BOOST_REQUIRE_EQUAL(IteratedPairs.size(), T.Num());
+
+	// Should not be compilable:
+	//cit.SetValue(3);
+}
+
+void ConstIteratorTest_Copy(const StringToIntRBTree& TC, StringToIntRBTree& T)
+{
+	BOOST_REQUIRE(TC.Iterator() == T.ConstIterator());
+	StringToIntRBTree::ConstIteratorType cit = TC.Iterator();
+	StringToIntRBTree::IteratorType it = T.Iterator();
+
+	BOOST_TEST_CHECKPOINT("Iterator copy-construct test");
+	StringToIntRBTree::ConstIteratorType new_cit_copied_from_it = it;
+	BOOST_REQUIRE(it == new_cit_copied_from_it);
+
+	BOOST_TEST_CHECKPOINT("Iterator copy test");
+	++new_cit_copied_from_it;
+	new_cit_copied_from_it = it;
+	BOOST_REQUIRE(it == new_cit_copied_from_it);
+}
+
+void ConstIteratorTest_Equality(const StringToIntRBTree& TC, StringToIntRBTree& T)
+{
+	StringToIntRBTree::ConstIteratorType cit = TC.Iterator();
+	StringToIntRBTree::IteratorType it = T.Iterator();
+
+	BOOST_REQUIRE_EQUAL(cit.GetKeyValue(), it.GetKeyValue());
+	BOOST_REQUIRE_EQUAL(cit.GetKey(), it.GetKey());
+	BOOST_REQUIRE_EQUAL(cit.GetValue(), it.GetValue());
+
+	BOOST_TEST_CHECKPOINT("Checking const/non-const iterator equality");
+	BOOST_REQUIRE(cit == it);
+	BOOST_REQUIRE(it == cit);
+
+	BOOST_TEST_CHECKPOINT("Checking const/non-const iterator non-equality");
+	++it;
+	BOOST_REQUIRE(cit != it);
+	BOOST_REQUIRE(it != cit);
+}
+
+BOOST_AUTO_TEST_CASE(ConstIteratorTest, *boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/IterationSuite/IterationRootOnly"))
+{
+	StringToIntRBTree T;
+
+	BOOST_REQUIRE(T.Add(STR_KEY_ONE, 1));
+	BOOST_REQUIRE(T.Add(STR_KEY_TWO, 2));
+	BOOST_REQUIRE(T.Add(STR_KEY_THREE, 3));
+
+	ConstIteratorTest_ConstContext(T);
+	ConstIteratorTest_Equality(T, T);
+	ConstIteratorTest_Copy(T, T);
+}
+
 BOOST_AUTO_TEST_CASE(IterationEqual)
 {
 	// WARNING!!! Key values matter!

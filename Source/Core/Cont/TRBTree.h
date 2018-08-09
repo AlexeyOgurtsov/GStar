@@ -2,14 +2,13 @@
 
 #include "Priv/TRBTreeImpl.h"
 #include "../Cont/TVector.h"
+#include <tuple>
+#include <type_traits>
 
 /**
 * TODO Key/Value iterator:
-* 1. Key and Value helpers
-* 2. Create C-style iterator accessor (begin, end, cbegin, cend) (+DONE)
-* 3. Const-correctness
-* 4. Insertion whilte iterating
-* 5. Backward iteration
+* 1. Insertion while iterating
+* 2. Backward iteration
 *
 * TODO:
 * 1. Create the Stack-overflow unit-test for traverse;
@@ -54,19 +53,24 @@ public:
 	*/
 	using ValueType = typename KeyValueType::ValueType;
 
+private:
+	static auto GetThisTypeHelper() -> std::remove_reference_t<decltype(*this)>;
+
+public:
 	/**
 	* Type of this tree
 	*/
-	using ThisType = typename TRBTree<KVType<KeyType,ValueType>>;
+	using ThisType = decltype(GetThisTypeHelper());
 
 	/**
 	* Iterator type.
 	*/
 	template<class TreeTypeArg>
 	class TIteratorBase;
-	using TIterator = TIteratorBase<ThisType>;
-	using IteratorType = typename TIterator;
 
+	using IteratorType = TIteratorBase<ThisType>;
+	using ConstIteratorType = TIteratorBase<const ThisType>;
+	
 	/**
 	* Capacity to be used for the buffer by default.
 	*/
@@ -101,27 +105,56 @@ public:
 	/**
 	* Returns iterator to the first Key/Value pair.
 	*/
-	TIterator Iterator()
+	ConstIteratorType Iterator() const
 	{
-		if (Empty())
-		{
-			return TIterator(this, TRBTreeImpl::ChildNodeRef::Invalid());
-		}
-		else
-		{
-			return TIterator(this, GetDeepestNodeRef(TRBTreeImpl::ChildNodeRef::RootNode(), TRBTreeImpl::LEFT_CHILD_IDX));
-		}
+		return GetFirstIteratorImpl<ConstIteratorType>(this);
+	}
+
+	/**
+	* Returns iterator to the first Key/Value pair.
+	*/
+	IteratorType Iterator()
+	{
+		return GetFirstIteratorImpl<IteratorType>(this);
+	}
+
+	/**
+	* Returns const iterator to the first Key/Value pair.
+	*/
+	ConstIteratorType ConstIterator() const
+	{
+		return GetFirstIteratorImpl<ConstIteratorType>(this);
 	}
 
 	/**
 	* C++ range iteration support.
 	*/
-	TIterator begin() { return Iterator(); }
+	IteratorType begin() { return Iterator(); }
 
 	/**
 	* C++ range iteration support.
 	*/
-	TIterator end() { return TIterator(this, TRBTreeImpl::ChildNodeRef::Invalid()); }
+	ConstIteratorType begin() const { return ConstIterator(); }
+
+	/**
+	* C++ range iteration support.
+	*/
+	ConstIteratorType cbegin() const { return begin(); }
+
+	/**
+	* C++ range iteration support.
+	*/
+	IteratorType end() { return IteratorType::EndIterator(this); }
+
+	/**
+	* C++ range iteration support.
+	*/
+	ConstIteratorType end() const { return ConstIteratorType::EndIterator(this); }
+
+	/**
+	* C++ range iteration support.
+	*/
+	ConstIteratorType cend() const { return end(); }
 
 	/**
 	* Returns KeyValue with a minimal key.
@@ -266,6 +299,9 @@ public:
 	class TIteratorBase
 	{
 	public:
+		template<class OtherTreeType>
+		friend class TIteratorBase;
+
 		/**
 		* Key/Value type of this iterator.
 		*/
@@ -282,7 +318,7 @@ public:
 		using ValueType = typename KeyValueType::ValueType;
 
 		/**
-		* Constructs from reference to the given node of the tree.
+		* Constructs iterator from reference to the given node of the tree.
 		*
 		* If node reference is invalid, End iterator is created.
 		*/
@@ -291,6 +327,35 @@ public:
 		,	NodeRef{ InNodeRef }
 		{
 			BOOST_ASSERT(pTree);
+		}
+
+		/**
+		* Copy constructs.
+		*/
+		template<class OtherTreeType>
+		TIteratorBase(const TIteratorBase<OtherTreeType>& InOther) :
+			NodeRef{TRBTreeImpl::ChildNodeRef::Invalid()}
+		{
+			*this = InOther;
+		}
+
+		/**
+		* Copies.
+		*/
+		template<class OtherTreeType>
+		TIteratorBase& operator=(const TIteratorBase<OtherTreeType>& InOther)
+		{
+			pTree = InOther.pTree;
+			NodeRef = InOther.NodeRef;
+			return *this;
+		}
+
+		/**
+		* Returns End iterator.
+		*/
+		static TIteratorBase EndIterator(TreeTypeArg *pInTree)
+		{
+			return TIteratorBase(pInTree, TRBTreeImpl::ChildNodeRef::Invalid());
 		}
 
 		/**
@@ -364,7 +429,8 @@ public:
 		*/
 		TIteratorBase operator--(int);
 
-		bool operator==(TIteratorBase B)
+		template<class OtherTreeType>
+		bool operator==(TIteratorBase<OtherTreeType> B)
 		{
 			if (IsEnd() && B.IsEnd())
 			{
@@ -377,14 +443,14 @@ public:
 			return GetKeyValue().Key == B.GetKeyValue().Key;
 		}
 
-		bool operator!=(TIteratorBase B)
+		template<class OtherTreeType>
+		bool operator!=(TIteratorBase<OtherTreeType> B)
 		{
 			return !(operator==(B));
 		}
 
 	protected:
-		const NodeType* GetNode() const { return pTree->GetNode(NodeRef); }
-		NodeType* GetNode() { return pTree->GetNode(NodeRef); }
+		decltype(auto) GetNode() const { return pTree->GetNode(NodeRef); }
 
 		void AdvanceNext()
 		{
@@ -430,7 +496,7 @@ public:
 		}
 
 	private:
-		TRBTree *pTree;
+		TreeTypeArg *pTree;
 		TRBTreeImpl::ChildNodeRef NodeRef;
 	};
 
@@ -797,6 +863,24 @@ private:
 		BOOST_ASSERT_MSG(INDEX_NONE != NextChildParentIdx, "TRBTree::GetChildNodeRef: the given child must exist");
 		
 		return TRBTreeImpl::ChildNodeRef{ NextChildParentIdx, InChildIdx };
+	}
+
+	/**
+	* Returns iterator to the first element.
+	*
+	* NOTE: We pass this pointer to make this function act either like const or mutable depending on context,
+	* however formally be const.
+	*/
+	template<class IteratorTypeArg, class ThisTypeArg> IteratorTypeArg GetFirstIteratorImpl(ThisTypeArg InThisPtr) const
+	{
+		if (Empty())
+		{
+			return IteratorTypeArg(InThisPtr, TRBTreeImpl::ChildNodeRef::Invalid());
+		}
+		else
+		{
+			return IteratorTypeArg(InThisPtr, GetDeepestNodeRef(TRBTreeImpl::ChildNodeRef::RootNode(), TRBTreeImpl::LEFT_CHILD_IDX));
+		}
 	}
 
 	/**
