@@ -42,17 +42,17 @@ BOOST_AUTO_TEST_CASE(MainTest)
 	bool const bOneLessEqualTwo = CompareLessOrEqual(1, 2, DefaultComparer);
 	BOOST_REQUIRE(bOneLessEqualTwo);
 
-	bool const bOneGreaterEqualTwo = CompareLessOrEqual(1, 2, DefaultComparer);
+	bool const bOneGreaterEqualTwo = CompareGreaterOrEqual(1, 2, DefaultComparer);
 	BOOST_REQUIRE(!bOneGreaterEqualTwo);
 
 	bool const bTwoEqualOne = CompareEqual(1, 2, DefaultComparer);
 	BOOST_REQUIRE(!bTwoEqualOne);
 
 	bool const bTwoLessEqualOne = CompareLessOrEqual(2, 1, DefaultComparer);
-	BOOST_REQUIRE(bTwoLessEqualOne);
+	BOOST_REQUIRE(!bTwoLessEqualOne);
 
-	bool const bTwoGreaterEqualOne = CompareLessOrEqual(2, 1, DefaultComparer);
-	BOOST_REQUIRE(!bTwoGreaterEqualOne);
+	bool const bTwoGreaterEqualOne = CompareGreaterOrEqual(2, 1, DefaultComparer);
+	BOOST_REQUIRE(bTwoGreaterEqualOne);
 }
 
 BOOST_AUTO_TEST_CASE

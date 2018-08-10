@@ -1,6 +1,46 @@
 #pragma once
 
 /**
+* Result of A,B comparison: A < B
+*/
+constexpr int COMPARE_LESS = -1;
+
+/**
+* Result of A,B comparison: A == B
+*/
+constexpr int COMPARE_EQUAL = 0;
+
+/**
+* Result of A,B comparison: A > B
+*/
+constexpr int COMPARE_GREATER = 1;
+
+/**
+* Helper function for checking result of the Comparer's Compare function on equality.
+*/
+__forceinline bool CompareEqual(int InCompareResult) { return COMPARE_EQUAL == InCompareResult; }
+
+/**
+* Helper function for checking result of the Comparer's Compare function on A < B.
+*/
+__forceinline bool CompareLess(int InCompareResult) { return COMPARE_LESS == InCompareResult; }
+
+/**
+* Helper function for checking result of the Comparer's Compare function on A > B.
+*/
+__forceinline bool CompareGreater(int InCompareResult) { return COMPARE_GREATER == InCompareResult; }
+
+/**
+* Helper function for checking result of the Comparer's Compare function on A <= B.
+*/
+__forceinline bool CompareLessOrEqual(int InCompareResult) { return InCompareResult <= COMPARE_EQUAL; }
+
+/**
+* Helper function for checking result of the Comparer's Compare function on A >= B.
+*/
+__forceinline bool CompareGreaterOrEqual(int InCompareResult) { return COMPARE_EQUAL <=  InCompareResult; }
+
+/**
 * Default comparer.
 * Uses the operator< for less comparison and > for greater comparison.
 */
@@ -20,15 +60,15 @@ struct TComparer
 	{
 		if (A < B)
 		{
-			return -1;
+			return COMPARE_LESS;
 		}
 
 		if (B < A)
 		{
-			return 1;
+			return COMPARE_GREATER;
 		}
 
-		return 0;
+		return COMPARE_EQUAL;
 	}
 };
 
@@ -44,31 +84,29 @@ int DefaultCompare(const LT& A, const RT& B)
 template<class LT, class RT>
 bool CompareLess(const LT& A, const RT& B, TComparer<LT, RT> Comparer)
 {
-	return Comparer.Compare(A, B) < 0;
+	return CompareLess(Comparer.Compare(A, B));
 }
 
 template<class LT, class RT>
 bool CompareGreater(const LT& A, const RT& B, TComparer<LT, RT> Comparer)
 {
-	return Comparer.Compare(A, B) > 0;
+	return CompareGreater(Comparer.Compare(A, B));
 }
-
 
 template<class LT, class RT>
 bool CompareEqual(const LT& A, const RT& B, TComparer<LT, RT> Comparer)
 {
-	return Comparer.Compare(A,B) == 0;
+	return CompareEqual(Comparer.Compare(A,B));
 }
-
 
 template<class LT, class RT>
 bool CompareLessOrEqual(const LT& A, const RT& B, TComparer<LT, RT> Comparer)
 {
-	return Comparer.Compare(A, B) <= 0;
+	return CompareLessOrEqual(Comparer.Compare(A, B));
 }
 
 template<class LT, class RT>
 bool CompareGreaterOrEqual(const LT& A, const RT& B, TComparer<LT, RT> Comparer)
 {
-	return Comparer.Compare(A, B) >= 0;
+	return CompareGreaterOrEqual(Comparer.Compare(A, B));
 }

@@ -2,6 +2,7 @@
 
 #include "Priv/TRBTreeImpl.h"
 #include "../Cont/TVector.h"
+#include "../Templ/TComparer.h"
 #include <tuple>
 #include <type_traits>
 
@@ -13,13 +14,10 @@
 * TODO:
 * 1. Create the Stack-overflow unit-test for traverse;
 *
-* TODO Node Iterator:
-* 1. Make const-correct
-*
 * TODO First:
 * 1. Add.
+* 1.1. Implement balancing
 * 2. Remove.
-* 3. Find
 *
 * TODO Third:
 * 1. Clear()
@@ -27,6 +25,8 @@
 *
 * TODO Generalize:
 * 1. Provide the means to select the key comparison function.
+* 1.1. Find (+DONE)
+* 1.2. Add
 */
 
 /**
@@ -191,13 +191,24 @@ public:
 	*/
 	const KeyValueType* Find(const KeyType& InKey) const
 	{
+		return Find(InKey, TComparer<KeyType, KeyType>());
+	}
+
+	/**
+	* Searches Key-Value pair by the given key using the given comparer.
+	*
+	* @Returns: Pointer to the Key-Value pair (or nullptr, if NOT found).
+	*/
+	template<class SearchKeyType, class ComparerType>
+	const KeyValueType* Find(const SearchKeyType& InKey, ComparerType InComparer) const
+	{
 		if (Empty())
 		{
 			return nullptr;
 		}
 
 		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
-		bool bFound = FindNode(InKey, /*OutNodeRef*/ NodeRef);
+		bool bFound = FindNode(InKey, /*OutNodeRef*/ NodeRef, InComparer);
 		if ( ! bFound )
 		{
 			return nullptr;
@@ -574,7 +585,8 @@ private:
 	static bool KeyLess(const KeyType& A, const KeyType& B)
 	{
 		// TODO: Provide the means to customize the compare function.
-		return A < B;
+		TComparer<KeyType, KeyType> Comparer;
+		return CompareLess(A, B, Comparer);
 	}
 
 	/**
@@ -582,7 +594,9 @@ private:
 	*/
 	static bool KeyEqual(const KeyType& A, const KeyType& B)
 	{
-		return ( ! KeyLess(A,B) ) && ( ! KeyLess(B, A) );
+		// TODO: Provide the means to customize the compare function.
+		TComparer<KeyType, KeyType> Comparer;
+		return CompareEqual(A, B, Comparer);
 	}
 
 	/**
@@ -632,7 +646,11 @@ private:
 	*
 	* Returns true, if the node is found.
 	*/
-	bool FindNode(const KeyType& InKey, TRBTreeImpl::ChildNodeRef& OutNodeRef ) const
+	template<class SearchKeyType, class Comparer>
+	bool FindNode
+	(
+		const SearchKeyType& InKey, TRBTreeImpl::ChildNodeRef& OutNodeRef, Comparer InComparer
+	) const
 	{
 		BOOST_ASSERT_MSG( ! Empty(), "TRBTree: FindNode: Container must be non-empty" );
 
@@ -642,16 +660,19 @@ private:
 		while (true)
 		{
 			const KeyType* pCurrKey = &(It.GetNode()->GetKey());
-			if(KeyEqual(InKey, *pCurrKey))
+
+			int CompareResult = InComparer.Compare(*pCurrKey, InKey);
+			
+			if (CompareEqual(CompareResult))
 			{
 				return true;
 			}
 
-			if(KeyLess(InKey, *pCurrKey)) 
+			if(CompareGreater(CompareResult))
 			{
 				It = It.GetLeft();
 			}
-			else if(KeyLess(*pCurrKey, InKey))
+			else if(CompareLess(CompareResult))
 			{
 				It = It.GetRight();
 			}
@@ -682,7 +703,7 @@ private:
 			return true;
 		}
 
-		if ( FindNode(InKV.Key, /*OutNodeRef*/OutChildNodeRef) )
+		if ( FindNode(InKV.Key, /*OutNodeRef*/OutChildNodeRef, TComparer<KeyType, KeyType>()) )
 		{
 			return false;
 		}
