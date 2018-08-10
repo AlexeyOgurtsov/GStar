@@ -40,6 +40,12 @@
     <Filter Include="Cont\UT\Test">
       <UniqueIdentifier>{3e80beaf-5851-4e4c-9241-2bcd02775d25}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Templ">
+      <UniqueIdentifier>{8bfc2800-f14d-4f3f-9a7e-a782ab12e133}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Templ\Test">
+      <UniqueIdentifier>{8c8eda12-cb51-4bfe-9bbd-43b77b580a9f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Core\Str\IdentStr.h">
@@ -92,6 +98,15 @@
     </ClInclude>
     <ClInclude Include="..\..\Core\Cont\UT\Test\TKeyValueTester.h">
       <Filter>Cont\UT\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Templ\Test\TemplTest.h">
+      <Filter>Templ\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Templ\Test\ComparerTest.h">
+      <Filter>Templ\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Templ\TComparer.h">
+      <Filter>Templ</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
