@@ -13,3 +13,6 @@ LATER:
 * IdentStr and its storage (make IdentStr use index, not ptr);
 * Core exception (depends on String)
 * Typed index (cannot be explicitly converted to int)
+* Core operations:
+Neg (to avoid nasty hard-to-debug minus sign)
+* Hash provider

@@ -13,7 +13,7 @@ BOOST_AUTO_TEST_SUITE(DefaultComparer)
 
 BOOST_AUTO_TEST_CASE(MainTest)
 {
-	TComparer<int, int> const DefaultComparer;
+	TGeneralComparer<int, int> const DefaultComparer;
 
 	bool const bOneLessTwo = CompareLess(1, 2, DefaultComparer);
 	BOOST_REQUIRE(bOneLessTwo);
@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE
 	*boost::unit_test::depends_on("Core/Templ/TComparerSuite/DefaultComparer/MainTest")
 )
 {
-	TComparer<int, unsigned int> const DefaultComparer;
+	TGeneralComparer<int, unsigned int> const DefaultComparer;
 
 	bool const bOneLessTwo = CompareLess(1, static_cast<unsigned int>(2), DefaultComparer);
 	BOOST_REQUIRE(bOneLessTwo);
@@ -93,7 +93,7 @@ struct TestObjectForComparer
 };
 
 template<>
-struct TComparer<TestObjectForComparer, TestObjectForComparer>
+struct TGeneralComparer<TestObjectForComparer, TestObjectForComparer>
 {
 	int Compare(const TestObjectForComparer& A, const TestObjectForComparer& B) const
 	{
@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE
 	*boost::unit_test::depends_on("Core/Templ/TComparerSuite/DefaultComparer/DifferentTypesTest")
 )
 {
-	TComparer<TestObjectForComparer, TestObjectForComparer> const DefaultComparer;
+	TGeneralComparer<TestObjectForComparer, TestObjectForComparer> const DefaultComparer;
 	
 	bool const bOneLessTwo = CompareLess(TestObjectForComparer{ 1 }, TestObjectForComparer{ 2 }, DefaultComparer);
 	BOOST_REQUIRE(bOneLessTwo);
@@ -132,6 +132,27 @@ BOOST_AUTO_TEST_CASE
 }
 
 BOOST_AUTO_TEST_SUITE_END() // DefaultComparer
+
+BOOST_AUTO_TEST_SUITE(HelperComparerSuite)
+
+BOOST_AUTO_TEST_CASE(DereferenceComparer)
+{
+	const int A = 1;
+	const int B = 2;
+	const int * const pA = &A;
+	const int * const pB = &B;
+
+	TDereferenceComparer<int> DereferenceComparer;
+	TLeftDereferenceComparer<int> LeftDereferenceComparer;
+	TRightDereferenceComparer<int> RightDereferenceComparer;
+
+	BOOST_REQUIRE(CompareLess(DereferenceComparer.Compare(pA,pB)));
+	BOOST_REQUIRE(CompareLess(LeftDereferenceComparer.Compare(pA, B)));
+	BOOST_REQUIRE(CompareLess(RightDereferenceComparer.Compare(A, pB)));
+}
+
+BOOST_AUTO_TEST_SUITE_END() // HelperComparerSuite
+
 BOOST_AUTO_TEST_SUITE_END() // TComparerSuite
 BOOST_AUTO_TEST_SUITE_END() // Templ
 BOOST_AUTO_TEST_SUITE_END() // Core

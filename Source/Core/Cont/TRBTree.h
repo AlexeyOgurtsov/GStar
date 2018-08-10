@@ -22,11 +22,6 @@
 * TODO Third:
 * 1. Clear()
 * 2. CopyTo(TArray) function.
-*
-* TODO Generalize:
-* 1. Provide the means to select the key comparison function.
-* 1.1. Find (+DONE)
-* 1.2. Add
 */
 
 /**
@@ -34,7 +29,7 @@
 *
 * WARNING!!! This implementation does NOT automatically frees the node memory.
 */
-template<class KVTypeArg>
+template<class KVTypeArg, class ComparerArg = TComparer<typename KVTypeArg::KeyType>>
 class TRBTree
 {
 public:
@@ -66,10 +61,10 @@ public:
 	* Iterator type.
 	*/
 	template<class TreeTypeArg>
-	class TIteratorBase;
+	class TGeneralIterator;
 
-	using IteratorType = TIteratorBase<ThisType>;
-	using ConstIteratorType = TIteratorBase<const ThisType>;
+	using IteratorType = TGeneralIterator<ThisType>;
+	using ConstIteratorType = TGeneralIterator<const ThisType>;
 	
 	/**
 	* Capacity to be used for the buffer by default.
@@ -191,7 +186,7 @@ public:
 	*/
 	const KeyValueType* Find(const KeyType& InKey) const
 	{
-		return Find(InKey, TComparer<KeyType, KeyType>());
+		return Find(InKey, ComparerArg());
 	}
 
 	/**
@@ -307,11 +302,11 @@ public:
 	* Iterates KeyValue pairs in the order of their keys.
 	*/
 	template<class TreeTypeArg>
-	class TIteratorBase
+	class TGeneralIterator
 	{
 	public:
 		template<class OtherTreeType>
-		friend class TIteratorBase;
+		friend class TGeneralIterator;
 
 		/**
 		* Key/Value type of this iterator.
@@ -333,7 +328,7 @@ public:
 		*
 		* If node reference is invalid, End iterator is created.
 		*/
-		TIteratorBase(TreeTypeArg *pInTree, TRBTreeImpl::ChildNodeRef InNodeRef) :
+		TGeneralIterator(TreeTypeArg *pInTree, TRBTreeImpl::ChildNodeRef InNodeRef) :
 			pTree{ pInTree }
 		,	NodeRef{ InNodeRef }
 		{
@@ -344,7 +339,7 @@ public:
 		* Copy constructs.
 		*/
 		template<class OtherTreeType>
-		TIteratorBase(const TIteratorBase<OtherTreeType>& InOther) :
+		TGeneralIterator(const TGeneralIterator<OtherTreeType>& InOther) :
 			NodeRef{TRBTreeImpl::ChildNodeRef::Invalid()}
 		{
 			*this = InOther;
@@ -354,7 +349,7 @@ public:
 		* Copies.
 		*/
 		template<class OtherTreeType>
-		TIteratorBase& operator=(const TIteratorBase<OtherTreeType>& InOther)
+		TGeneralIterator& operator=(const TGeneralIterator<OtherTreeType>& InOther)
 		{
 			pTree = InOther.pTree;
 			NodeRef = InOther.NodeRef;
@@ -364,9 +359,9 @@ public:
 		/**
 		* Returns End iterator.
 		*/
-		static TIteratorBase EndIterator(TreeTypeArg *pInTree)
+		static TGeneralIterator EndIterator(TreeTypeArg *pInTree)
 		{
-			return TIteratorBase(pInTree, TRBTreeImpl::ChildNodeRef::Invalid());
+			return TGeneralIterator(pInTree, TRBTreeImpl::ChildNodeRef::Invalid());
 		}
 
 		/**
@@ -414,7 +409,7 @@ public:
 		/**
 		* Advances iterator to the next KeyValue pair.
 		*/
-		TIteratorBase& operator++()
+		TGeneralIterator& operator++()
 		{
 			AdvanceNext();
 			return *this;
@@ -423,25 +418,25 @@ public:
 		/**
 		* Advances iterator to the next KeyValue pair.
 		*/
-		TIteratorBase operator++(int)
+		TGeneralIterator operator++(int)
 		{
-			TIteratorBase OldIt = *this;
-			TIteratorBase::operator++();
+			TGeneralIterator OldIt = *this;
+			TGeneralIterator::operator++();
 			return OldIt;
 		}
 
 		/**
 		* Advances an iterator to previous KeyValue pair.
 		*/
-		TIteratorBase& operator--();
+		TGeneralIterator& operator--();
 
 		/**
 		* Advances iterator to the previus KeyValue pair.
 		*/
-		TIteratorBase operator--(int);
+		TGeneralIterator operator--(int);
 
 		template<class OtherTreeType>
-		bool operator==(TIteratorBase<OtherTreeType> B)
+		bool operator==(TGeneralIterator<OtherTreeType> B)
 		{
 			if (IsEnd() && B.IsEnd())
 			{
@@ -455,7 +450,7 @@ public:
 		}
 
 		template<class OtherTreeType>
-		bool operator!=(TIteratorBase<OtherTreeType> B)
+		bool operator!=(TGeneralIterator<OtherTreeType> B)
 		{
 			return !(operator==(B));
 		}
@@ -580,26 +575,6 @@ private:
 	};
 
 	/**
-	* Returns true if left key less than right according to the used compare function.
-	*/
-	static bool KeyLess(const KeyType& A, const KeyType& B)
-	{
-		// TODO: Provide the means to customize the compare function.
-		TComparer<KeyType, KeyType> Comparer;
-		return CompareLess(A, B, Comparer);
-	}
-
-	/**
-	* Returns true if left key equals right according to the used compare function.
-	*/
-	static bool KeyEqual(const KeyType& A, const KeyType& B)
-	{
-		// TODO: Provide the means to customize the compare function.
-		TComparer<KeyType, KeyType> Comparer;
-		return CompareEqual(A, B, Comparer);
-	}
-
-	/**
 	* Searches Value by the given key.
 	*
 	* @Returns: Pointer to the Value (or nullptr, if NOT found).
@@ -703,7 +678,7 @@ private:
 			return true;
 		}
 
-		if ( FindNode(InKV.Key, /*OutNodeRef*/OutChildNodeRef, TComparer<KeyType, KeyType>()) )
+		if ( FindNode(InKV.Key, /*OutNodeRef*/OutChildNodeRef, ComparerArg()) )
 		{
 			return false;
 		}
