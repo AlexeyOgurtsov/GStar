@@ -7,6 +7,16 @@
 #include <type_traits>
 
 /**
+* TODO Balancing:
+* 1. Color the root node appropriately in the AddNewNode
+* 2. Helper operations
+* 2.1. MoveSubtree
+* 2.2.  
+* 3. Implement Rotate operations
+* 4. Balancing function
+* 5. Checker for tree balance state.
+* 6. Write tests
+*
 * TODO Key/Value iterator:
 * 1. Insertion while iterating
 * 2. Backward iteration
@@ -234,7 +244,14 @@ public:
 	bool Add(const KeyType& InKey, const ValueType& InValue)
 	{
 		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
-		return AddNewNode(KeyValueType{InKey,InValue}, /*Out*/ NodeRef);
+		bool const bAdded = AddNewNode(KeyValueType{InKey,InValue}, /*Out*/ NodeRef);
+		if (bAdded && Num() >= 3)
+		{
+			FixupRedBlackAfterAdd(NodeRef);
+		}
+		// Uncomment for testing purposes only (will greately slow):
+		BOOST_ASSERT_MSG(DebugCheckValid(), "TRBTree::Add: tree state must be valid");
+		return bAdded;
 	}
 
 	/**
@@ -290,6 +307,170 @@ public:
 		}
 
 		return TraverseSubtree(TRBTreeImpl::ChildNodeRef::RootNode(), Func);
+	}
+
+	/**
+	* Checks that tree is in the correct state.
+	* Slow! To be called on the unit-testing stage only.
+	*
+	* Checks that: 
+	* - Tree is correct;
+	* - Red-black invariants hold;
+	*/
+	bool DebugCheckValid()
+	{
+		if (Num() == 0) { return true; }
+
+		if ( GetNode(RootIdx)->IsRed() ) { return false; }
+
+		struct SubtreeContext
+		{
+			TRBTreeImpl::ChildNodeRef NodeRef;
+			const SubtreeContext* pParent = nullptr;
+			const SubtreeContext* pMaxAncestor = nullptr;
+			const SubtreeContext* pMinAncestor = nullptr;
+
+			/**
+			* Count of black nodes on the path from the root to this node. 
+			* Nil nodes are excluded.
+			*/
+			int BlackPathLength = 0;
+
+			bool IsRoot() const { return NodeRef.IsRoot(); }
+
+			const KeyType* GetMinKey(const TRBTree* pTree) const
+			{
+				return pMinAncestor ? &pMinAncestor->GetKey(pTree) : nullptr;
+			}
+
+			const KeyType* GetMaximKey(const TRBTree* pTree) const
+			{
+				return pMaxAncestor ? &pMaxAncestor->GetKey(pTree) : nullptr;
+			}
+
+			const KeyType& GetKey(const TRBTree* pTree) const
+			{
+				return GetNode(pTree)->GetKey();
+			}
+
+			const KeyType& GetParentKey(const TRBTree* pTree) const
+			{
+				BOOST_ASSERT(pParent);
+				return pParent->GetKey(pTree);
+			}
+			const NodeType* GetNode(const TRBTree* pTree) const { return pTree->GetNode(NodeRef); }
+			const SubtreeContext* GetGrandpa() const
+			{
+				if (IsRoot() || pParent->IsRoot())
+				{
+					return nullptr; 
+				}
+			 	return pParent->pParent;
+			}
+
+			SubtreeContext
+			(
+				TRBTreeImpl::ChildNodeRef InNodeRef, const SubtreeContext* pInParent,
+				const SubtreeContext* pInMinAncestor,
+				const SubtreeContext* pInMaxAncestor,
+				int InBlackPathLength
+			) :
+				NodeRef(InNodeRef)
+			,	pParent(pInParent) 
+			,	pMaxAncestor(pInMaxAncestor)
+			,	pMinAncestor(pInMinAncestor)
+			,	BlackPathLength(InBlackPathLength)
+			{
+				BOOST_ASSERT(pParent || InNodeRef.IsRoot());
+				BOOST_ASSERT(pMaxAncestor || pMinAncestor || InNodeRef.IsRoot());
+			}
+		};
+
+		/**
+		* Points to the node that is a leaf of the reference black path node.
+		*/
+		const SubtreeContext* pReferenceBlackPath = nullptr;
+		/**
+		* Contains a context for each iterated element.
+		*/
+		TVector<SubtreeContext> Way;
+		Way.ReserveGrow(Num());
+		Way.Push(SubtreeContext{ TRBTreeImpl::ChildNodeRef::RootNode(), nullptr, nullptr, nullptr, 0 });
+		for (int CurrNodeIdx = 0; CurrNodeIdx < Num(); CurrNodeIdx++)
+		{
+			const SubtreeContext* pNode = &Way[CurrNodeIdx];
+
+			bool bLeaf = true;
+			for (TRBTreeImpl::NodeChildIndex childIdx = TRBTreeImpl::LEFT_CHILD_IDX; childIdx <= TRBTreeImpl::RIGHT_CHILD_IDX; childIdx++)			
+			{
+				TRBTreeImpl::ChildNodeRef ChildRef = GetChildNodeRef(pNode->NodeRef, childIdx);
+				if (NodeExists(ChildRef))
+				{
+					bLeaf = false;
+
+					const SubtreeContext* pChildMinAncestor = nullptr;
+					const SubtreeContext* pChildMaxAncestor = nullptr;
+					if (childIdx == TRBTreeImpl::LEFT_CHILD_IDX)
+					{
+						pChildMaxAncestor = pNode;
+						pChildMinAncestor = pNode->pMinAncestor;
+					}
+					else
+					{
+						pChildMinAncestor = pNode;
+						pChildMaxAncestor = pNode->pMaxAncestor;
+					}
+
+					int BlackPathLength = pNode->BlackPathLength;
+					if (GetNode(ChildRef)->IsBlack())
+					{
+						BlackPathLength++;
+					}
+
+					SubtreeContext* pChildContext = Way.Push
+					(
+						SubtreeContext
+						{ 
+							ChildRef,
+							pNode, pChildMinAncestor, pChildMaxAncestor,
+							BlackPathLength
+						}
+					);
+
+					// Check that child context is valid
+					const KeyType* pChildKey = &pChildContext->GetKey(this);
+					const KeyType* pMinKey = pChildContext->GetMinKey(this);
+					const KeyType* pMaximKey = pChildContext->GetMaximKey(this);
+					if ( pMinKey && ( *pChildKey  < *pMinKey) )
+					{
+						return false;
+					}
+
+					if ( pMaximKey && (*pChildKey > *pMaximKey) )
+					{
+						return false;
+					}
+				}
+			}
+
+			if (bLeaf)
+			{
+				if (pReferenceBlackPath)
+				{
+					bool bBlackPathValid = (pNode->BlackPathLength == pReferenceBlackPath->BlackPathLength);
+					if ( ! bBlackPathValid)
+					{
+						return false;
+					}
+				}
+				else
+				{
+					pReferenceBlackPath = pNode;
+				}
+			}
+		}
+		
+		return true;
 	}
 
 private:
@@ -675,6 +856,7 @@ private:
 		{
 			OutChildNodeRef = TRBTreeImpl::ChildNodeRef::RootNode();
 			RootIdx = CreateNewNode(InKV, INDEX_NONE);
+			GetNode(RootIdx)->MakeBlack();
 			return true;
 		}
 
@@ -714,6 +896,150 @@ private:
 	}
 
 	/**
+	* Fixups the properties of the Red-black tree after the new node addition.
+	*/
+	void FixupRedBlackAfterAdd(TRBTreeImpl::ChildNodeRef NodeRef)
+	{
+		BOOST_ASSERT_MSG(Num()>= 3, "The tree must already contain at least 3 nodes before the fixup operation");
+		while (true)
+		{
+			TRBTreeImpl::ChildNodeRef ParentRef = GetParentNodeRef(NodeRef);
+
+			// NOTE: WE skip the check that parent is root, because if root, then by definition black.
+			if (/*ParentRef.IsRoot()|| */ GetNode(ParentRef)->IsBlack())
+			{
+				return;
+			}
+
+			// NOTE: Grandpa always exists because parent is not a root node.
+			TRBTreeImpl::ChildNodeRef GrandpaRef = GetParentNodeRef(ParentRef);
+			TRBTreeImpl::ChildNodeRef UncleRef = GetChildNodeRef(GrandpaRef, TRBTreeImpl::InvertChildIndex(ParentRef.ChildIdx));
+			if ( ( ! NodeExists(UncleRef) ) || GetNode(UncleRef)->IsBlack())
+			{
+				// At this point both parent and the new node are red,
+				// and we cannot perform recoloring because uncle is black.
+				NodeRef = RotateSubtree(NodeRef, ParentRef, GrandpaRef);
+				if (NodeRef.IsRoot())
+				{
+					return;
+				}
+			}
+			else
+			{
+				// At this point both parent and the new node are black,
+				// and the is uncle is red, so we can perform recoloring.
+				GetNode(ParentRef)->MakeBlack();
+				GetNode(UncleRef)->MakeBlack();
+				if ( ! GrandpaRef.IsRoot() )
+				{
+					GetNode(GrandpaRef)->MakeRed();
+					NodeRef = ParentRef;
+				}
+				else
+				{
+					return;
+				}
+			}
+		}
+	}
+
+	/**
+	* Handles all rotation cases.
+	* Returns reference to the node to be visited next.
+	*/
+	TRBTreeImpl::ChildNodeRef RotateSubtree(TRBTreeImpl::ChildNodeRef NodeRef, TRBTreeImpl::ChildNodeRef ParentRef, TRBTreeImpl::ChildNodeRef GrandpaRef)
+	{
+		int const NodeIndex = GetNodeIndex(NodeRef);
+		if (NodeRef.ChildIdx == ParentRef.ChildIdx)
+		{
+			return Rotate_SameChildIdx(NodeIndex, GrandpaRef, NodeRef.ChildIdx);
+		}
+		else
+		{
+			return Rotate_DifferentChildIdx(NodeIndex, GrandpaRef, NodeRef.ChildIdx);
+		}
+	}
+
+	/**
+	* Handles rotation case where new node and its parent
+	* are left and right childs or vice versa.
+	*/
+	TRBTreeImpl::ChildNodeRef Rotate_DifferentChildIdx(TRBTreeImpl::NodeIndex NodeIndex, TRBTreeImpl::ChildNodeRef GrandpaRef, TRBTreeImpl::NodeChildIndex ChildIdx)
+	{
+		TRBTreeImpl::NodeChildIndex const InvertedChildIdx = TRBTreeImpl::InvertChildIndex(ChildIdx);
+
+		TRBTreeImpl::ChildNodeRef const OldParentRef = GetChildNodeRef(GrandpaRef, InvertedChildIdx);
+		TRBTreeImpl::ChildNodeRef const OldNewNodeRef = TRBTreeImpl::ChildNodeRef{ NodeIndex, ChildIdx };
+		// Child of the new node with childIdx equal to the child idx of the new node itself.
+		TRBTreeImpl::ChildNodeRef const ChildOfNewRef = GetChildNodeRef(OldNewNodeRef, ChildIdx);
+		TRBTreeImpl::ChildNodeRef const OtherChildOfNewRef = GetChildNodeRef(OldNewNodeRef, InvertedChildIdx);
+
+		int const OldParentIdx = GetNodeIndex(OldParentRef);
+		int const OldGrandpaIdx = GetNodeIndex(GrandpaRef);
+		int const OldChildOfNewIdx = GetNodeIndex(ChildOfNewRef);
+		int const OldOtherChildOfNewIdx = GetNodeIndex(OtherChildOfNewRef);
+
+		GetNode(OldGrandpaIdx)->MakeRed();
+		GetNode(NodeIndex)->MakeBlack();
+
+		LinkToNewParentByNewReference(NodeIndex, GrandpaRef);
+		LinkToNewParentByNewReference(OldParentIdx, OtherChildOfNewRef);
+		LinkToNewParentByNewReference(OldGrandpaIdx, ChildOfNewRef);
+		LinkToNewParentByNewReference(OldOtherChildOfNewIdx, OldParentRef);
+		LinkToNewParentByNewReference(OldChildOfNewIdx, GrandpaRef);
+
+		return GrandpaRef;
+	}
+
+	/**
+	* Handles rotation case where both the new node and its parent
+	* are both left or right childs.
+	*/
+	TRBTreeImpl::ChildNodeRef Rotate_SameChildIdx(TRBTreeImpl::NodeIndex NodeIndex, TRBTreeImpl::ChildNodeRef GrandpaRef, TRBTreeImpl::NodeChildIndex ChildIdx)
+	{
+		TRBTreeImpl::ChildNodeRef const OldParentRef = GetChildNodeRef(GrandpaRef, ChildIdx);
+		TRBTreeImpl::ChildNodeRef const BrotherRef = GetChildNodeRef(OldParentRef, TRBTreeImpl::InvertChildIndex(ChildIdx));
+		int const OldParentIdx = GetNodeIndex(OldParentRef);
+		int const OldGrandpaIdx = GetNodeIndex(GrandpaRef);
+		int const OldBrotherIdx = GetNodeIndex(BrotherRef);
+
+		GetNode(OldGrandpaIdx)->MakeRed();
+		GetNode(OldParentIdx)->MakeBlack();
+		
+		LinkToNewParentByNewReference(OldParentIdx, GrandpaRef);
+		LinkToNewParentByNewReference(OldBrotherIdx, OldParentRef);
+		LinkToNewParentByNewReference(OldGrandpaIdx, BrotherRef);
+
+		return GrandpaRef;
+	}
+
+	/**
+	* Relocates node, so that it can be accessed by a new reference.
+	*
+	* Correctly setups link from node to the new parent, 
+	* and from the new parent's child to the node.
+	* However, link from old parent to old child is NOT invalidated.
+	*
+	* Function works correctly if the NodeIdx is INDEX_NONE (meaning that no node exist).
+	*/
+	void LinkToNewParentByNewReference(TRBTreeImpl::NodeIndex NodeIdx, TRBTreeImpl::ChildNodeRef NewRef)
+	{
+		if (NodeIdx != INDEX_NONE)
+		{
+			NodeType* const pNode = GetNode(NodeIdx);
+			pNode->ParentIdx = NewRef.ParentIdx;
+		}
+		if (NewRef.IsRoot())
+		{
+			RootIdx = NodeIdx;
+		}
+		else
+		{
+			GetNode(NewRef.ParentIdx)->SetChild(NewRef.ChildIdx, NodeIdx);
+		}
+	}
+
+	/**
 	* Gets node by index.
 	*/
 	__forceinline const NodeType* GetNode(int InIdx) const { return &Buffer[InIdx]; };
@@ -724,12 +1050,28 @@ private:
 	__forceinline NodeType* GetNode(int InIdx) { return &Buffer[InIdx]; };
 
 	/**
+	* Returns index of the node by the given reference.
+	*
+	* @returns: index of the node, or INDEX_NONE, if no node by the given ref.
+	*/
+	TRBTreeImpl::NodeIndex GetNodeIndex(const TRBTreeImpl::ChildNodeRef InNodeRef) const
+	{
+		if (InNodeRef.IsRoot())
+		{
+			return RootIdx;
+		}
+		
+		return GetParentNode(InNodeRef)->GetChild(InNodeRef.ChildIdx);
+	}
+
+	/**
 	* Gets parent node reference.
 	*/
 	TRBTreeImpl::ChildNodeRef GetParentNodeRef(const TRBTreeImpl::ChildNodeRef InNodeRef) const
 	{
 		const TRBTreeImpl::NodeChildIndex ParentIdx = InNodeRef.ParentIdx;
 		const NodeType* const pParent = GetParentNode(InNodeRef);
+		BOOST_ASSERT_MSG(pParent, "TRBTree::GetParentNodeRef: parent must exist");
 		if (pParent->ParentIdx == INDEX_NONE) 
 		{
 			// If parent of parent is root, we return the root 

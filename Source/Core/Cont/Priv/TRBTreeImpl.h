@@ -26,6 +26,18 @@ namespace TRBTreeImpl
 	*/
 	constexpr NodeChildIndex RIGHT_CHILD_IDX = 1;
 
+	inline NodeChildIndex InvertChildIndex(NodeChildIndex InChildIdx)
+	{
+		if (InChildIdx == LEFT_CHILD_IDX)
+		{
+			return RIGHT_CHILD_IDX;
+		}
+		else
+		{
+			return LEFT_CHILD_IDX;
+		}
+	}
+
 	/**
 	* Unically identifies node relative to its parent.
 	*/
@@ -140,6 +152,11 @@ namespace TRBTreeImpl
 		*/
 		NodeIndex ParentIdx;
 
+		bool IsChildFree() const
+		{
+			return ( ! HasChild(LEFT_CHILD_IDX) ) && ( ! HasChild(RIGHT_CHILD_IDX) );
+		}
+
 		/**
 		* Has child.
 		*/
@@ -189,6 +206,14 @@ namespace TRBTreeImpl
 		__forceinline void MakeBlack()
 		{
 			bRed = false;
+		}
+
+		/**
+		* Makes red.
+		*/
+		__forceinline void MakeRed()
+		{
+			bRed = true;
 		}
 
 		/**

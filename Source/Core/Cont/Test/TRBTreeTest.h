@@ -952,6 +952,22 @@ BOOST_AUTO_TEST_CASE(AddLessLessLess, *boost::unit_test::depends_on("Core/Contai
 	BOOST_REQUIRE(ArrayEquals(DestBuf, REFERENCE_SEQUENCE, NUM));
 }
 
+BOOST_AUTO_TEST_CASE(AddLessManyMany, *boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/AddSuite/AddLessLessLess"))
+{
+	IntRBTree T;
+
+	constexpr int COUNT = 40;
+	for (int i = COUNT - 1; i >= 0; i--)
+	{
+		BOOST_REQUIRE(T.Add(i, NoValue{}));
+	}
+
+	for (int i = 0; i < COUNT; i++)
+	{
+		BOOST_REQUIRE(T.Contains(i));
+	}
+}
+
 BOOST_AUTO_TEST_CASE(AddMiddle, *boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/AddSuite/AddLess"))
 {
 	constexpr int NUM = 3;
@@ -1063,6 +1079,22 @@ BOOST_AUTO_TEST_CASE(AddGreaterGreaterGreater, *boost::unit_test::depends_on("Co
 	BOOST_TEST_CHECKPOINT("Copying to buffer");
 	IntRBTree::KeyValueType DestBuf[NUM];
 	T.CopyTo(DestBuf);
+}
+
+BOOST_AUTO_TEST_CASE(AddGreaterManyMany, *boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/AddSuite/AddGreaterGreaterGreater"))
+{
+	IntRBTree T;
+
+	constexpr int COUNT = 40;
+	for (int i = 0; i < COUNT; i++)
+	{
+		BOOST_REQUIRE(T.Add(i, NoValue{}));
+	}
+
+	for (int i = 0; i < COUNT; i++)
+	{
+		BOOST_REQUIRE(T.Contains(i));
+	}
 }
 
 
