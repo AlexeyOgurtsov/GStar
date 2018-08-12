@@ -245,7 +245,7 @@ public:
 	{
 		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
 		bool const bAdded = AddNewNode(KeyValueType{InKey,InValue}, /*Out*/ NodeRef);
-		if (bAdded && Num() >= 3)
+		if (bAdded && Num() >= 4)
 		{
 			FixupRedBlackAfterAdd(NodeRef);
 		}
@@ -900,10 +900,15 @@ private:
 	*/
 	void FixupRedBlackAfterAdd(TRBTreeImpl::ChildNodeRef NodeRef)
 	{
-		BOOST_ASSERT_MSG(Num()>= 3, "The tree must already contain at least 3 nodes before the fixup operation");
+		BOOST_ASSERT_MSG(Num()>= 4, "The tree must already contain at least 4 nodes (including the new added one) before the fixup operation");
 		while (true)
 		{
 			TRBTreeImpl::ChildNodeRef ParentRef = GetParentNodeRef(NodeRef);
+
+			if ( ! NodeExists(ParentRef) )
+			{
+				return;
+			}
 
 			// NOTE: WE skip the check that parent is root, because if root, then by definition black.
 			if (/*ParentRef.IsRoot()|| */ GetNode(ParentRef)->IsBlack())
@@ -933,7 +938,7 @@ private:
 				if ( ! GrandpaRef.IsRoot() )
 				{
 					GetNode(GrandpaRef)->MakeRed();
-					NodeRef = ParentRef;
+					NodeRef = GrandpaRef;
 				}
 				else
 				{
@@ -969,7 +974,7 @@ private:
 		TRBTreeImpl::NodeChildIndex const InvertedChildIdx = TRBTreeImpl::InvertChildIndex(ChildIdx);
 
 		TRBTreeImpl::ChildNodeRef const OldParentRef = GetChildNodeRef(GrandpaRef, InvertedChildIdx);
-		TRBTreeImpl::ChildNodeRef const OldNewNodeRef = TRBTreeImpl::ChildNodeRef{ NodeIndex, ChildIdx };
+		TRBTreeImpl::ChildNodeRef const OldNewNodeRef = GetChildNodeRef(OldParentRef, ChildIdx);
 		// Child of the new node with childIdx equal to the child idx of the new node itself.
 		TRBTreeImpl::ChildNodeRef const ChildOfNewRef = GetChildNodeRef(OldNewNodeRef, ChildIdx);
 		TRBTreeImpl::ChildNodeRef const OtherChildOfNewRef = GetChildNodeRef(OldNewNodeRef, InvertedChildIdx);
@@ -985,8 +990,8 @@ private:
 		LinkToNewParentByNewReference(NodeIndex, GrandpaRef);
 		LinkToNewParentByNewReference(OldParentIdx, OtherChildOfNewRef);
 		LinkToNewParentByNewReference(OldGrandpaIdx, ChildOfNewRef);
-		LinkToNewParentByNewReference(OldOtherChildOfNewIdx, OldParentRef);
-		LinkToNewParentByNewReference(OldChildOfNewIdx, GrandpaRef);
+		LinkToNewParentByNewReference(OldOtherChildOfNewIdx, OldNewNodeRef);
+		LinkToNewParentByNewReference(OldChildOfNewIdx, OldParentRef);
 
 		return GrandpaRef;
 	}
