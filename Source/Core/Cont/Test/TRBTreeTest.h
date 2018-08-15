@@ -862,6 +862,255 @@ BOOST_AUTO_TEST_CASE(TraverseTest, *boost::unit_test::depends_on("Core/Container
 	BOOST_REQUIRE(ArrayContainsValue(DestBuf.data(), NUM, KEY_EIGHT));
 }
 
+BOOST_AUTO_TEST_SUITE
+(
+	RemoveSuite,
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/AddSuite")
+)
+BOOST_AUTO_TEST_CASE(RemoveFromEmpty)
+{
+	constexpr int KEY_ONE = 1;
+	constexpr int KEY_TWO = 2;
+
+	IntRBTree T;
+	BOOST_REQUIRE( ! T.Remove(KEY_ONE) );
+	BOOST_REQUIRE( ! T.Remove(KEY_TWO) );
+}
+
+BOOST_AUTO_TEST_CASE(RemoveFromRoot_TreeWithOneElem)
+{
+	constexpr int KEY_EXISTING = 1;
+	constexpr int KEY_NOT_EXISTING = 2;
+
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntRBTree T;
+	T.Add(KEY_EXISTING, NoValue{});
+	BOOST_REQUIRE_EQUAL(T.Num(), 1);
+
+	BOOST_TEST_CHECKPOINT("Removing non-existing key");
+	BOOST_REQUIRE( ! T.Remove(KEY_NOT_EXISTING) );
+	BOOST_REQUIRE( ! T.Empty() );
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	BOOST_REQUIRE( T.Remove(KEY_EXISTING) );
+	BOOST_REQUIRE(T.Empty());
+}
+
+BOOST_AUTO_TEST_CASE
+(
+	RemoveFromRoot_ThatHasOnlyLeftChild_OnlyTwoElements,
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite/RemoveFromRoot_TreeWithOneElem")
+)
+{
+	constexpr int KEY_ROOT = 2;
+	constexpr int KEY_LEFT_CHILD = 1;
+	constexpr int KEY_NOT_EXISTING = 9;
+
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntRBTree T;
+	T.Add(KEY_ROOT, NoValue{});
+	T.Add(KEY_LEFT_CHILD, NoValue{});
+	BOOST_REQUIRE_EQUAL(T.Num(), 2);
+
+	BOOST_TEST_CHECKPOINT("Removing non-existing key");
+	BOOST_REQUIRE(!T.Remove(KEY_NOT_EXISTING));
+	BOOST_REQUIRE(!T.Empty());
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	BOOST_REQUIRE(T.Remove(KEY_ROOT));
+	BOOST_REQUIRE_EQUAL(T.Num(), 1);
+	BOOST_REQUIRE_EQUAL(T.Min().Key, KEY_LEFT_CHILD);
+	BOOST_REQUIRE_EQUAL(T.Max().Key, KEY_LEFT_CHILD);
+}
+
+BOOST_AUTO_TEST_CASE
+(
+	RemoveFromRoot_ThatHasOnlyRightChild_OnlyTwoElements,
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite/RemoveFromRoot_TreeWithOneElem")
+)
+{
+	constexpr int KEY_ROOT = 1;
+	constexpr int KEY_RIGHT_CHILD = 2;
+	constexpr int KEY_NOT_EXISTING = 9;
+
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntRBTree T;
+	T.Add(KEY_ROOT, NoValue{});
+	T.Add(KEY_RIGHT_CHILD, NoValue{});
+	BOOST_REQUIRE_EQUAL(T.Num(), 2);
+
+	BOOST_TEST_CHECKPOINT("Removing non-existing key");
+	BOOST_REQUIRE(!T.Remove(KEY_NOT_EXISTING));
+	BOOST_REQUIRE(!T.Empty());
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	BOOST_REQUIRE(T.Remove(KEY_ROOT));
+	BOOST_REQUIRE_EQUAL(T.Num(), 1);
+	BOOST_REQUIRE_EQUAL(T.Min().Key, KEY_RIGHT_CHILD);
+	BOOST_REQUIRE_EQUAL(T.Max().Key, KEY_RIGHT_CHILD);
+}
+
+BOOST_AUTO_TEST_CASE
+(
+	RemoveFromRoot_ThatHasTwoChildren,
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite/RemoveFromRoot_ThatHasOnlyLeftChild_OnlyTwoElements")
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite/RemoveFromRoot_ThatHasOnlyRightChild_OnlyTwoElements")
+)
+{
+	constexpr int KEY_ROOT = 2;
+	constexpr int KEY_LEFT_CHILD = 1;
+	constexpr int KEY_RIGHT_CHILD = 3;
+	constexpr int KEY_NOT_EXISTING = 9;
+
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntRBTree T;
+	T.Add(KEY_ROOT, NoValue{});
+	T.Add(KEY_LEFT_CHILD, NoValue{});
+	T.Add(KEY_RIGHT_CHILD, NoValue{});
+	BOOST_REQUIRE_EQUAL(T.Num(), 3);
+
+	BOOST_TEST_CHECKPOINT("Removing non-existing key");
+	BOOST_REQUIRE(!T.Remove(KEY_NOT_EXISTING));
+	BOOST_REQUIRE(!T.Empty());
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	BOOST_REQUIRE(T.Remove(KEY_ROOT));
+	BOOST_REQUIRE_EQUAL(T.Num(), 2);
+	BOOST_REQUIRE_EQUAL(T.Min().Key, KEY_LEFT_CHILD);
+	BOOST_REQUIRE_EQUAL(T.Max().Key, KEY_RIGHT_CHILD);
+}
+
+BOOST_AUTO_TEST_CASE(RemoveLeftChildOfRoot_OnlyTwoElements)
+{
+	constexpr int KEY_ROOT = 2;
+	constexpr int KEY_LEFT_CHILD = 1;
+
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntRBTree T;
+	T.Add(KEY_ROOT, NoValue{});
+	T.Add(KEY_LEFT_CHILD, NoValue{});
+	BOOST_REQUIRE_EQUAL(T.Num(), 2);
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	BOOST_REQUIRE(T.Remove(KEY_LEFT_CHILD));
+	BOOST_REQUIRE_EQUAL(T.Num(), 1);
+	BOOST_REQUIRE_EQUAL(T.Min().Key, KEY_ROOT);
+	BOOST_REQUIRE_EQUAL(T.Max().Key, KEY_ROOT);
+}
+
+BOOST_AUTO_TEST_CASE(RemoveLeftChildOfRoot_ChildHasTwoChildren)
+{
+	constexpr int KEY_ROOT = 5;
+	constexpr int KEY_LEFT_CHILD = 3;
+	constexpr int KEY_RIGHT_CHILD = 7;
+	constexpr int KEY_LEFT_LEFT_CHILD_CHILD = 1;
+	constexpr int KEY_LEFT_RIGHT_CHILD_CHILD = 2;
+	constexpr int INITIAL_COUNT = 5;
+
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntRBTree T;
+	BOOST_REQUIRE(T.Add(KEY_ROOT, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_LEFT_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_RIGHT_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_LEFT_LEFT_CHILD_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_LEFT_RIGHT_CHILD_CHILD, NoValue{}));
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	BOOST_REQUIRE(T.Remove(KEY_LEFT_CHILD));
+	BOOST_REQUIRE_EQUAL(T.Num(), (INITIAL_COUNT - 1));
+	IntRBTree::KeyValueType ordered[(INITIAL_COUNT - 1)];
+	T.CopyTo(ordered);
+	BOOST_REQUIRE_EQUAL(ordered[0].Key, KEY_LEFT_LEFT_CHILD_CHILD);
+	BOOST_REQUIRE_EQUAL(ordered[1].Key, KEY_LEFT_RIGHT_CHILD_CHILD);
+	BOOST_REQUIRE_EQUAL(ordered[2].Key, KEY_ROOT);
+	BOOST_REQUIRE_EQUAL(ordered[3].Key, KEY_RIGHT_CHILD);
+}
+
+BOOST_AUTO_TEST_CASE(RemoveRightChildOfRoot_ChildHasTwoChildren)
+{
+	constexpr int KEY_ROOT = 5;
+	constexpr int KEY_LEFT_CHILD = 3;
+	constexpr int KEY_RIGHT_CHILD = 7;
+	constexpr int KEY_RIGHT_LEFT_CHILD_CHILD = 6;
+	constexpr int KEY_RIGHT_RIGHT_CHILD_CHILD = 8;
+	constexpr int INITIAL_COUNT = 5;
+
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntRBTree T;
+	BOOST_REQUIRE(T.Add(KEY_ROOT, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_LEFT_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_RIGHT_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_RIGHT_LEFT_CHILD_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_RIGHT_RIGHT_CHILD_CHILD, NoValue{}));
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	BOOST_REQUIRE(T.Remove(KEY_RIGHT_CHILD));
+	BOOST_REQUIRE_EQUAL(T.Num(), (INITIAL_COUNT - 1));
+	IntRBTree::KeyValueType ordered[(INITIAL_COUNT - 1)];
+	T.CopyTo(ordered);
+	BOOST_REQUIRE_EQUAL(ordered[0].Key, KEY_LEFT_CHILD);
+	BOOST_REQUIRE_EQUAL(ordered[1].Key, KEY_ROOT);
+	BOOST_REQUIRE_EQUAL(ordered[2].Key, KEY_RIGHT_LEFT_CHILD_CHILD);
+	BOOST_REQUIRE_EQUAL(ordered[3].Key, KEY_RIGHT_RIGHT_CHILD_CHILD);
+}
+
+BOOST_AUTO_TEST_CASE
+(
+	RemoveRoot_TwoTireTree, 
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite/RemoveFromRoot_ThatHasTwoChildren")
+)
+{
+	constexpr int KEY_ROOT = 5;
+	constexpr int KEY_LEFT_CHILD = 3;
+	constexpr int KEY_RIGHT_CHILD = 7;
+	constexpr int KEY_LEFT_LEFT_CHILD_CHILD = 1;
+	constexpr int KEY_LEFT_RIGHT_CHILD_CHILD = 2;
+	constexpr int INITIAL_COUNT = 5;
+
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntRBTree T;
+	BOOST_REQUIRE(T.Add(KEY_ROOT, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_LEFT_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_RIGHT_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_LEFT_LEFT_CHILD_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_LEFT_RIGHT_CHILD_CHILD, NoValue{}));
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	BOOST_REQUIRE(T.Remove(KEY_ROOT));
+	BOOST_REQUIRE_EQUAL(T.Num(), (INITIAL_COUNT - 1));
+
+	BOOST_TEST_CHECKPOINT("Checking");
+	IntRBTree::KeyValueType ordered[(INITIAL_COUNT - 1)];
+	T.CopyTo(ordered);
+	BOOST_REQUIRE_EQUAL(ordered[0].Key, KEY_LEFT_LEFT_CHILD_CHILD);
+	BOOST_REQUIRE_EQUAL(ordered[1].Key, KEY_LEFT_RIGHT_CHILD_CHILD);
+	BOOST_REQUIRE_EQUAL(ordered[2].Key, KEY_LEFT_CHILD);
+	BOOST_REQUIRE_EQUAL(ordered[3].Key, KEY_RIGHT_CHILD);
+}
+
+BOOST_AUTO_TEST_CASE(RemoveRightChildOfRoot_OnlyTwoElements)
+{
+	constexpr int KEY_ROOT = 1;
+	constexpr int KEY_RIGHT_CHILD = 2;
+
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntRBTree T;
+	T.Add(KEY_ROOT, NoValue{});
+	T.Add(KEY_RIGHT_CHILD, NoValue{});
+	BOOST_REQUIRE_EQUAL(T.Num(), 2);
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	BOOST_REQUIRE(T.Remove(KEY_RIGHT_CHILD));
+	BOOST_REQUIRE_EQUAL(T.Num(), 1);
+	BOOST_REQUIRE_EQUAL(T.Min().Key, KEY_ROOT);
+	BOOST_REQUIRE_EQUAL(T.Max().Key, KEY_ROOT);
+}
+
+BOOST_AUTO_TEST_SUITE_END() // RemoveSuite
+
 BOOST_AUTO_TEST_SUITE(AddSuite)
 BOOST_AUTO_TEST_CASE
 (

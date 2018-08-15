@@ -147,6 +147,11 @@ namespace TRBTreeImpl
 		*/
 		bool bExists = true;
 
+		void MarkRemoved()
+		{
+			bExists = false;
+		}
+
 		/**
 		* Index of the parent pointer (INDEX_NONE in the case of the root).
 		*/

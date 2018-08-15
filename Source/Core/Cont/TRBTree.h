@@ -7,15 +7,12 @@
 #include <type_traits>
 
 /**
-* TODO Balancing:
-* 1. Color the root node appropriately in the AddNewNode
-* 2. Helper operations
-* 2.1. MoveSubtree
-* 2.2.  
-* 3. Implement Rotate operations
-* 4. Balancing function
-* 5. Checker for tree balance state.
-* 6. Write tests
+* TODO First:
+* 1. Remove (by key).
+* 1.1. Write tests
+*
+* TODO Interface:
+* 1. Add operation version that takes TKeyValue.
 *
 * TODO Key/Value iterator:
 * 1. Insertion while iterating
@@ -23,11 +20,6 @@
 *
 * TODO:
 * 1. Create the Stack-overflow unit-test for traverse;
-*
-* TODO First:
-* 1. Add.
-* 1.1. Implement balancing
-* 2. Remove.
 *
 * TODO Third:
 * 1. Clear()
@@ -235,6 +227,24 @@ public:
 	* @see: Non-const version
 	*/
 	ValueType* FindValue(const KeyType& InKey) { return const_cast<ValueType*>(FindValueImpl(InKey)); }
+
+	/*
+	* Removes value with the given key from the tree.
+	*
+	* @returns: true, if was found and removed (otherwise false). 
+	*/
+	bool Remove(const KeyType& InKey)
+	{
+		if (Empty())
+		{
+			return false;
+		}
+
+		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
+		bool bRemoved = RemoveNode(InKey, /*Out*/NodeRef);
+		// TODO: Add balancing here
+		return bRemoved;
+	}
 
 	/**
 	* Adds a new node to the tree.
@@ -846,26 +856,121 @@ private:
 	}
 
 	/**
+	* Removes node with the given key from the tree.
+	*
+	* @returns: true, if was found and removed (otherwise false)
+	*/
+	bool RemoveNode(const KeyType& InKey, TRBTreeImpl::ChildNodeRef& OutNodeRef)
+	{
+		BOOST_ASSERT_MSG( ! Empty(), "TRBTree::RemoveNode: The tree must be NON-empty before calling this function" );
+		bool const bFound = FindNode(InKey, OutNodeRef, ComparerArg());
+		if ( ! bFound )
+		{
+			return false;
+		}
+
+		// Save node to mark it deleted later
+		NodeType* const pNode = GetNode(OutNodeRef);
+		
+		TRBTreeImpl::NodeChildIndex ChildToRelinkToIdx = INDEX_NONE;
+		if ( ! pNode->HasChild(TRBTreeImpl::LEFT_CHILD_IDX) )
+		{
+			// Warning!!! We relink to other (possibly existing) node!!!
+			ChildToRelinkToIdx = TRBTreeImpl::RIGHT_CHILD_IDX;	
+		}
+		else if ( ! pNode->HasChild(TRBTreeImpl::RIGHT_CHILD_IDX))
+		{
+			// Warning!!! We relink to other (possibly existing) node!!!
+			ChildToRelinkToIdx = TRBTreeImpl::LEFT_CHILD_IDX;
+		}
+
+		if (ChildToRelinkToIdx == INDEX_NONE)
+		{
+			RemoveNode_MakeRightSubtreeChildOfPredecessor(OutNodeRef);
+		}
+		else
+		{
+			/**
+			* If node has only one child we can remove it by relinking its parent to the child.
+			*/
+			RemoveNode_LinkToChild(OutNodeRef, ChildToRelinkToIdx);
+		}
+
+		// Deal with the deleted node (we must done it AFTER the links are updated to avoid some assertion to fire)
+		pNode->MarkRemoved();
+		Count--;
+
+		return true;
+	}
+
+	void RemoveNode_MakeRightSubtreeChildOfPredecessor(TRBTreeImpl::ChildNodeRef InNodeRef)
+	{
+		TRBTreeImpl::NodeIndex const OldNodeIdx = GetNodeIndex(InNodeRef);
+		TRBTreeImpl::NodeIndex const OldRightChildIdx = GetNode(InNodeRef)->GetChild(TRBTreeImpl::RIGHT_CHILD_IDX);
+
+		TRBTreeImpl::ChildNodeRef const LeftChildRef = GetChildNodeRef(InNodeRef, TRBTreeImpl::LEFT_CHILD_IDX);
+		TRBTreeImpl::NodeChildIndex OldLeftChildIdx = GetNodeIndex(LeftChildRef);
+		
+		TRBTreeImpl::ChildNodeRef const PredecessorRef = GetDeepestNodeRef(LeftChildRef, /*ChildIdx=*/ TRBTreeImpl::RIGHT_CHILD_IDX);
+		TRBTreeImpl::NodeIndex const PredecessorIdx = GetNodeIndex(PredecessorRef);
+		
+		TRBTreeImpl::ChildNodeRef const RightChildOfPredecessorRef = GetChildNodeRef(PredecessorRef, TRBTreeImpl::RIGHT_CHILD_IDX);
+
+		LinkToNewParentByNewReference(OldLeftChildIdx, InNodeRef);
+		LinkToNewParentByNewReference(OldRightChildIdx, RightChildOfPredecessorRef);
+		GetNode(OldNodeIdx)->SetChild(TRBTreeImpl::LEFT_CHILD_IDX, INDEX_NONE);
+	}
+
+	/**
+	* Removes node by linking to the given child.
+	*
+	* The given child may be absent.
+	*/
+	void RemoveNode_LinkToChild(TRBTreeImpl::ChildNodeRef InNodeRef, TRBTreeImpl::NodeChildIndex ChildIdx)
+	{
+		TRBTreeImpl::ChildNodeRef const NextNodeRef = GetChildNodeRef(InNodeRef, ChildIdx);
+		bool const bChildExists = NodeExists(NextNodeRef);
+		TRBTreeImpl::NodeIndex const NextNodeIdx = bChildExists ? GetNodeIndex(NextNodeRef) : INDEX_NONE;
+		
+		if (InNodeRef.IsRoot())
+		{
+			if (bChildExists)
+			{
+				GetNode(NextNodeIdx)->ParentIdx = RootIdx;	
+			}
+			RootIdx = NextNodeIdx;
+		}
+		else
+		{
+			if (bChildExists)
+			{
+				GetNode(NextNodeIdx)->ParentIdx = InNodeRef.ParentIdx;
+			}
+			GetNode(InNodeRef.ParentIdx)->SetChild(InNodeRef.ChildIdx, NextNodeIdx);
+		}
+	}
+
+	/**
 	* Creates and adds a new node to the tree.
 	*
 	* @Returns: true if was added (or false if already was in the tree).
 	*/
-	bool AddNewNode(const KeyValueType& InKV, TRBTreeImpl::ChildNodeRef& OutChildNodeRef)
+	bool AddNewNode(const KeyValueType& InKV, TRBTreeImpl::ChildNodeRef& OutNodeRef)
 	{
 		if (Empty())
 		{
-			OutChildNodeRef = TRBTreeImpl::ChildNodeRef::RootNode();
+			OutNodeRef = TRBTreeImpl::ChildNodeRef::RootNode();
 			RootIdx = CreateNewNode(InKV, INDEX_NONE);
 			GetNode(RootIdx)->MakeBlack();
 			return true;
 		}
 
-		if ( FindNode(InKV.Key, /*OutNodeRef*/OutChildNodeRef, ComparerArg()) )
+		if ( FindNode(InKV.Key, /*Out*/OutNodeRef, ComparerArg()) )
 		{
 			return false;
 		}
 
-		AddNewNodeAtRef(InKV, OutChildNodeRef);
+		AddNewNodeAtRef(InKV, OutNodeRef);
 		return true;
 	}
 
