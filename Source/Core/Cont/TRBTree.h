@@ -240,9 +240,17 @@ public:
 			return false;
 		}
 
-		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
-		bool bRemoved = RemoveNode(InKey, /*Out*/NodeRef);
-		// TODO: Add balancing here
+		TRBTreeImpl::ChildNodeRef NodeSubstitutorRef = TRBTreeImpl::ChildNodeRef::Invalid();
+		bool const bRemoved = RemoveNode(InKey, /*Out*/NodeSubstitutorRef);
+
+		if ( bRemoved && ( ! Empty() ) )
+		{
+			FixupRedBlackAfterRemove(NodeSubstitutorRef);
+		}
+
+		// Uncomment for testing purposes only (will greately slow):
+		BOOST_ASSERT_MSG(DebugCheckValid(), "TRBTree::Remove: tree state must be valid");
+
 		return bRemoved;
 	}
 
@@ -860,17 +868,19 @@ private:
 	*
 	* @returns: true, if was found and removed (otherwise false)
 	*/
-	bool RemoveNode(const KeyType& InKey, TRBTreeImpl::ChildNodeRef& OutNodeRef)
+	bool RemoveNode(const KeyType& InKey, TRBTreeImpl::ChildNodeRef& OutSubstitutorRef)
 	{
 		BOOST_ASSERT_MSG( ! Empty(), "TRBTree::RemoveNode: The tree must be NON-empty before calling this function" );
-		bool const bFound = FindNode(InKey, OutNodeRef, ComparerArg());
+
+		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
+		bool const bFound = FindNode(InKey, NodeRef, ComparerArg());
 		if ( ! bFound )
 		{
 			return false;
 		}
 
 		// Save node to mark it deleted later
-		NodeType* const pNode = GetNode(OutNodeRef);
+		NodeType* const pNode = GetNode(NodeRef);
 		
 		TRBTreeImpl::NodeChildIndex ChildToRelinkToIdx = INDEX_NONE;
 		if ( ! pNode->HasChild(TRBTreeImpl::LEFT_CHILD_IDX) )
@@ -886,14 +896,14 @@ private:
 
 		if (ChildToRelinkToIdx == INDEX_NONE)
 		{
-			RemoveNode_MakeRightSubtreeChildOfPredecessor(OutNodeRef);
+			RemoveNode_MakeRightSubtreeChildOfPredecessor(NodeRef, OutSubstitutorRef);
 		}
 		else
 		{
 			/**
 			* If node has only one child we can remove it by relinking its parent to the child.
 			*/
-			RemoveNode_LinkToChild(OutNodeRef, ChildToRelinkToIdx);
+			RemoveNode_LinkToChild(NodeRef, ChildToRelinkToIdx, OutSubstitutorRef);
 		}
 
 		// Deal with the deleted node (we must done it AFTER the links are updated to avoid some assertion to fire)
@@ -903,7 +913,7 @@ private:
 		return true;
 	}
 
-	void RemoveNode_MakeRightSubtreeChildOfPredecessor(TRBTreeImpl::ChildNodeRef InNodeRef)
+	void RemoveNode_MakeRightSubtreeChildOfPredecessor(TRBTreeImpl::ChildNodeRef InNodeRef, TRBTreeImpl::ChildNodeRef& OutSubstitutorRef)
 	{
 		TRBTreeImpl::NodeIndex const OldNodeIdx = GetNodeIndex(InNodeRef);
 		TRBTreeImpl::NodeIndex const OldRightChildIdx = GetNode(InNodeRef)->GetChild(TRBTreeImpl::RIGHT_CHILD_IDX);
@@ -915,6 +925,8 @@ private:
 		TRBTreeImpl::NodeIndex const PredecessorIdx = GetNodeIndex(PredecessorRef);
 		
 		TRBTreeImpl::ChildNodeRef const RightChildOfPredecessorRef = GetChildNodeRef(PredecessorRef, TRBTreeImpl::RIGHT_CHILD_IDX);
+		BOOST_ASSERT_MSG( ! NodeExists(RightChildOfPredecessorRef), "TRBTree::RemoveNode_MakeRightSubtreeChildOfPredecessor: Right child of the predecessor must NOT exist");
+		OutSubstitutorRef = GetChildNodeRef(PredecessorRef, TRBTreeImpl::LEFT_CHILD_IDX);
 
 		LinkToNewParentByNewReference(OldLeftChildIdx, InNodeRef);
 		LinkToNewParentByNewReference(OldRightChildIdx, RightChildOfPredecessorRef);
@@ -926,7 +938,7 @@ private:
 	*
 	* The given child may be absent.
 	*/
-	void RemoveNode_LinkToChild(TRBTreeImpl::ChildNodeRef InNodeRef, TRBTreeImpl::NodeChildIndex ChildIdx)
+	void RemoveNode_LinkToChild(TRBTreeImpl::ChildNodeRef InNodeRef, TRBTreeImpl::NodeChildIndex ChildIdx, TRBTreeImpl::ChildNodeRef& OutSubstitutorRef)
 	{
 		TRBTreeImpl::ChildNodeRef const NextNodeRef = GetChildNodeRef(InNodeRef, ChildIdx);
 		bool const bChildExists = NodeExists(NextNodeRef);
@@ -948,6 +960,12 @@ private:
 			}
 			GetNode(InNodeRef.ParentIdx)->SetChild(InNodeRef.ChildIdx, NextNodeIdx);
 		}
+
+		/**
+		* WARNING!!! Because we relinked the substitutor (child node) to parent of the NodeRef,
+		* we must return the reference relative to that parent.
+		*/
+		OutSubstitutorRef = TRBTreeImpl::ChildNodeRef(InNodeRef.ParentIdx, ChildIdx);
 	}
 
 	/**
@@ -1001,11 +1019,19 @@ private:
 	}
 
 	/**
+	* Fixups the properties of the Red-black tree after node is removed.
+	*/
+	void FixupRedBlackAfterRemove(TRBTreeImpl::ChildNodeRef SubstitutorNodeRef)
+	{
+		BOOST_ASSERT_MSG( ! Empty() , "TRBTree::FixupRedBlackAfterRemove: The tree must be non-empty");
+	}
+
+	/**
 	* Fixups the properties of the Red-black tree after the new node addition.
 	*/
 	void FixupRedBlackAfterAdd(TRBTreeImpl::ChildNodeRef NodeRef)
 	{
-		BOOST_ASSERT_MSG(Num()>= 4, "The tree must already contain at least 4 nodes (including the new added one) before the fixup operation");
+		BOOST_ASSERT_MSG(Num()>= 4, "TRBTree::FixupRedBlackAfterAdd: The tree must already contain at least 4 nodes (including the new added one) before the fixup operation");
 		while (true)
 		{
 			TRBTreeImpl::ChildNodeRef ParentRef = GetParentNodeRef(NodeRef);

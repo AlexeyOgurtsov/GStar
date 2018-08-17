@@ -196,7 +196,21 @@ namespace TRBTreeImpl
 		}
 
 		/**
-		* Returns true if the node is black.
+		* Makes the given node double black
+		*/
+		void MakeDoubleBlack()
+		{
+			BOOST_ASSERT_MSG( IsBlack(), "TRBTree::MakeDoubleBlack: the node must already be black" );
+			bDoubleBlack = true;
+		}
+
+		/**
+		* Returns true if the node is double black
+		*/
+		bool IsDoubleBlack() const { return bDoubleBlack; }
+
+		/**
+		* Returns true if the node is black (or double black).
 		*/
 		__forceinline bool IsBlack() const { return ! bRed; }
 
@@ -211,6 +225,7 @@ namespace TRBTreeImpl
 		__forceinline void MakeBlack()
 		{
 			bRed = false;
+			bDoubleBlack = false;
 		}
 
 		/**
@@ -219,6 +234,7 @@ namespace TRBTreeImpl
 		__forceinline void MakeRed()
 		{
 			bRed = true;
+			bDoubleBlack = false;
 		}
 
 		/**
@@ -260,5 +276,6 @@ namespace TRBTreeImpl
 		* Children.
 		*/
 		NodeIndex Children[2];
+		bool bDoubleBlack = false;
 	};
 } // TRBTreeImpl
