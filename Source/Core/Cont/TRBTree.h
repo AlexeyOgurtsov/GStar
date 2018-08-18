@@ -241,9 +241,10 @@ public:
 		}
 
 		TRBTreeImpl::ChildNodeRef NodeSubstitutorRef = TRBTreeImpl::ChildNodeRef::Invalid();
-		bool const bRemoved = RemoveNode(InKey, /*Out*/NodeSubstitutorRef);
+		bool bNeedsFixup = false;
+		bool const bRemoved = RemoveNode(InKey, /*Out*/NodeSubstitutorRef, /*Out*/bNeedsFixup);
 
-		if ( bRemoved && ( ! Empty() ) )
+		if ( bRemoved && bNeedsFixup && ( ! Empty() ) )
 		{
 			FixupRedBlackAfterRemove(NodeSubstitutorRef);
 		}
@@ -868,7 +869,7 @@ private:
 	*
 	* @returns: true, if was found and removed (otherwise false)
 	*/
-	bool RemoveNode(const KeyType& InKey, TRBTreeImpl::ChildNodeRef& OutSubstitutorRef)
+	bool RemoveNode(const KeyType& InKey, TRBTreeImpl::ChildNodeRef& OutSubstitutorRef, bool& bOutNeedsFixup)
 	{
 		BOOST_ASSERT_MSG( ! Empty(), "TRBTree::RemoveNode: The tree must be NON-empty before calling this function" );
 
@@ -896,14 +897,14 @@ private:
 
 		if (ChildToRelinkToIdx == INDEX_NONE)
 		{
-			RemoveNode_MakeRightSubtreeChildOfPredecessor(NodeRef, OutSubstitutorRef);
+			RemoveNode_MakeRightSubtreeChildOfPredecessor(NodeRef, OutSubstitutorRef, bOutNeedsFixup);
 		}
 		else
 		{
 			/**
 			* If node has only one child we can remove it by relinking its parent to the child.
 			*/
-			RemoveNode_LinkToChild(NodeRef, ChildToRelinkToIdx, OutSubstitutorRef);
+			RemoveNode_LinkToChild(NodeRef, ChildToRelinkToIdx, OutSubstitutorRef, bOutNeedsFixup);
 		}
 
 		// Deal with the deleted node (we must done it AFTER the links are updated to avoid some assertion to fire)
@@ -913,7 +914,7 @@ private:
 		return true;
 	}
 
-	void RemoveNode_MakeRightSubtreeChildOfPredecessor(TRBTreeImpl::ChildNodeRef InNodeRef, TRBTreeImpl::ChildNodeRef& OutSubstitutorRef)
+	void RemoveNode_MakeRightSubtreeChildOfPredecessor(TRBTreeImpl::ChildNodeRef InNodeRef, TRBTreeImpl::ChildNodeRef& OutSubstitutorRef, bool& bOutNeedsFixup)
 	{
 		TRBTreeImpl::NodeIndex const OldNodeIdx = GetNodeIndex(InNodeRef);
 		TRBTreeImpl::NodeIndex const OldRightChildIdx = GetNode(InNodeRef)->GetChild(TRBTreeImpl::RIGHT_CHILD_IDX);
@@ -923,6 +924,7 @@ private:
 		
 		TRBTreeImpl::ChildNodeRef const PredecessorRef = GetDeepestNodeRef(LeftChildRef, /*ChildIdx=*/ TRBTreeImpl::RIGHT_CHILD_IDX);
 		TRBTreeImpl::NodeIndex const PredecessorIdx = GetNodeIndex(PredecessorRef);
+		bOutNeedsFixup = GetNode(PredecessorIdx)->IsBlack();
 		
 		TRBTreeImpl::ChildNodeRef const RightChildOfPredecessorRef = GetChildNodeRef(PredecessorRef, TRBTreeImpl::RIGHT_CHILD_IDX);
 		BOOST_ASSERT_MSG( ! NodeExists(RightChildOfPredecessorRef), "TRBTree::RemoveNode_MakeRightSubtreeChildOfPredecessor: Right child of the predecessor must NOT exist");
@@ -938,11 +940,13 @@ private:
 	*
 	* The given child may be absent.
 	*/
-	void RemoveNode_LinkToChild(TRBTreeImpl::ChildNodeRef InNodeRef, TRBTreeImpl::NodeChildIndex ChildIdx, TRBTreeImpl::ChildNodeRef& OutSubstitutorRef)
+	void RemoveNode_LinkToChild(TRBTreeImpl::ChildNodeRef InNodeRef, TRBTreeImpl::NodeChildIndex ChildIdx, TRBTreeImpl::ChildNodeRef& OutSubstitutorRef, bool& bOutNeedsFixup)
 	{
 		TRBTreeImpl::ChildNodeRef const NextNodeRef = GetChildNodeRef(InNodeRef, ChildIdx);
 		bool const bChildExists = NodeExists(NextNodeRef);
 		TRBTreeImpl::NodeIndex const NextNodeIdx = bChildExists ? GetNodeIndex(NextNodeRef) : INDEX_NONE;
+
+		bOutNeedsFixup = GetNode(InNodeRef)->IsBlack();
 		
 		if (InNodeRef.IsRoot())
 		{
@@ -1024,6 +1028,181 @@ private:
 	void FixupRedBlackAfterRemove(TRBTreeImpl::ChildNodeRef SubstitutorNodeRef)
 	{
 		BOOST_ASSERT_MSG( ! Empty() , "TRBTree::FixupRedBlackAfterRemove: The tree must be non-empty");
+
+		TRBTreeImpl::ChildNodeRef CurrNodeRef = SubstitutorNodeRef;
+		NodeType* pCurrNode = nullptr;
+		while (true)
+		{
+			BOOST_ASSERT(NodeExists(CurrNodeRef));
+
+			if (CurrNodeRef.IsRoot())
+			{
+				break;
+			}
+
+			pCurrNode = GetNode(CurrNodeRef);
+			TRBTreeImpl::NodeIndex CurrNodeIdx = GetNodeIndex(CurrNodeRef);
+			if (pCurrNode->IsRed())
+			{
+				break;
+			}
+
+			TRBTreeImpl::ChildNodeRef ParentRef = GetParentNodeRef(CurrNodeRef);
+				
+			TRBTreeImpl::ChildNodeRef BrotherRef { CurrNodeRef.ParentIdx, TRBTreeImpl::InvertChildIndex(CurrNodeRef.ChildIdx) };
+			if ( ! NodeExists(BrotherRef) )
+			{
+				BOOST_ASSERT_MSG(false, "TRBTree: FixupRedBlackAfterRemove: The case is NOT yet coded");
+				CurrNodeRef = ParentRef;
+				break;
+			}
+			else
+			{
+				NodeType* pBrother = GetNode(BrotherRef);
+				if (pBrother->IsRed())
+				{
+					/**
+					* If the brother is red, we must .
+					*/
+					RotateAround(ParentRef, BrotherRef.ChildIdx);
+
+					// Really, brother reference should NOT change during rotation:
+					//BrotherRef = TRBTreeImpl::ChildNodeRef(OldParentIdx, BrotherRef.ChildIdx);
+
+					// However, the referenced brother is changed:
+					pBrother = GetNode(BrotherRef);
+
+					/**
+					* Parent now has another parent, so we must recalculate the reference.
+					*
+					* TODO: OPTIMIZATION: Should we recalculate it always, maybe we will not use it?
+					*/
+					ParentRef = GetParentNodeRef(CurrNodeRef);
+				}
+
+				BOOST_ASSERT_MSG(pBrother->IsBlack(), "TRBTree::FixupRedBlackAfterRemove: Case 2: At this point the brother must be black");
+
+				TRBTreeImpl::ChildNodeRef BrotherChildRef = GetChildNodeRef(BrotherRef, CurrNodeRef.ChildIdx);
+				TRBTreeImpl::ChildNodeRef BrotherOtherChildRef = GetChildNodeRef(BrotherRef, BrotherRef.ChildIdx);
+				
+				bool bBrotherChild_BlackOrNull = true;
+				bool bBrotherOtherChild_BlackOrNull = true;
+
+				NodeType* pBrotherChild = nullptr;
+				NodeType* pBrotherOtherChild = nullptr;
+
+				if (NodeExists(BrotherChildRef))
+				{
+					pBrotherChild = GetNode(BrotherChildRef);
+					bBrotherChild_BlackOrNull = pBrotherChild->IsBlack();
+				}
+				else
+				{
+					pBrotherChild = nullptr;
+					bBrotherChild_BlackOrNull = true;
+				}
+
+				if (NodeExists(BrotherOtherChildRef))
+				{
+					pBrotherOtherChild = GetNode(BrotherOtherChildRef);
+					bBrotherOtherChild_BlackOrNull = pBrotherOtherChild->IsBlack();
+				}
+				else
+				{
+					pBrotherOtherChild = nullptr;
+					bBrotherOtherChild_BlackOrNull = true;
+				}
+
+				// Second case (see Cormen)
+				if (bBrotherChild_BlackOrNull && bBrotherOtherChild_BlackOrNull)
+				{
+					pBrother->MakeRed();
+					CurrNodeRef = ParentRef;
+					// TODO: Should we make the parent black ? (it was NOT in the Corman)
+					continue;
+				}
+
+				// Third case
+				if (bBrotherOtherChild_BlackOrNull)
+				{
+					BOOST_ASSERT_MSG(pBrotherChild->IsRed(), "TRBTree::FixupRedBlackAfterRemove: case 3: At this point brother child must be red");
+					pBrotherChild->MakeBlack();
+					pBrother->MakeRed();
+					RotateAround(BrotherRef, BrotherChildRef.ChildIdx);
+
+					/**
+					* NOTE: Brother is always relative to the current node,
+					* and the current node is NOT changed.
+					* So, because the parent of the current node is not changed,
+					* and reference to the brother is relative to it, the reference to the brother is NOT changed.
+					*/
+					pBrother = GetNode(BrotherRef);
+
+					/**
+					*  We must update the links to the children.
+					*/
+					if (NodeExists(BrotherChildRef))
+					{
+						pBrotherChild = GetNode(BrotherChildRef);
+						bBrotherChild_BlackOrNull = pBrotherChild->IsBlack();
+					}
+					else
+					{
+						pBrotherChild = nullptr;
+						bBrotherChild_BlackOrNull = true;
+					}
+
+					if (NodeExists(BrotherOtherChildRef))
+					{
+						pBrotherOtherChild = GetNode(BrotherOtherChildRef);
+						bBrotherOtherChild_BlackOrNull = pBrotherOtherChild->IsBlack();
+					}
+					else
+					{
+						pBrotherOtherChild = nullptr;
+						bBrotherOtherChild_BlackOrNull = true;
+					}
+				}
+				BOOST_ASSERT_MSG(pBrother->IsBlack(), "TRBTree::FixupRedBlackAfterRemove: Case  4: At this point the brother must be black");
+				BOOST_ASSERT_MSG(pBrotherOtherChild->IsBlack(), "TRBTree::FixupRedBlackAfterRemove: Case 4: At this point other child of brother must be black");
+
+				// Fourth case
+				NodeType* pParent = GetNode(ParentRef);
+				pBrother->CopyColorFrom(pParent);
+				pParent->MakeBlack();
+				if (pBrotherOtherChild)
+				{
+					// Should the brother child indice are to be updated?
+					pBrotherOtherChild->MakeBlack();
+				}
+
+				RotateAround(BrotherRef, BrotherOtherChildRef.ChildIdx);
+
+				// We must set current node to root, because of the MakeBlack call after the loop
+				pCurrNode = GetNode(RootIdx);
+				break;
+			}
+		}
+
+		pCurrNode->MakeBlack();
+	}
+
+	/**
+	* Rotates around the given node.
+	* Correctly choose which mode to rotate.
+	*
+	* @argument: ChildIdx: index of the child of the node to rotate around
+	* (if child is left, then we rotate to the right and vice versa).
+	*/
+	void RotateAround(TRBTreeImpl::ChildNodeRef AroundNode, TRBTreeImpl::NodeChildIndex ChildIdx)
+	{
+		TRBTreeImpl::ChildNodeRef ParentRef = GetChildNodeRef(AroundNode, ChildIdx);
+		TRBTreeImpl::ChildNodeRef NodeRef = GetChildNodeRef(ParentRef, TRBTreeImpl::LEFT_CHILD_IDX);
+		if ( ! NodeExists(NodeRef) )
+		{
+			NodeRef = GetChildNodeRef(ParentRef, TRBTreeImpl::RIGHT_CHILD_IDX);
+		}
+		RotateSubtree(NodeRef, ParentRef, AroundNode);
 	}
 
 	/**
@@ -1110,13 +1289,17 @@ private:
 		TRBTreeImpl::ChildNodeRef const ChildOfNewRef = GetChildNodeRef(OldNewNodeRef, ChildIdx);
 		TRBTreeImpl::ChildNodeRef const OtherChildOfNewRef = GetChildNodeRef(OldNewNodeRef, InvertedChildIdx);
 
-		int const OldParentIdx = GetNodeIndex(OldParentRef);
-		int const OldGrandpaIdx = GetNodeIndex(GrandpaRef);
-		int const OldChildOfNewIdx = GetNodeIndex(ChildOfNewRef);
-		int const OldOtherChildOfNewIdx = GetNodeIndex(OtherChildOfNewRef);
+		TRBTreeImpl::NodeIndex const OldParentIdx = GetNodeIndex(OldParentRef);
+		TRBTreeImpl::NodeIndex const OldGrandpaIdx = GetNodeIndex(GrandpaRef);
+		TRBTreeImpl::NodeIndex const OldChildOfNewIdx = GetNodeIndex(ChildOfNewRef);
+		TRBTreeImpl::NodeIndex const OldOtherChildOfNewIdx = GetNodeIndex(OtherChildOfNewRef);
 
 		GetNode(OldGrandpaIdx)->MakeRed();
-		GetNode(NodeIndex)->MakeBlack();
+		if (NodeIndex != INDEX_NONE)
+		{
+			// TODO: Optimization node: we doing extra check in the case when we do know that NodeIndex exists.
+			GetNode(NodeIndex)->MakeBlack();
+		}
 
 		LinkToNewParentByNewReference(NodeIndex, GrandpaRef);
 		LinkToNewParentByNewReference(OldParentIdx, OtherChildOfNewRef);
@@ -1135,9 +1318,9 @@ private:
 	{
 		TRBTreeImpl::ChildNodeRef const OldParentRef = GetChildNodeRef(GrandpaRef, ChildIdx);
 		TRBTreeImpl::ChildNodeRef const BrotherRef = GetChildNodeRef(OldParentRef, TRBTreeImpl::InvertChildIndex(ChildIdx));
-		int const OldParentIdx = GetNodeIndex(OldParentRef);
-		int const OldGrandpaIdx = GetNodeIndex(GrandpaRef);
-		int const OldBrotherIdx = GetNodeIndex(BrotherRef);
+		TRBTreeImpl::NodeIndex const OldParentIdx = GetNodeIndex(OldParentRef);
+		TRBTreeImpl::NodeIndex const OldGrandpaIdx = GetNodeIndex(GrandpaRef);
+		TRBTreeImpl::NodeIndex const OldBrotherIdx = GetNodeIndex(BrotherRef);
 
 		GetNode(OldGrandpaIdx)->MakeRed();
 		GetNode(OldParentIdx)->MakeBlack();

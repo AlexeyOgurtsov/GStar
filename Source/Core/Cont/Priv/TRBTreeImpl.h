@@ -220,6 +220,16 @@ namespace TRBTreeImpl
 		__forceinline bool IsRed() const { return bRed; }
 
 		/**
+		* Copies color from the given node to this one.
+		*/
+		__forceinline void CopyColorFrom(const Node* pInSource)
+		{
+			BOOST_ASSERT(pInSource);
+			bRed = pInSource->bRed;
+			bDoubleBlack = pInSource->bDoubleBlack;
+		}
+
+		/**
 		* Makes black.
 		*/
 		__forceinline void MakeBlack()
