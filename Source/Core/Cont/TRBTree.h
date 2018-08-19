@@ -918,21 +918,45 @@ private:
 	{
 		TRBTreeImpl::NodeIndex const OldNodeIdx = GetNodeIndex(InNodeRef);
 		TRBTreeImpl::NodeIndex const OldRightChildIdx = GetNode(InNodeRef)->GetChild(TRBTreeImpl::RIGHT_CHILD_IDX);
+		const NodeType* pOldNode = GetNode(OldNodeIdx);
 
 		TRBTreeImpl::ChildNodeRef const LeftChildRef = GetChildNodeRef(InNodeRef, TRBTreeImpl::LEFT_CHILD_IDX);
 		TRBTreeImpl::NodeChildIndex OldLeftChildIdx = GetNodeIndex(LeftChildRef);
 		
 		TRBTreeImpl::ChildNodeRef const PredecessorRef = GetDeepestNodeRef(LeftChildRef, /*ChildIdx=*/ TRBTreeImpl::RIGHT_CHILD_IDX);
 		TRBTreeImpl::NodeIndex const PredecessorIdx = GetNodeIndex(PredecessorRef);
+
+
+		/**
+		* Determine, whether Red-black tree properties corrupted and needs a fixup.
+		* WARNING! To be called before color is copied from the predecessor.
+		*/
 		bOutNeedsFixup = GetNode(PredecessorIdx)->IsBlack();
+
+		GetNode(PredecessorIdx)->CopyColorFrom(pOldNode);
 		
 		TRBTreeImpl::ChildNodeRef const RightChildOfPredecessorRef = GetChildNodeRef(PredecessorRef, TRBTreeImpl::RIGHT_CHILD_IDX);
 		BOOST_ASSERT_MSG( ! NodeExists(RightChildOfPredecessorRef), "TRBTree::RemoveNode_MakeRightSubtreeChildOfPredecessor: Right child of the predecessor must NOT exist");
 		OutSubstitutorRef = GetChildNodeRef(PredecessorRef, TRBTreeImpl::LEFT_CHILD_IDX);
+		TRBTreeImpl::NodeChildIndex SubstitutorIdx = GetNodeIndex(OutSubstitutorRef);
 
-		LinkToNewParentByNewReference(OldLeftChildIdx, InNodeRef);
+		// TODO: Old code: remove after testing:
+		//LinkToNewParentByNewReference(OldLeftChildIdx, InNodeRef);
+		//LinkToNewParentByNewReference(OldRightChildIdx, RightChildOfPredecessorRef);
+		//GetNode(OldNodeIdx)->SetChild(TRBTreeImpl::LEFT_CHILD_IDX, INDEX_NONE);
+
+		LinkToNewParentByNewReference(PredecessorIdx, InNodeRef);
+		if (OldLeftChildIdx != PredecessorIdx)
+		{
+			LinkToNewParentByNewReference(OldLeftChildIdx, OutSubstitutorRef);
+			LinkToNewParentByNewReference(SubstitutorIdx, PredecessorRef);
+		}
+		else
+		{
+			LinkToNewParentByNewReference(SubstitutorIdx, PredecessorRef);
+			// In this case substitutor's position relative to the predecessor is kept the same.
+		}
 		LinkToNewParentByNewReference(OldRightChildIdx, RightChildOfPredecessorRef);
-		GetNode(OldNodeIdx)->SetChild(TRBTreeImpl::LEFT_CHILD_IDX, INDEX_NONE);
 	}
 
 	/**
@@ -946,7 +970,17 @@ private:
 		bool const bChildExists = NodeExists(NextNodeRef);
 		TRBTreeImpl::NodeIndex const NextNodeIdx = bChildExists ? GetNodeIndex(NextNodeRef) : INDEX_NONE;
 
+		/**
+		* Determine whether red-black properties are corrupted and needs a fixup.
+		* WARNING!! To be checked only before color is updated.
+		*/
 		bOutNeedsFixup = GetNode(InNodeRef)->IsBlack();
+
+		if (bChildExists)
+		{
+			GetNode(NextNodeIdx)->CopyColorFrom(GetNode(InNodeRef));
+		}
+
 		
 		if (InNodeRef.IsRoot())
 		{
@@ -1035,12 +1069,12 @@ private:
 		{
 			BOOST_ASSERT(NodeExists(CurrNodeRef));
 
+			pCurrNode = GetNode(CurrNodeRef);
+
 			if (CurrNodeRef.IsRoot())
 			{
 				break;
 			}
-
-			pCurrNode = GetNode(CurrNodeRef);
 			TRBTreeImpl::NodeIndex CurrNodeIdx = GetNodeIndex(CurrNodeRef);
 			if (pCurrNode->IsRed())
 			{
