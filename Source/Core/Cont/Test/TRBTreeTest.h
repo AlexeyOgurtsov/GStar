@@ -998,7 +998,7 @@ BOOST_AUTO_TEST_CASE(RemoveLeftChildOfRoot_OnlyTwoElements)
 	BOOST_REQUIRE_EQUAL(T.Max().Key, KEY_ROOT);
 }
 
-BOOST_AUTO_TEST_CASE(RemoveLeftChildOfRoot_ChildHasTwoChildren)
+BOOST_AUTO_TEST_CASE(RemoveLeftChildOfRoot_LeftChildHasTwoChildren)
 {
 	constexpr int KEY_ROOT = 5;
 	constexpr int KEY_LEFT_CHILD = 3;
@@ -1017,6 +1017,37 @@ BOOST_AUTO_TEST_CASE(RemoveLeftChildOfRoot_ChildHasTwoChildren)
 	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
 
 	BOOST_TEST_CHECKPOINT("Removing");
+	// WARNING!!! It's correct, left child of root after balancing is old KEY_LEFT_RIGHT_CHILD_CHILD
+	BOOST_REQUIRE(T.Remove(KEY_LEFT_RIGHT_CHILD_CHILD));
+	BOOST_REQUIRE_EQUAL(T.Num(), (INITIAL_COUNT - 1));
+	IntRBTree::KeyValueType ordered[(INITIAL_COUNT - 1)];
+	T.CopyTo(ordered);
+	BOOST_REQUIRE_EQUAL(ordered[0].Key, KEY_LEFT_LEFT_CHILD_CHILD);
+	BOOST_REQUIRE_EQUAL(ordered[1].Key, KEY_LEFT_CHILD);
+	BOOST_REQUIRE_EQUAL(ordered[2].Key, KEY_ROOT);
+	BOOST_REQUIRE_EQUAL(ordered[3].Key, KEY_RIGHT_CHILD);
+}
+
+BOOST_AUTO_TEST_CASE(RemoveRightChildOfLeftChildOfRoot_LeftChildOfRootHasTwoChildren)
+{
+	constexpr int KEY_ROOT = 5;
+	constexpr int KEY_LEFT_CHILD = 3;
+	constexpr int KEY_RIGHT_CHILD = 7;
+	constexpr int KEY_LEFT_LEFT_CHILD_CHILD = 1;
+	constexpr int KEY_LEFT_RIGHT_CHILD_CHILD = 2;
+	constexpr int INITIAL_COUNT = 5;
+
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntRBTree T;
+	BOOST_REQUIRE(T.Add(KEY_ROOT, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_LEFT_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_RIGHT_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_LEFT_LEFT_CHILD_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_LEFT_RIGHT_CHILD_CHILD, NoValue{}));
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	// WARNING!!! It's correct, Right child of left child of root after balancing is old KEY_LEFT_CHILD)
 	BOOST_REQUIRE(T.Remove(KEY_LEFT_CHILD));
 	BOOST_REQUIRE_EQUAL(T.Num(), (INITIAL_COUNT - 1));
 	IntRBTree::KeyValueType ordered[(INITIAL_COUNT - 1)];
@@ -1107,6 +1138,323 @@ BOOST_AUTO_TEST_CASE(RemoveRightChildOfRoot_OnlyTwoElements)
 	BOOST_REQUIRE_EQUAL(T.Num(), 1);
 	BOOST_REQUIRE_EQUAL(T.Min().Key, KEY_ROOT);
 	BOOST_REQUIRE_EQUAL(T.Max().Key, KEY_ROOT);
+}
+
+BOOST_AUTO_TEST_CASE(RemoveLeftLeaf_TwoTire)
+{
+	constexpr int KEY_FIRST = 3;
+	constexpr int KEY_SECOND = 1;
+	constexpr int KEY_THIRD = 4;
+	constexpr int KEY_FOURTH = 0;
+	constexpr int INITIAL_COUNT = 4;
+
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntRBTree T;
+	T.Add(KEY_FIRST, NoValue{});
+	T.Add(KEY_SECOND, NoValue{});
+	T.Add(KEY_THIRD, NoValue{});
+	T.Add(KEY_FOURTH, NoValue{});
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	BOOST_REQUIRE(T.Remove(KEY_FOURTH));
+	BOOST_REQUIRE_EQUAL(T.Num(), (INITIAL_COUNT - 1));
+
+	BOOST_TEST_CHECKPOINT("Checking");
+	IntRBTree::KeyValueType ordered[(INITIAL_COUNT - 1)];
+	T.CopyTo(ordered);
+	BOOST_REQUIRE_EQUAL(ordered[0].Key, KEY_SECOND);
+	BOOST_REQUIRE_EQUAL(ordered[1].Key, KEY_FIRST);
+	BOOST_REQUIRE_EQUAL(ordered[2].Key, KEY_THIRD);
+}
+
+BOOST_AUTO_TEST_CASE(RemoveRightLeaf_TwoTire)
+{
+	constexpr int KEY_FIRST = 3;
+	constexpr int KEY_SECOND = 1;
+	constexpr int KEY_THIRD = 4;
+	constexpr int KEY_FOURTH = 2;
+	constexpr int INITIAL_COUNT = 4;
+
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntRBTree T;
+	T.Add(KEY_FIRST, NoValue{});
+	T.Add(KEY_SECOND, NoValue{});
+	T.Add(KEY_THIRD, NoValue{});
+	T.Add(KEY_FOURTH, NoValue{});
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	BOOST_REQUIRE(T.Remove(KEY_FOURTH));
+	BOOST_REQUIRE_EQUAL(T.Num(), (INITIAL_COUNT - 1));
+
+	BOOST_TEST_CHECKPOINT("Checking");
+	IntRBTree::KeyValueType ordered[(INITIAL_COUNT - 1)];
+	T.CopyTo(ordered);
+	BOOST_REQUIRE_EQUAL(ordered[0].Key, KEY_SECOND);
+	BOOST_REQUIRE_EQUAL(ordered[1].Key, KEY_FIRST);
+	BOOST_REQUIRE_EQUAL(ordered[2].Key, KEY_THIRD);
+}
+
+BOOST_AUTO_TEST_CASE(RemoveInternalNode_WithOnlyLeftRedChild)
+{
+	constexpr int KEY_FIRST = 3;
+	constexpr int KEY_SECOND = 1;
+	constexpr int KEY_THIRD = 4;
+	constexpr int KEY_FOURTH = 0;
+	constexpr int INITIAL_COUNT = 4;
+
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntRBTree T;
+	T.Add(KEY_FIRST, NoValue{});
+	T.Add(KEY_SECOND, NoValue{});
+	T.Add(KEY_THIRD, NoValue{});
+	T.Add(KEY_FOURTH, NoValue{});
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	BOOST_REQUIRE(T.Remove(KEY_SECOND));
+	BOOST_REQUIRE_EQUAL(T.Num(), (INITIAL_COUNT - 1));
+
+	BOOST_TEST_CHECKPOINT("Checking");
+	IntRBTree::KeyValueType ordered[(INITIAL_COUNT - 1)];
+	T.CopyTo(ordered);
+	BOOST_REQUIRE_EQUAL(ordered[0].Key, KEY_FOURTH);
+	BOOST_REQUIRE_EQUAL(ordered[1].Key, KEY_FIRST);
+	BOOST_REQUIRE_EQUAL(ordered[2].Key, KEY_THIRD);
+}
+
+BOOST_AUTO_TEST_CASE(RemoveInternalNode_WithOnlyRightRedChild)
+{
+	constexpr int KEY_FIRST = 3;
+	constexpr int KEY_SECOND = 1;
+	constexpr int KEY_THIRD = 4;
+	constexpr int KEY_FOURTH = 2;
+	constexpr int INITIAL_COUNT = 4;
+
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntRBTree T;
+	T.Add(KEY_FIRST, NoValue{});
+	T.Add(KEY_SECOND, NoValue{});
+	T.Add(KEY_THIRD, NoValue{});
+	T.Add(KEY_FOURTH, NoValue{});
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	BOOST_REQUIRE(T.Remove(KEY_SECOND));
+	BOOST_REQUIRE_EQUAL(T.Num(), (INITIAL_COUNT - 1));
+
+	BOOST_TEST_CHECKPOINT("Checking");
+	IntRBTree::KeyValueType ordered[(INITIAL_COUNT - 1)];
+	T.CopyTo(ordered);
+	BOOST_REQUIRE_EQUAL(ordered[0].Key, KEY_FOURTH);
+	BOOST_REQUIRE_EQUAL(ordered[1].Key, KEY_FIRST);
+	BOOST_REQUIRE_EQUAL(ordered[2].Key, KEY_THIRD);
+}
+
+BOOST_AUTO_TEST_CASE(RemoveInternalNode_WithOnlyRightRedChild_OnlyLeftRedChildOfBrother)
+{
+	constexpr int KEY_FIRST = 4;
+	constexpr int KEY_SECOND = 1;
+	constexpr int KEY_THIRD = 6;
+	constexpr int KEY_FOURTH = 3;
+	constexpr int KEY_FIVE = 5;
+	constexpr int INITIAL_COUNT = 5;
+
+
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntRBTree T;
+	T.Add(KEY_FIRST, NoValue{});
+	T.Add(KEY_SECOND, NoValue{});
+	T.Add(KEY_THIRD, NoValue{});
+	T.Add(KEY_FOURTH, NoValue{});
+	T.Add(KEY_FIVE, NoValue{});
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	BOOST_REQUIRE(T.Remove(KEY_SECOND));
+	BOOST_REQUIRE_EQUAL(T.Num(), (INITIAL_COUNT - 1));
+
+	BOOST_TEST_CHECKPOINT("Checking");
+	IntRBTree::KeyValueType ordered[(INITIAL_COUNT - 1)];
+	T.CopyTo(ordered);
+	BOOST_REQUIRE_EQUAL(ordered[0].Key, KEY_FOURTH);
+	BOOST_REQUIRE_EQUAL(ordered[1].Key, KEY_FIRST);
+	BOOST_REQUIRE_EQUAL(ordered[2].Key, KEY_FIVE);
+	BOOST_REQUIRE_EQUAL(ordered[3].Key, KEY_THIRD);
+}
+
+BOOST_AUTO_TEST_CASE(RemoveInternalNode_WithOnlyRightRedChild_OnlyRightRedChildOfBrother)
+{
+	constexpr int KEY_FIRST = 4;
+	constexpr int KEY_SECOND = 1;
+	constexpr int KEY_THIRD = 6;
+	constexpr int KEY_FOURTH = 3;
+	constexpr int KEY_FIVE = 7;
+	constexpr int INITIAL_COUNT = 5;
+
+
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntRBTree T;
+	T.Add(KEY_FIRST, NoValue{});
+	T.Add(KEY_SECOND, NoValue{});
+	T.Add(KEY_THIRD, NoValue{});
+	T.Add(KEY_FOURTH, NoValue{});
+	T.Add(KEY_FIVE, NoValue{});
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	BOOST_REQUIRE(T.Remove(KEY_SECOND));
+	BOOST_REQUIRE_EQUAL(T.Num(), (INITIAL_COUNT - 1));
+
+	BOOST_TEST_CHECKPOINT("Checking");
+	IntRBTree::KeyValueType ordered[(INITIAL_COUNT - 1)];
+	T.CopyTo(ordered);
+	BOOST_REQUIRE_EQUAL(ordered[0].Key, KEY_FOURTH);
+	BOOST_REQUIRE_EQUAL(ordered[1].Key, KEY_FIRST);
+	BOOST_REQUIRE_EQUAL(ordered[2].Key, KEY_THIRD);
+	BOOST_REQUIRE_EQUAL(ordered[3].Key, KEY_FIVE);
+}
+
+BOOST_AUTO_TEST_CASE(RemoveInternalNode_WithOnlyRightRedChild_BothRedChildrenOfBlackBrother)
+{
+	constexpr int KEY_FIRST = 4;
+	constexpr int KEY_SECOND = 1;
+	constexpr int KEY_THIRD = 6;
+	constexpr int KEY_FOURTH = 3;
+	constexpr int KEY_FIVE = 7;
+	constexpr int KEY_SIX = 5;
+	constexpr int INITIAL_COUNT = 6;
+
+
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntRBTree T;
+	T.Add(KEY_FIRST, NoValue{});
+	T.Add(KEY_SECOND, NoValue{});
+	T.Add(KEY_THIRD, NoValue{});
+	T.Add(KEY_FOURTH, NoValue{});
+	T.Add(KEY_FIVE, NoValue{});
+	T.Add(KEY_SIX, NoValue{});
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	BOOST_REQUIRE(T.Remove(KEY_SECOND));
+	BOOST_REQUIRE_EQUAL(T.Num(), (INITIAL_COUNT - 1));
+
+	BOOST_TEST_CHECKPOINT("Checking");
+	IntRBTree::KeyValueType ordered[(INITIAL_COUNT - 1)];
+	T.CopyTo(ordered);
+	BOOST_REQUIRE_EQUAL(ordered[0].Key, KEY_FOURTH);
+	BOOST_REQUIRE_EQUAL(ordered[1].Key, KEY_FIRST);
+	BOOST_REQUIRE_EQUAL(ordered[2].Key, KEY_SIX);
+	BOOST_REQUIRE_EQUAL(ordered[3].Key, KEY_THIRD);
+	BOOST_REQUIRE_EQUAL(ordered[4].Key, KEY_FIVE);
+}
+
+BOOST_AUTO_TEST_CASE(RemoveInternalNode_FullTwoTireTree)
+{
+	constexpr int KEY_FIRST = 4;
+	constexpr int KEY_SECOND = 1;
+	constexpr int KEY_THIRD = 6;
+	constexpr int KEY_FOURTH = 3;
+	constexpr int KEY_FIVE = 7;
+	constexpr int KEY_SIX = 5;
+	constexpr int KEY_SEVEN = 0;
+	constexpr int INITIAL_COUNT = 7;
+
+
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntRBTree T;
+	T.Add(KEY_FIRST, NoValue{});
+	T.Add(KEY_SECOND, NoValue{});
+	T.Add(KEY_THIRD, NoValue{});
+	T.Add(KEY_FOURTH, NoValue{});
+	T.Add(KEY_FIVE, NoValue{});
+	T.Add(KEY_SIX, NoValue{});
+	T.Add(KEY_SEVEN, NoValue{});
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	BOOST_REQUIRE(T.Remove(KEY_SECOND));
+	BOOST_REQUIRE_EQUAL(T.Num(), (INITIAL_COUNT - 1));
+
+	BOOST_TEST_CHECKPOINT("Checking");
+	IntRBTree::KeyValueType ordered[(INITIAL_COUNT - 1)];
+	T.CopyTo(ordered);
+	BOOST_REQUIRE_EQUAL(ordered[0].Key, KEY_SEVEN);
+	BOOST_REQUIRE_EQUAL(ordered[1].Key, KEY_FOURTH);
+	BOOST_REQUIRE_EQUAL(ordered[2].Key, KEY_FIRST);
+	BOOST_REQUIRE_EQUAL(ordered[3].Key, KEY_SIX);
+	BOOST_REQUIRE_EQUAL(ordered[4].Key, KEY_THIRD);
+	BOOST_REQUIRE_EQUAL(ordered[5].Key, KEY_FIVE);
+}
+
+BOOST_AUTO_TEST_CASE(RemoveInternalNode_WithOnlyLeftRedChild_RedBrother)
+{
+	constexpr int KEY_FIRST = 2;
+	constexpr int KEY_SECOND = 1;
+	constexpr int KEY_THIRD = 6;
+	constexpr int KEY_FOURTH = 0;
+	constexpr int KEY_FIVE = 3;
+	constexpr int KEY_SIX = 7;
+	constexpr int KEY_SEVEN = 4;
+	constexpr int INITIAL_COUNT = 7;
+
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntRBTree T;
+	T.Add(KEY_FIRST, NoValue{});
+	T.Add(KEY_SECOND, NoValue{});
+	T.Add(KEY_THIRD, NoValue{});
+	T.Add(KEY_FOURTH, NoValue{});
+	T.Add(KEY_FIVE, NoValue{});
+	T.Add(KEY_SIX, NoValue{});
+	T.Add(KEY_SEVEN, NoValue{});
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	BOOST_REQUIRE(T.Remove(KEY_SECOND));
+	BOOST_REQUIRE_EQUAL(T.Num(), (INITIAL_COUNT - 1));
+
+	BOOST_TEST_CHECKPOINT("Checking");
+	IntRBTree::KeyValueType ordered[(INITIAL_COUNT - 1)];
+	T.CopyTo(ordered);
+	BOOST_REQUIRE_EQUAL(ordered[0].Key, KEY_FOURTH);
+	BOOST_REQUIRE_EQUAL(ordered[1].Key, KEY_FIRST);
+	BOOST_REQUIRE_EQUAL(ordered[2].Key, KEY_FIVE);
+	BOOST_REQUIRE_EQUAL(ordered[3].Key, KEY_SEVEN);
+	BOOST_REQUIRE_EQUAL(ordered[4].Key, KEY_THIRD);
+	BOOST_REQUIRE_EQUAL(ordered[5].Key, KEY_SIX);
+}
+
+BOOST_AUTO_TEST_CASE(RemoveInternalBlackNode_WithTwoBlackChildren_BrotherWith_RightRedLeftBlackChildren)
+{
+	constexpr int INITIAL_COUNT = 10;
+
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntRBTree T;
+	for (int i = 1; i <= INITIAL_COUNT; i++)
+	{
+		BOOST_REQUIRE(T.Add(i, NoValue{}));
+	}
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	BOOST_REQUIRE(T.Remove(2));
+	BOOST_REQUIRE_EQUAL(T.Num(), (INITIAL_COUNT - 1));
+
+	BOOST_TEST_CHECKPOINT("Checking");
+	IntRBTree::KeyValueType ordered[(INITIAL_COUNT - 1)];
+	T.CopyTo(ordered);
+	int curr_index = 0;
+	for (int ref_key = 1; ref_key <= INITIAL_COUNT; ref_key++)
+	{
+		if (ref_key != 2)
+		{
+			BOOST_REQUIRE_EQUAL(ordered[curr_index].Key, ref_key);
+			curr_index++;
+		}
+		ref_key++;
+	}
 }
 
 BOOST_AUTO_TEST_SUITE_END() // RemoveSuite
@@ -1299,6 +1647,10 @@ BOOST_AUTO_TEST_CASE(AddGreaterGreater, *boost::unit_test::depends_on("Core/Cont
 	BOOST_TEST_CHECKPOINT("Copying to buffer");
 	IntRBTree::KeyValueType DestBuf[NUM];
 	T.CopyTo(DestBuf);
+
+	BOOST_REQUIRE_EQUAL(DestBuf[0].Key, KEY_ONE);
+	BOOST_REQUIRE_EQUAL(DestBuf[1].Key, KEY_TWO);
+	BOOST_REQUIRE_EQUAL(DestBuf[2].Key, KEY_THREE);
 }
 
 BOOST_AUTO_TEST_CASE(AddGreaterGreaterGreater, *boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/AddSuite/AddGreaterGreater"))
@@ -1328,6 +1680,11 @@ BOOST_AUTO_TEST_CASE(AddGreaterGreaterGreater, *boost::unit_test::depends_on("Co
 	BOOST_TEST_CHECKPOINT("Copying to buffer");
 	IntRBTree::KeyValueType DestBuf[NUM];
 	T.CopyTo(DestBuf);
+
+	BOOST_REQUIRE_EQUAL(DestBuf[0].Key, KEY_ONE);
+	BOOST_REQUIRE_EQUAL(DestBuf[1].Key, KEY_TWO);
+	BOOST_REQUIRE_EQUAL(DestBuf[2].Key, KEY_THREE);
+	BOOST_REQUIRE_EQUAL(DestBuf[3].Key, KEY_FOUR);
 }
 
 BOOST_AUTO_TEST_CASE(AddGreaterManyMany, *boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/AddSuite/AddGreaterGreaterGreater"))
@@ -1343,6 +1700,14 @@ BOOST_AUTO_TEST_CASE(AddGreaterManyMany, *boost::unit_test::depends_on("Core/Con
 	for (int i = 0; i < COUNT; i++)
 	{
 		BOOST_REQUIRE(T.Contains(i));
+	}
+
+	IntRBTree::KeyValueType DestBuf[COUNT];
+	T.CopyTo(DestBuf);
+
+	for (int i = 0; i < COUNT; i++)
+	{
+		BOOST_REQUIRE_EQUAL(DestBuf[i].Key, i);
 	}
 }
 

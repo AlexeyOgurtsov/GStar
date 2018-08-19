@@ -244,7 +244,7 @@ public:
 		bool bNeedsFixup = false;
 		bool const bRemoved = RemoveNode(InKey, /*Out*/NodeSubstitutorRef, /*Out*/bNeedsFixup);
 
-		if ( bRemoved && bNeedsFixup && ( ! Empty() ) )
+		if ( bRemoved && bNeedsFixup && ( ! Empty() ))
 		{
 			FixupRedBlackAfterRemove(NodeSubstitutorRef);
 		}
@@ -466,6 +466,12 @@ public:
 					}
 
 					if ( pMaximKey && (*pChildKey > *pMaximKey) )
+					{
+						return false;
+					}
+
+					// Check that parent reference is valid
+					if (ChildRef.ParentIdx != GetNodeIndex(pNode->NodeRef))
 					{
 						return false;
 					}
@@ -966,20 +972,21 @@ private:
 	*/
 	void RemoveNode_LinkToChild(TRBTreeImpl::ChildNodeRef InNodeRef, TRBTreeImpl::NodeChildIndex ChildIdx, TRBTreeImpl::ChildNodeRef& OutSubstitutorRef, bool& bOutNeedsFixup)
 	{
+		TRBTreeImpl::NodeIndex NodeIdx = GetNodeIndex(InNodeRef);
 		TRBTreeImpl::ChildNodeRef const NextNodeRef = GetChildNodeRef(InNodeRef, ChildIdx);
 		bool const bChildExists = NodeExists(NextNodeRef);
 		TRBTreeImpl::NodeIndex const NextNodeIdx = bChildExists ? GetNodeIndex(NextNodeRef) : INDEX_NONE;
 
 		/**
 		* Determine whether red-black properties are corrupted and needs a fixup.
-		* WARNING!! To be checked only before color is updated.
+		* WARNING!! To be checked only AFTER color is updated.
 		*/
 		bOutNeedsFixup = GetNode(InNodeRef)->IsBlack();
 
-		if (bChildExists)
-		{
-			GetNode(NextNodeIdx)->CopyColorFrom(GetNode(InNodeRef));
-		}
+		//if (bChildExists)
+		//{
+		//	GetNode(NextNodeIdx)->CopyColorFrom(GetNode(InNodeRef));
+		//}
 
 		
 		if (InNodeRef.IsRoot())
@@ -1003,7 +1010,7 @@ private:
 		* WARNING!!! Because we relinked the substitutor (child node) to parent of the NodeRef,
 		* we must return the reference relative to that parent.
 		*/
-		OutSubstitutorRef = TRBTreeImpl::ChildNodeRef(InNodeRef.ParentIdx, ChildIdx);
+		OutSubstitutorRef = InNodeRef;
 	}
 
 	/**
@@ -1067,26 +1074,32 @@ private:
 		NodeType* pCurrNode = nullptr;
 		while (true)
 		{
-			BOOST_ASSERT(NodeExists(CurrNodeRef));
-
-			pCurrNode = GetNode(CurrNodeRef);
-
 			if (CurrNodeRef.IsRoot())
 			{
 				break;
 			}
+
+			TRBTreeImpl::ChildNodeRef BrotherRef{ CurrNodeRef.ParentIdx, TRBTreeImpl::InvertChildIndex(CurrNodeRef.ChildIdx) };
+			TRBTreeImpl::ChildNodeRef ParentRef = GetParentNodeRef(CurrNodeRef);
+			if ( ! NodeExists(CurrNodeRef) )
+			{
+				BOOST_ASSERT_MSG( NodeExists(BrotherRef), "TRBTree:FixupRedBlackAfterRemove: at this point the brother must exist");
+				GetNode(BrotherRef)->MakeRed();
+				CurrNodeRef = ParentRef;
+				continue;
+			}
+
+			pCurrNode = GetNode(CurrNodeRef);
+
 			TRBTreeImpl::NodeIndex CurrNodeIdx = GetNodeIndex(CurrNodeRef);
 			if (pCurrNode->IsRed())
 			{
 				break;
 			}
-
-			TRBTreeImpl::ChildNodeRef ParentRef = GetParentNodeRef(CurrNodeRef);
 				
-			TRBTreeImpl::ChildNodeRef BrotherRef { CurrNodeRef.ParentIdx, TRBTreeImpl::InvertChildIndex(CurrNodeRef.ChildIdx) };
 			if ( ! NodeExists(BrotherRef) )
 			{
-				BOOST_ASSERT_MSG(false, "TRBTree: FixupRedBlackAfterRemove: The case is NOT yet coded");
+				//BOOST_ASSERT_MSG(false, "TRBTree: FixupRedBlackAfterRemove: The case is NOT yet coded");
 				CurrNodeRef = ParentRef;
 				break;
 			}
@@ -1198,7 +1211,7 @@ private:
 					}
 				}
 				BOOST_ASSERT_MSG(pBrother->IsBlack(), "TRBTree::FixupRedBlackAfterRemove: Case  4: At this point the brother must be black");
-				BOOST_ASSERT_MSG(pBrotherOtherChild->IsBlack(), "TRBTree::FixupRedBlackAfterRemove: Case 4: At this point other child of brother must be black");
+				BOOST_ASSERT_MSG(pBrotherOtherChild->IsRed(), "TRBTree::FixupRedBlackAfterRemove: Case 4: At this point other child of brother must be red");
 
 				// Fourth case
 				NodeType* pParent = GetNode(ParentRef);
@@ -1268,10 +1281,10 @@ private:
 				// At this point both parent and the new node are red,
 				// and we cannot perform recoloring because uncle is black.
 				NodeRef = RotateSubtree(NodeRef, ParentRef, GrandpaRef);
-				if (NodeRef.IsRoot())
-				{
+				//if (NodeRef.IsRoot())
+				//{
 					return;
-				}
+				//}
 			}
 			else
 			{
