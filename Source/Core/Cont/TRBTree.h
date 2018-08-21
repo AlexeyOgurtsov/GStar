@@ -1107,12 +1107,19 @@ private:
 			else
 			{
 				NodeType* pBrother = GetNode(BrotherRef);
+
+				TRBTreeImpl::ChildNodeRef BrotherChildRef = GetChildNodeRef(BrotherRef, CurrNodeRef.ChildIdx);
+				TRBTreeImpl::ChildNodeRef BrotherOtherChildRef = GetChildNodeRef(BrotherRef, BrotherRef.ChildIdx);
+
 				if (pBrother->IsRed())
 				{
-					/**
-					* If the brother is red, we must .
-					*/
-					RotateAround(ParentRef, BrotherRef.ChildIdx);
+					GetNode(BrotherRef)->MakeBlack();
+					GetNode(ParentRef)->MakeRed();
+
+					RotateBrotherUpAroundParent_AfterDeleted(BrotherRef, ParentRef);
+
+					// TODO: Remove
+					//RotateAround(ParentRef, BrotherRef.ChildIdx);
 
 					// Really, brother reference should NOT change during rotation:
 					//BrotherRef = TRBTreeImpl::ChildNodeRef(OldParentIdx, BrotherRef.ChildIdx);
@@ -1130,8 +1137,8 @@ private:
 
 				BOOST_ASSERT_MSG(pBrother->IsBlack(), "TRBTree::FixupRedBlackAfterRemove: Case 2: At this point the brother must be black");
 
-				TRBTreeImpl::ChildNodeRef BrotherChildRef = GetChildNodeRef(BrotherRef, CurrNodeRef.ChildIdx);
-				TRBTreeImpl::ChildNodeRef BrotherOtherChildRef = GetChildNodeRef(BrotherRef, BrotherRef.ChildIdx);
+				BrotherChildRef = GetChildNodeRef(BrotherRef, CurrNodeRef.ChildIdx);
+				BrotherOtherChildRef = GetChildNodeRef(BrotherRef, BrotherRef.ChildIdx);
 				
 				bool bBrotherChild_BlackOrNull = true;
 				bool bBrotherOtherChild_BlackOrNull = true;
@@ -1176,7 +1183,9 @@ private:
 					BOOST_ASSERT_MSG(pBrotherChild->IsRed(), "TRBTree::FixupRedBlackAfterRemove: case 3: At this point brother child must be red");
 					pBrotherChild->MakeBlack();
 					pBrother->MakeRed();
-					RotateAround(ParentRef, CurrNodeRef.ChildIdx);
+
+					// TODO: We need to disable recoloring here
+					RotateAround(BrotherRef, CurrNodeRef.ChildIdx);
 
 					/**
 					* NOTE: Brother is always relative to the current node,
@@ -1224,7 +1233,12 @@ private:
 					pBrotherOtherChild->MakeBlack();
 				}
 
-				RotateAround(ParentRef, BrotherRef.ChildIdx);
+				pBrother->CopyColorFrom(pParent);
+				pParent->MakeBlack();
+				pBrotherOtherChild->MakeBlack();
+				RotateBrotherUpAroundParent_AfterDeleted(BrotherRef, ParentRef);
+				
+				//RotateAround(ParentRef, BrotherRef.ChildIdx);
 
 				// We must set current node to root, because of the MakeBlack call after the loop
 				pCurrNode = GetNode(RootIdx);
@@ -1233,6 +1247,29 @@ private:
 		}
 
 		pCurrNode->MakeBlack();
+	}
+
+	/**
+	* Rotates brother up around the parent node.
+	*/
+	void RotateBrotherUpAroundParent_AfterDeleted(TRBTreeImpl::ChildNodeRef BrotherRef, TRBTreeImpl::ChildNodeRef ParentRef)
+	{
+		BOOST_ASSERT(NodeExists(BrotherRef));
+		BOOST_ASSERT(NodeExists(ParentRef));
+
+		TRBTreeImpl::ChildNodeRef const BrotherChildRef = GetChildNodeRef(BrotherRef, TRBTreeImpl::InvertChildIndex(BrotherRef.ChildIdx));
+		TRBTreeImpl::ChildNodeRef const BrotherOtherChildRef = GetChildNodeRef(BrotherRef, BrotherRef.ChildIdx);
+
+		if (NodeExists(BrotherOtherChildRef))
+		{
+			// Same child idx of brother and child of brother
+			Rotate_SameChildIdx(GetNodeIndex(BrotherOtherChildRef), ParentRef, BrotherOtherChildRef.ChildIdx);
+		}
+		else
+		{
+			// Different child idx of brother and child of brother
+			Rotate_DifferentChildIdx(GetNodeIndex(BrotherChildRef), ParentRef, BrotherChildRef.ChildIdx);
+		}
 	}
 
 	/**
@@ -1250,7 +1287,8 @@ private:
 		{
 			NodeRef = GetChildNodeRef(ParentRef, TRBTreeImpl::RIGHT_CHILD_IDX);
 		}
-		RotateSubtree(NodeRef, ParentRef, AroundNode);
+		// TODO: Substitute with concrete particular case rotations
+		RotateAndColorSubtree_ForNewRedNode(NodeRef, ParentRef, AroundNode);
 	}
 
 	/**
@@ -1281,7 +1319,7 @@ private:
 			{
 				// At this point both parent and the new node are red,
 				// and we cannot perform recoloring because uncle is black.
-				NodeRef = RotateSubtree(NodeRef, ParentRef, GrandpaRef);
+				NodeRef = RotateAndColorSubtree_ForNewRedNode(NodeRef, ParentRef, GrandpaRef);
 				return;
 			}
 			else
@@ -1307,15 +1345,18 @@ private:
 	* Handles all rotation cases.
 	* Returns reference to the node to be visited next.
 	*/
-	TRBTreeImpl::ChildNodeRef RotateSubtree(TRBTreeImpl::ChildNodeRef NodeRef, TRBTreeImpl::ChildNodeRef ParentRef, TRBTreeImpl::ChildNodeRef GrandpaRef)
+	TRBTreeImpl::ChildNodeRef RotateAndColorSubtree_ForNewRedNode(TRBTreeImpl::ChildNodeRef NodeRef, TRBTreeImpl::ChildNodeRef ParentRef, TRBTreeImpl::ChildNodeRef GrandpaRef)
 	{
 		int const NodeIndex = GetNodeIndex(NodeRef);
+		GetNode(GrandpaRef)->MakeRed();
 		if (NodeRef.ChildIdx == ParentRef.ChildIdx)
 		{
+			GetNode(ParentRef)->MakeBlack();
 			return Rotate_SameChildIdx(NodeIndex, GrandpaRef, NodeRef.ChildIdx);
 		}
 		else
 		{
+			GetNode(NodeIndex)->MakeBlack();
 			return Rotate_DifferentChildIdx(NodeIndex, GrandpaRef, NodeRef.ChildIdx);
 		}
 	}
@@ -1339,13 +1380,6 @@ private:
 		TRBTreeImpl::NodeIndex const OldChildOfNewIdx = GetNodeIndex(ChildOfNewRef);
 		TRBTreeImpl::NodeIndex const OldOtherChildOfNewIdx = GetNodeIndex(OtherChildOfNewRef);
 
-		GetNode(OldGrandpaIdx)->MakeRed();
-		if (NodeIndex != INDEX_NONE)
-		{
-			// TODO: Optimization node: we doing extra check in the case when we do know that NodeIndex exists.
-			GetNode(NodeIndex)->MakeBlack();
-		}
-
 		LinkToNewParentByNewReference(NodeIndex, GrandpaRef);
 		LinkToNewParentByNewReference(OldParentIdx, OtherChildOfNewRef);
 		LinkToNewParentByNewReference(OldGrandpaIdx, ChildOfNewRef);
@@ -1366,9 +1400,6 @@ private:
 		TRBTreeImpl::NodeIndex const OldParentIdx = GetNodeIndex(OldParentRef);
 		TRBTreeImpl::NodeIndex const OldGrandpaIdx = GetNodeIndex(GrandpaRef);
 		TRBTreeImpl::NodeIndex const OldBrotherIdx = GetNodeIndex(BrotherRef);
-
-		GetNode(OldGrandpaIdx)->MakeRed();
-		GetNode(OldParentIdx)->MakeBlack();
 		
 		LinkToNewParentByNewReference(OldParentIdx, GrandpaRef);
 		LinkToNewParentByNewReference(OldBrotherIdx, OldParentRef);
