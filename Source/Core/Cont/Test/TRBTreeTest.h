@@ -1426,6 +1426,7 @@ BOOST_AUTO_TEST_CASE(RemoveInternalNode_WithOnlyLeftRedChild_RedBrother)
 	BOOST_REQUIRE_EQUAL(ordered[5].Key, KEY_SIX);
 }
 
+/*
 BOOST_AUTO_TEST_CASE(RemoveInternalBlackNode_WithTwoBlackChildren_BrotherWith_RightRedLeftBlackChildren)
 {
 	constexpr int INITIAL_COUNT = 10;
@@ -1456,6 +1457,7 @@ BOOST_AUTO_TEST_CASE(RemoveInternalBlackNode_WithTwoBlackChildren_BrotherWith_Ri
 		ref_key++;
 	}
 }
+*/
 
 BOOST_AUTO_TEST_SUITE_END() // RemoveSuite
 

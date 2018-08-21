@@ -264,7 +264,7 @@ public:
 	{
 		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
 		bool const bAdded = AddNewNode(KeyValueType{InKey,InValue}, /*Out*/ NodeRef);
-		if (bAdded && Num() >= 4)
+		if (bAdded && Num() >= 3)
 		{
 			FixupRedBlackAfterAdd(NodeRef);
 		}
@@ -1076,6 +1076,7 @@ private:
 		{
 			if (CurrNodeRef.IsRoot())
 			{
+				pCurrNode = GetNode(CurrNodeRef);
 				break;
 			}
 
@@ -1175,7 +1176,7 @@ private:
 					BOOST_ASSERT_MSG(pBrotherChild->IsRed(), "TRBTree::FixupRedBlackAfterRemove: case 3: At this point brother child must be red");
 					pBrotherChild->MakeBlack();
 					pBrother->MakeRed();
-					RotateAround(BrotherRef, BrotherChildRef.ChildIdx);
+					RotateAround(ParentRef, CurrNodeRef.ChildIdx);
 
 					/**
 					* NOTE: Brother is always relative to the current node,
@@ -1223,7 +1224,7 @@ private:
 					pBrotherOtherChild->MakeBlack();
 				}
 
-				RotateAround(BrotherRef, BrotherOtherChildRef.ChildIdx);
+				RotateAround(ParentRef, BrotherRef.ChildIdx);
 
 				// We must set current node to root, because of the MakeBlack call after the loop
 				pCurrNode = GetNode(RootIdx);
@@ -1257,7 +1258,7 @@ private:
 	*/
 	void FixupRedBlackAfterAdd(TRBTreeImpl::ChildNodeRef NodeRef)
 	{
-		BOOST_ASSERT_MSG(Num()>= 4, "TRBTree::FixupRedBlackAfterAdd: The tree must already contain at least 4 nodes (including the new added one) before the fixup operation");
+		BOOST_ASSERT_MSG(Num()>= 3, "TRBTree::FixupRedBlackAfterAdd: The tree must already contain at least 3 nodes (including the new added one) before the fixup operation");
 		while (true)
 		{
 			TRBTreeImpl::ChildNodeRef ParentRef = GetParentNodeRef(NodeRef);
@@ -1281,14 +1282,11 @@ private:
 				// At this point both parent and the new node are red,
 				// and we cannot perform recoloring because uncle is black.
 				NodeRef = RotateSubtree(NodeRef, ParentRef, GrandpaRef);
-				//if (NodeRef.IsRoot())
-				//{
-					return;
-				//}
+				return;
 			}
 			else
 			{
-				// At this point both parent and the new node are black,
+				// At this point both parent and the new node are red,
 				// and the is uncle is red, so we can perform recoloring.
 				GetNode(ParentRef)->MakeBlack();
 				GetNode(UncleRef)->MakeBlack();
@@ -1435,7 +1433,7 @@ private:
 	*/
 	TRBTreeImpl::ChildNodeRef GetParentNodeRef(const TRBTreeImpl::ChildNodeRef InNodeRef) const
 	{
-		const TRBTreeImpl::NodeChildIndex ParentIdx = InNodeRef.ParentIdx;
+		const TRBTreeImpl::NodeIndex ParentIdx = InNodeRef.ParentIdx;
 		const NodeType* const pParent = GetParentNode(InNodeRef);
 		BOOST_ASSERT_MSG(pParent, "TRBTree::GetParentNodeRef: parent must exist");
 		if (pParent->ParentIdx == INDEX_NONE) 
