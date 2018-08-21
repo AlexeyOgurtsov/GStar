@@ -174,6 +174,17 @@ public:
 	}
 
 	/**
+	* Clears the container.
+	*/
+	void Clear()
+	{
+		// NOTE: We must clear the buffer, because node may contain non-POD types.
+		Buffer.Clear();
+		RootIdx = 0;
+		Count = 0;
+	}
+
+	/**
 	* Returns true, if contains the given key.
 	*/
 	bool Contains(const KeyType& InKey) const
@@ -235,6 +246,8 @@ public:
 	*/
 	bool Remove(const KeyType& InKey)
 	{
+		BOOST_ASSERT_MSG(false, "TRBTree::Remove: we must REALLY destroy the value (because it maybe non-pod type)");
+
 		if (Empty())
 		{
 			return false;

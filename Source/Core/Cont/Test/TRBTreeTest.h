@@ -53,6 +53,34 @@ BOOST_AUTO_TEST_SUITE(TRBTreeTestSuite)
 
 BOOST_AUTO_TEST_SUITE
 (
+	ExtraOps,
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/AddSuite")
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite")
+)
+
+BOOST_AUTO_TEST_CASE(ClearingTest)
+{
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntRBTree T;
+	for (int i = 0; i < 10; i++)
+	{
+		BOOST_REQUIRE(T.Add(i, NoValue{}));
+	}
+
+	BOOST_TEST_CHECKPOINT("Clearing");
+	T.Clear();
+	BOOST_REQUIRE(T.Empty());
+
+	BOOST_TEST_CHECKPOINT("Checking content after cleared");
+	IntRBTree::KeyValueType buf { 0, NoValue{} };
+	T.CopyUnorderedTo(&buf);
+	BOOST_REQUIRE_EQUAL(IntRBTree::KeyValueType( 0, NoValue{} ), buf);
+}
+
+BOOST_AUTO_TEST_SUITE_END() // ExtraOps
+
+BOOST_AUTO_TEST_SUITE
+(
 	CustomCompare,
 	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal")
 )
@@ -952,6 +980,111 @@ BOOST_AUTO_TEST_CASE
 
 BOOST_AUTO_TEST_CASE
 (
+	RemoveLeftBlackChildLeaf_OfRoot,
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite/RemoveFromRoot_ThatHasOnlyLeftChild_OnlyTwoElements")
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite/RemoveFromRoot_ThatHasOnlyRightChild_OnlyTwoElements")
+)
+{
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntRBTree T;
+	for (int i = 1; i <= 4; i++)
+	{
+		T.Add(i, NoValue{});
+	}
+	BOOST_REQUIRE_EQUAL(T.Num(), 4);
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	BOOST_REQUIRE(T.Remove(1));
+	BOOST_REQUIRE_EQUAL(T.Num(), 3);
+
+	IntRBTree::KeyValueType ordered[3];
+	T.CopyTo(ordered);
+	BOOST_REQUIRE_EQUAL(ordered[0].Key, 2);
+	BOOST_REQUIRE_EQUAL(ordered[1].Key, 3);
+	BOOST_REQUIRE_EQUAL(ordered[2].Key, 4);
+}
+
+BOOST_AUTO_TEST_CASE
+(
+	RemoveRoot_BothChildrenOfBrotherRed,
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite/RemoveFromRoot_ThatHasOnlyLeftChild_OnlyTwoElements")
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite/RemoveFromRoot_ThatHasOnlyRightChild_OnlyTwoElements")
+)
+{
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntRBTree T;
+	for (int i = 1; i <= 5; i++)
+	{
+		T.Add(i, NoValue{});
+	}
+	BOOST_REQUIRE_EQUAL(T.Num(), 5);
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	BOOST_REQUIRE(T.Remove(2));
+	BOOST_REQUIRE_EQUAL(T.Num(), 4);
+
+	IntRBTree::KeyValueType ordered[4];
+	T.CopyTo(ordered);
+	BOOST_REQUIRE_EQUAL(ordered[0].Key, 1);
+	BOOST_REQUIRE_EQUAL(ordered[1].Key, 3);
+	BOOST_REQUIRE_EQUAL(ordered[2].Key, 4);
+	BOOST_REQUIRE_EQUAL(ordered[3].Key, 5);
+}
+
+BOOST_AUTO_TEST_CASE
+(
+	RemoveRoot_BrotherHasLeftRedChild,
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite/RemoveFromRoot_ThatHasOnlyLeftChild_OnlyTwoElements")
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite/RemoveFromRoot_ThatHasOnlyRightChild_OnlyTwoElements")
+)
+{
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntRBTree T;
+	T.Add(2, NoValue{});
+	T.Add(1, NoValue{});
+	T.Add(4, NoValue{});
+	T.Add(3, NoValue{});
+	BOOST_REQUIRE_EQUAL(T.Num(), 4);
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	BOOST_REQUIRE(T.Remove(2));
+	BOOST_REQUIRE_EQUAL(T.Num(), 3);
+
+	IntRBTree::KeyValueType ordered[3];
+	T.CopyTo(ordered);
+	BOOST_REQUIRE_EQUAL(ordered[0].Key, 1);
+	BOOST_REQUIRE_EQUAL(ordered[1].Key, 3);
+	BOOST_REQUIRE_EQUAL(ordered[2].Key, 4);
+}
+
+BOOST_AUTO_TEST_CASE
+(
+	RemoveRoot_BrotherHasRightRedChild,
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite/RemoveFromRoot_ThatHasOnlyLeftChild_OnlyTwoElements")
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite/RemoveFromRoot_ThatHasOnlyRightChild_OnlyTwoElements")
+)
+{
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntRBTree T;
+	for (int i = 1; i <= 4; i++)
+	{
+		T.Add(i, NoValue{});
+	}
+	BOOST_REQUIRE_EQUAL(T.Num(), 4);
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	BOOST_REQUIRE(T.Remove(2));
+	BOOST_REQUIRE_EQUAL(T.Num(), 3);
+
+	IntRBTree::KeyValueType ordered[3];
+	T.CopyTo(ordered);
+	BOOST_REQUIRE_EQUAL(ordered[0].Key, 1);
+	BOOST_REQUIRE_EQUAL(ordered[1].Key, 3);
+	BOOST_REQUIRE_EQUAL(ordered[2].Key, 4);
+}
+
+BOOST_AUTO_TEST_CASE
+(
 	RemoveFromRoot_ThatHasTwoChildren,
 	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite/RemoveFromRoot_ThatHasOnlyLeftChild_OnlyTwoElements")
 	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite/RemoveFromRoot_ThatHasOnlyRightChild_OnlyTwoElements")
@@ -1017,16 +1150,46 @@ BOOST_AUTO_TEST_CASE(RemoveLeftChildOfRoot_LeftChildHasTwoChildren)
 	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
 
 	BOOST_TEST_CHECKPOINT("Removing");
-	// WARNING!!! It's correct, left child of root after balancing is old KEY_LEFT_RIGHT_CHILD_CHILD
-	BOOST_REQUIRE(T.Remove(KEY_LEFT_RIGHT_CHILD_CHILD));
+	BOOST_REQUIRE(T.Remove(KEY_LEFT_CHILD));
 	BOOST_REQUIRE_EQUAL(T.Num(), (INITIAL_COUNT - 1));
 	IntRBTree::KeyValueType ordered[(INITIAL_COUNT - 1)];
 	T.CopyTo(ordered);
 	BOOST_REQUIRE_EQUAL(ordered[0].Key, KEY_LEFT_LEFT_CHILD_CHILD);
-	BOOST_REQUIRE_EQUAL(ordered[1].Key, KEY_LEFT_CHILD);
+	BOOST_REQUIRE_EQUAL(ordered[1].Key, KEY_LEFT_RIGHT_CHILD_CHILD);
 	BOOST_REQUIRE_EQUAL(ordered[2].Key, KEY_ROOT);
 	BOOST_REQUIRE_EQUAL(ordered[3].Key, KEY_RIGHT_CHILD);
 }
+
+BOOST_AUTO_TEST_CASE(RemoveLeftChildOfRoot_DeletableHasLeftChild_BrotherHasOneRedChild)
+{
+	constexpr int KEY_ROOT = 5;
+	constexpr int KEY_LEFT_CHILD = 3;
+	constexpr int KEY_RIGHT_CHILD = 7;
+	constexpr int KEY_LEFT_LEFT_CHILD_CHILD = 1;
+	constexpr int KEY_BROTHER_RIGHT_CHILD = 8;
+	constexpr int INITIAL_COUNT = 5;
+
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntRBTree T;
+	BOOST_REQUIRE(T.Add(KEY_ROOT, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_LEFT_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_RIGHT_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_LEFT_LEFT_CHILD_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_BROTHER_RIGHT_CHILD, NoValue{}));
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	BOOST_REQUIRE(T.Remove(KEY_LEFT_CHILD));
+	BOOST_REQUIRE_EQUAL(T.Num(), (INITIAL_COUNT - 1));
+	IntRBTree::KeyValueType ordered[(INITIAL_COUNT - 1)];
+	T.CopyTo(ordered);
+	BOOST_REQUIRE_EQUAL(ordered[0].Key, KEY_LEFT_LEFT_CHILD_CHILD);
+	BOOST_REQUIRE_EQUAL(ordered[1].Key, KEY_ROOT);
+	BOOST_REQUIRE_EQUAL(ordered[2].Key, KEY_RIGHT_CHILD);
+	BOOST_REQUIRE_EQUAL(ordered[3].Key, KEY_BROTHER_RIGHT_CHILD);
+}
+
+
 
 BOOST_AUTO_TEST_CASE(RemoveRightChildOfLeftChildOfRoot_LeftChildOfRootHasTwoChildren)
 {
@@ -1048,12 +1211,12 @@ BOOST_AUTO_TEST_CASE(RemoveRightChildOfLeftChildOfRoot_LeftChildOfRootHasTwoChil
 
 	BOOST_TEST_CHECKPOINT("Removing");
 	// WARNING!!! It's correct, Right child of left child of root after balancing is old KEY_LEFT_CHILD)
-	BOOST_REQUIRE(T.Remove(KEY_LEFT_CHILD));
+	BOOST_REQUIRE(T.Remove(KEY_LEFT_RIGHT_CHILD_CHILD));
 	BOOST_REQUIRE_EQUAL(T.Num(), (INITIAL_COUNT - 1));
 	IntRBTree::KeyValueType ordered[(INITIAL_COUNT - 1)];
 	T.CopyTo(ordered);
 	BOOST_REQUIRE_EQUAL(ordered[0].Key, KEY_LEFT_LEFT_CHILD_CHILD);
-	BOOST_REQUIRE_EQUAL(ordered[1].Key, KEY_LEFT_RIGHT_CHILD_CHILD);
+	BOOST_REQUIRE_EQUAL(ordered[1].Key, KEY_LEFT_CHILD);
 	BOOST_REQUIRE_EQUAL(ordered[2].Key, KEY_ROOT);
 	BOOST_REQUIRE_EQUAL(ordered[3].Key, KEY_RIGHT_CHILD);
 }
@@ -1455,6 +1618,67 @@ BOOST_AUTO_TEST_CASE(RemoveInternalBlackNode_WithTwoBlackChildren_BrotherWith_Ri
 		}
 	}
 }
+
+BOOST_AUTO_TEST_CASE(RemoveInternalBlackNode_WithTwoBlackChildren_BrotherWith_RightBlackLeftRedChildren)
+{
+	constexpr int INITIAL_COUNT = 10;
+
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntRBTree T;
+	for (int i = INITIAL_COUNT; i >= 1; i--)
+	{
+		BOOST_REQUIRE(T.Add(i, NoValue{}));
+	}
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	BOOST_REQUIRE(T.Remove(9));
+	BOOST_REQUIRE_EQUAL(T.Num(), (INITIAL_COUNT - 1));
+
+	BOOST_TEST_CHECKPOINT("Checking");
+	IntRBTree::KeyValueType ordered[(INITIAL_COUNT - 1)];
+	T.CopyTo(ordered);
+	int curr_index = 0;
+	for (int ref_key = 1; ref_key <= INITIAL_COUNT; ref_key++)
+	{
+		if (ref_key != 9)
+		{
+			BOOST_REQUIRE_EQUAL(ordered[curr_index].Key, ref_key);
+			curr_index++;
+		}
+	}
+}
+
+BOOST_AUTO_TEST_CASE(RemoveInternalBlackNode_RedNode_WithTwoBlackChildren)
+{
+	constexpr int INITIAL_COUNT = 6;
+
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntRBTree T;
+	for (int i = 1; i <= INITIAL_COUNT; i++)
+	{
+		BOOST_REQUIRE(T.Add(i, NoValue{}));
+	}
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	BOOST_REQUIRE(T.Remove(4));
+	BOOST_REQUIRE_EQUAL(T.Num(), (INITIAL_COUNT - 1));
+
+	BOOST_TEST_CHECKPOINT("Checking");
+	IntRBTree::KeyValueType ordered[(INITIAL_COUNT - 1)];
+	T.CopyTo(ordered);
+	int curr_index = 0;
+	for (int ref_key = 1; ref_key <= INITIAL_COUNT; ref_key++)
+	{
+		if (ref_key != 4)
+		{
+			BOOST_REQUIRE_EQUAL(ordered[curr_index].Key, ref_key);
+			curr_index++;
+		}
+	}
+}
+
 
 BOOST_AUTO_TEST_SUITE_END() // RemoveSuite
 
