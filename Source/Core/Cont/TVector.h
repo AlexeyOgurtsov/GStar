@@ -1,6 +1,8 @@
 #pragma once
 
 #include "ContainerSystem.h"
+#include <boost/serialization/split_member.hpp>
+#include <windows.h>
 
 /************************************************************************************************************
 * Default resize policy
@@ -44,6 +46,7 @@ struct DefaultVectorResizePolicy
 	public:
 		using ThisType = TVector<T, ResizePolicy>;
 		using ResizePolicyType = ResizePolicy<T>;
+		using ValueType = T;
 
 		template<class T, template<class> class OtherResizePolicy> friend class TVector;
 		friend class boost::serialization::access;
@@ -51,11 +54,240 @@ struct DefaultVectorResizePolicy
 		template<class T, template<class> class ResizePolicy>
 		friend std::string* AppendExtraDebugInfoString(std::string* pOutString, const TVector<T, ResizePolicy>& V);
 
+		template<class ContTypeArg>
+		class TGeneralIterator;
+
 		/**
 		* Iterator type.
 		*/
-		using IteratorType = T*;
-		using ConstIteratorType = const T*;
+		using IteratorType = TGeneralIterator<ThisType>;
+		using ConstIteratorType = TGeneralIterator<const ThisType>;
+
+		template<class ContTypeArg>
+		class TGeneralIterator
+		{
+		public:
+			template<class OtherContType>
+			friend class TGeneralIterator;
+
+			using ValueType = typename ContTypeArg::ValueType;
+
+			/**
+			* Default ctor: Creates floating end iterator.
+			*/
+			TGeneralIterator() :
+				pCont(nullptr)
+			,	Ind(INDEX_NONE) {}
+
+			/**
+			* Constructor: Creates iterator.
+			*/
+			TGeneralIterator(ContTypeArg* pInCont, int InIndex) :
+				pCont(pInCont)
+			,	Ind(InIndex)
+			{
+				BOOST_ASSERT(pCont);
+				BOOST_ASSERT_MSG(pCont->IsIndexValid(InIndex), "TVector: Iterator: index must be valid");
+			}
+
+			/**
+			* Copy-constructs.
+			*/
+			template<class OtherContType>
+			TGeneralIterator(const TGeneralIterator<OtherContType>& InOther)
+			{
+				*this = InOther;
+			}
+
+			/**
+			* Copies
+			*/
+			template<class OtherContType>
+			ThisType operator=(const TGeneralIterator<OtherContType>& InOther)
+			{
+				pCont = InOther.pCont;
+				Ind = InOther.Ind;
+				return *this;
+			}
+
+			/**
+			* Advances iterator to the next element.
+			*/
+			TGeneralIterator& operator++()
+			{
+				BOOST_ASSERT_MSG( ! IsFloatingEnd(), "Iterator: floating end iterator may never be incremented" );
+				BOOST_ASSERT_MSG( ! IsEnd(), "TVector: Iterator: increment(++): already at end");
+				Ind++;
+				return *this;
+			}
+
+			/**
+			* Advances iterator to the next element.
+			*/
+			TGeneralIterator operator++(int)
+			{
+				TGeneralIterator OldIt = *this;
+				TGeneralIterator::operator++();
+				return OldIt;
+			}
+
+			/**
+			* Sets to previous element.
+			*/
+			TGeneralIterator& operator--()
+			{
+				BOOST_ASSERT_MSG( ! IsFloatingEnd(), "Iterator: floating end iterator may never be decremented");
+				BOOST_ASSERT_MSG(Ind > 0, "TVector: Iterator: decrement(--): already at first element");
+				Ind--;
+				return *this;
+			}
+
+			/**
+			* Sets to previous element.
+			*/
+			TGeneralIterator operator--(int)
+			{
+				TGeneralIterator OldIt = *this;
+				TGeneralIterator::operator--();
+				return OldIt;
+			}
+
+			/**
+			* Advances iterator forward by the given number of elements and returns a new iterator value.
+			*/
+			TGeneralIterator operator+(int32_t Count) const
+			{
+				TGeneralIterator NextIterator { *this };
+				NextIterator.Forward(Count);
+				return NextIterator;
+			}
+
+			/**
+			* Advances iterator forward by the given number of elements backward and returns a new iterator value.
+			*/
+			TGeneralIterator operator-(int32_t Count) const
+			{
+				TGeneralIterator NextIterator{ *this };
+				NextIterator.Backward(Count);
+				return NextIterator;
+			}
+
+			/**
+			* Advances iterator forward by the given number of elements.
+			*/
+			void Forward(int32_t Count)
+			{
+				BOOST_ASSERT_MSG( Count > 0, "TVector: Iterator: Forward: count must be positive" );
+				BOOST_ASSERT_MSG( ! IsEnd() || (Count == 0), "TVector: Iterator: Forward: iterator must be NON-end iterator or count is equal to zero");
+				int32_t const NextIndex = Ind + Count;
+				if (pCont->IsIndexValid(NextIndex))
+				{
+					Ind = NextIndex;
+				}
+				else
+				{
+					// Making an end iterator
+					Ind = pCont->Len();
+				}
+			}
+
+
+			/**
+			* Advances iterator backward by the given number of elements.
+			*/
+			void Backward(int32_t Count)
+			{
+				BOOST_ASSERT_MSG(Count > 0, "TVector: Iterator: Backward: count must be positive");
+				BOOST_ASSERT_MSG( ! IsFloatingEnd(), "TVector: Iterator: Backward: iterator must be NOT floating end iterator");
+				Ind -= Count;
+				BOOST_ASSERT_MSG(Count <= pCont->Len(), "TVector: Iterator: Backward: Count must be <= Length of the array");
+			}
+
+			/**
+			* Current element index (from zero).
+			*/
+			__forceinline int32_t Index() const { return Ind; }
+
+			/**
+			* Current element.
+			*/
+			__forceinline ValueType& Get() const { return pCont->operator[](Ind); }
+
+			/**
+			* Gets ptr.
+			*/
+			__forceinline ValueType* GetPtr() const { return &(pCont->operator[](Ind)); }
+
+
+			/**
+			* Member access by pointer.
+			*/
+			__forceinline ValueType* operator->() const
+			{
+				return GetPtr();
+			}
+
+			/**
+			* Current element.
+			*/
+			ValueType& operator*() const { return Get(); }
+
+			/**
+			* NOT Is end iterator.
+			*/
+			__forceinline operator bool() const
+			{
+				return ! IsEnd();
+			}
+
+			/**
+			* Is end iterator.
+			*/
+			__forceinline bool operator!() const
+			{
+				return IsEnd();
+			}
+
+			__forceinline bool IsEnd() const
+			{
+				return IsFloatingEnd() || (Ind >= pCont->Len());
+			}
+
+			__forceinline bool IsFloatingEnd() const
+			{
+				return Ind == INDEX_NONE;
+			}
+
+			__forceinline bool AtStart() const
+			{
+				return Ind == 0;
+			}
+
+			template<class OtherContType>
+			bool operator==(const TGeneralIterator<OtherContType>& InOther) const
+			{
+				if (IsEnd() && InOther.IsEnd())
+				{
+					return true;
+				}
+				else if (IsEnd() || InOther.IsEnd())
+				{
+					return false;
+				}
+				BOOST_ASSERT_MSG(pCont == InOther.pCont, "TVector: comparison: iterators must be of the same type");
+				return Ind == InOther.Ind;
+			}
+
+			template<class OtherContType>
+			bool operator!=(const TGeneralIterator<OtherContType>& InOther) const
+			{
+				return ! (InOther);
+			}
+
+		private:
+			ContTypeArg* pCont;
+			int32_t Ind;
+		};
 
 		~TVector();
 
@@ -130,23 +362,8 @@ struct DefaultVectorResizePolicy
 		template<template<class> class OtherResizePolicy>
 		bool operator!=(const TVector<T, OtherResizePolicy>& Other) const;
 
-		/**
-		* Boost serialization support.
-		* @BUG: buffer must be resized on load
-		*/
 		template<class Archive>
-		void serialize(Archive& ar, const unsigned int version) const
-		{
-			// @TODO: Remove, use load/save pair instead. 
-			ar & Length;
-			for (int i = 0; i < Length; i++)
-			{
-				ar & pBuf[i];
-			}
-		}
-
-		template<class Archive>
-		void save(Archive& Ar, const unsigned int Version)
+		void save(Archive& Ar, const unsigned int Version) const
 		{
 			ar & Length;
 			for (int i = 0; i < Length; i++)
@@ -166,6 +383,8 @@ struct DefaultVectorResizePolicy
 				Ar & pBuf[i];
 			}
 		}
+
+		BOOST_SERIALIZATION_SPLIT_MEMBER()
 
 		/**
 		* Count bytes needed to store this class.
@@ -629,8 +848,8 @@ struct DefaultVectorResizePolicy
 		*/
 		ConstIteratorType Iterator() const
 		{
-			assert( ! Empty() );
-			return pBuf;
+			BOOST_ASSERT_MSG(!Empty(), "TVector: Getting Iterator: Container must be NON-empty");
+			return IteratorType(this, 0);
 		}
 
 		/**
@@ -643,8 +862,8 @@ struct DefaultVectorResizePolicy
 		*/
 		IteratorType Iterator()
 		{
-			assert(!Empty());
-			return pBuf;
+			BOOST_ASSERT_MSG( ! Empty(), "TVector: Getting Iterator: Container must be NON-empty" );
+			return IteratorType(this, 0);
 		}
 		
 		/**
@@ -2558,7 +2777,8 @@ TVector<T, ResizePolicy>::~TVector()
 * 7.1. Serialization/CountSerializeBytes/CountTotalBytes
 * 7.2. Search
 * 7.2. Sort
-* 8. Iterator support.
+* 8. Iterator support
+* 8.1. Reverse iterators
 *  
 * TODO Operations:
 * 1. RemoveAtSwap (+DONE)

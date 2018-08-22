@@ -67,7 +67,6 @@ BOOST_AUTO_TEST_SUITE
 	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite")
 )
 
-/*
 BOOST_AUTO_TEST_CASE(SerializationTest)
 {
 	constexpr int COUNT = 10;
@@ -99,7 +98,6 @@ BOOST_AUTO_TEST_CASE(SerializationTest)
 		BOOST_REQUIRE_EQUAL(buf[i].Key, i);
 	}
 }
-*/
 
 BOOST_AUTO_TEST_CASE(ClearingTest)
 {
@@ -387,6 +385,14 @@ void ConstIteratorTest_Copy(const StringToIntRBTree& TC, StringToIntRBTree& T)
 	BOOST_REQUIRE(TC.Iterator() == T.ConstIterator());
 	StringToIntRBTree::ConstIteratorType cit = TC.Iterator();
 	StringToIntRBTree::IteratorType it = T.Iterator();
+
+	BOOST_TEST_CHECKPOINT("Iterator move-construct test");
+	StringToIntRBTree::IteratorType it_moved = std::move(T.Iterator());
+	BOOST_REQUIRE(it_moved == T.Iterator());
+
+	BOOST_TEST_CHECKPOINT("Iterator move-assignment test");
+	it_moved = std::move(T.Iterator());
+	BOOST_REQUIRE(it_moved == T.Iterator());
 
 	BOOST_TEST_CHECKPOINT("Iterator copy-construct test");
 	StringToIntRBTree::ConstIteratorType new_cit_copied_from_it = it;

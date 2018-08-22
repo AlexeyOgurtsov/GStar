@@ -5,6 +5,7 @@
 #include "../Templ/TComparer.h"
 #include <tuple>
 #include <type_traits>
+#include <boost/serialization/split_member.hpp>
 
 /**
 * TODO First:
@@ -21,6 +22,7 @@
 * TODO Key/Value iterator:
 * 1. Insertion while iterating
 * 2. Backward iteration
+* 3. end() returns floating iterator: is it ok?
 *
 * TODO:
 * 1. Create the Stack-overflow unit-test for traverse;
@@ -185,35 +187,31 @@ public:
 	/**
 	* boost::serialization support.
 	*/
-	/*
-	template<class Archive> class SerializationSplitterHelper
+	template<class Archive>
+	void save(Archive& Ar, const unsigned int Version) const
 	{
-	public:
-		BOOST_SERIALIZATION_SPLIT_MEMBER();
-
-		void save(Archive& Ar, const unsigned int Version)
+		Ar & Count;
+		for (const KeyValueType& KV : *this)
 		{
-			Ar & Count;
-			for (const KeyValueType& KV : *this)
-			{
-				Ar & KV;
-			}
+			Ar & KV;
 		}
+	}
 
-		void load(Archive& Ar, const unsigned int Version)
+	template<class Archive>
+	void load(Archive& Ar, const unsigned int Version)
+	{
+		// @TODO: Optimize
+		Ar & Count;
+		for (int i = 0; i < Count; i++)
 		{
-			// @TODO: Optimize
-			Ar & Count;
-			for (int i = 0; i < Count; i++)
-			{
-				KeyValueType KV;
-				Ar & KV;
-				bool bAdded = Add(KV.Key, KV.Value);
-				BOOST_ASSERT_MSG(bAdded, "TRBTree: load: adding deserialized value must always succeed");
-			}
+			KeyValueType KV;
+			Ar & KV;
+			bool bAdded = Add(KV.Key, KV.Value);
+			BOOST_ASSERT_MSG(bAdded, "TRBTree: load: adding deserialized value must always succeed");
 		}
-	};
-	*/
+	}
+
+	BOOST_SERIALIZATION_SPLIT_MEMBER()
 
 	/**
 	* Clears the container.
@@ -634,6 +632,31 @@ public:
 		}
 
 		/**
+		* Returns current Key/Value pair.
+		* Iterator must be a non-end iterator.
+		*/
+		__forceinline const KeyValueType& operator*() const
+		{
+			return GetKeyValue();
+		}
+
+		/**
+		* Pointer to key-value.
+		*/
+		__forceinline const KeyValueType* GetPtr() const
+		{
+			return &GetKeyValue();
+		}
+
+		/**
+		* Member access by pointer.
+		*/
+		__forceinline const KeyValueType* operator->() const
+		{
+			return GetPtr();
+		}
+
+		/**
 		* Returns key.
 		*/
 		__forceinline const KeyType& GetKey() const { return GetKeyValue().Key; }
@@ -644,18 +667,37 @@ public:
 		__forceinline const ValueType& GetValue() const { return GetKeyValue().Value; }
 
 		/**
+		* NOT Is end iterator.
+		*/
+		__forceinline operator bool() const
+		{
+			return ! IsEnd();
+		}
+
+		/**
+		* Is end iterator.
+		*/
+		__forceinline bool operator!() const
+		{
+			return IsEnd();
+		}
+
+		/**
 		* Is end iterator.
 		*/
 		__forceinline bool IsEnd() const
 		{
-			return NodeRef.IsNull();
+			return IsFloatingEnd();
 		}
 
 		/**
-		* Dereference operator.
-		* Iterator must be a non-end iterator.
+		* Is this is end iterator, that always points to the end of the container 
+		* (ever after container is changed).
 		*/
-		__forceinline const KeyValueType& operator*() const { return GetKeyValue(); }
+		__forceinline bool IsFloatingEnd() const
+		{
+			return NodeRef.IsNull();;
+		}
 
 		/**
 		* Sets current value
@@ -695,7 +737,7 @@ public:
 		TGeneralIterator operator--(int);
 
 		template<class OtherTreeType>
-		bool operator==(TGeneralIterator<OtherTreeType> B)
+		bool operator==(TGeneralIterator<OtherTreeType> B) const
 		{
 			if (IsEnd() && B.IsEnd())
 			{
@@ -709,7 +751,7 @@ public:
 		}
 
 		template<class OtherTreeType>
-		bool operator!=(TGeneralIterator<OtherTreeType> B)
+		bool operator!=(TGeneralIterator<OtherTreeType> B) const
 		{
 			return !(operator==(B));
 		}

@@ -10,6 +10,8 @@ TOMORROW:
 (Depends on TOrderedSet)
 
 LATER:
+* Memory copy util (To avoid dependency on ZeroMemory)
+* Iterator Utils (Next, Prev etc.)
 * IdentStr and its storage (make IdentStr use index, not ptr);
 * Core exception (depends on String)
 * Typed index (cannot be explicitly converted to int)
