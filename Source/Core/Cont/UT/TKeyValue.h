@@ -18,7 +18,17 @@
 * - Hash code comparison uses both key and value;
 * - operator< is NOT provided;
 */
-class NoValue {};
+class NoValue
+{
+public:
+	/**
+	* Boost serialization support.
+	*/
+	template<class ArArg> void serialize(ArArg& Ar, const unsigned int Version)
+	{
+		// Nothing is to be done here
+	}
+};
 inline bool operator==(const NoValue& A, const NoValue& B) { return true; }
 inline bool operator!=(const NoValue& A, const NoValue& B) { return ! operator==(A, B); }
 

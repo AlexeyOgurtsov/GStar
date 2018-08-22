@@ -2,6 +2,7 @@
 
 #include "../ContainerSystem.h"
 #include "../UT/TKeyValue.h"
+#include <optional>
 
 namespace TRBTreeImpl
 {
@@ -123,33 +124,44 @@ namespace TRBTreeImpl
 		using ValueType = typename KeyValueType::ValueType;
 
 		/**
-		* Key/Value.
+		* Returns the Key-value pair.
 		*/
-		KeyValueType KV;
+		const KeyValueType& GetKV() const	
+		{
+			BOOST_ASSERT_MSG(Exists(), "TRBTreeImpl::Node: GetKV: Node must exist"); 
+			return OptKV.value(); 
+		}
+		
+		/**
+		* Returns the Key-value pair.
+		*/
+		KeyValueType& GetKV() 
+		{
+			BOOST_ASSERT_MSG(Exists(), "TRBTreeImpl::Node: GetKV: Node must exist");
+			return OptKV.value(); 
+		}
 
 		/**
 		* Key to be used for comparisons.
 		*/
-		__forceinline const KeyType& GetKey() const { return KV.Key; }
+		__forceinline const KeyType& GetKey() const { return GetKV().Key; }
 
 		/**
 		* Payload data.
 		*/
-		__forceinline ValueType GetValue() const { return KV.Value; }
-
-		/**
-		* Both children of the red node are blacks.
-		*/
-		bool bRed = true;
+		__forceinline ValueType GetValue() const { return GetKV().Value; }
 
 		/**
 		* If false, the node was removed.
 		*/
-		bool bExists = true;
+		__forceinline bool Exists() const { return OptKV.has_value(); }
 
-		void MarkRemoved()
+		/**
+		* Destroys the key-value pair properly, calling the necessary constructors.
+		*/
+		void Destroy()
 		{
-			bExists = false;
+			OptKV.reset();
 		}
 
 		/**
@@ -275,17 +287,26 @@ namespace TRBTreeImpl
 		* Constructs a RED node with a given key and value.
 		*/
 		Node(const KeyValueType& InKV, NodeIndex InParentIdx) :
-			KV{InKV}
+			OptKV{InKV}
 		,	ParentIdx{ InParentIdx } 
 		{
 			Children[0] = Children[1] = INDEX_NONE;
 		}
 
-	private:	
 		/**
-		* Children.
+		* Constructs a RED node with a given key and value by moving Key-value.
 		*/
+		Node(KeyValueType&& InKV, NodeIndex InParentIdx) :
+			OptKV{ std::move(InKV) }
+		,	ParentIdx{ InParentIdx }
+		{
+			Children[0] = Children[1] = INDEX_NONE;
+		}
+
+	private:
+		std::optional<KeyValueType> OptKV;	
 		NodeIndex Children[2];
+		bool bRed = true;
 		bool bDoubleBlack = false;
 	};
 } // TRBTreeImpl

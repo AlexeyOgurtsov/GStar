@@ -9,10 +9,14 @@
 /**
 * TODO First:
 * 1. Remove (by key).
-* 1.1. Write tests
+* 1.1. Write more RB-Tree complex tests
 *
-* TODO Interface:
-* 1. Add operation version that takes TKeyValue.
+* TODO Adding interface:
+* 1. Add operation version that takes TKeyValue
+* 2. Hint iterator position
+* 3. Emplace
+* 4. RValue support
+* 5. Add range of values
 *
 * TODO Key/Value iterator:
 * 1. Insertion while iterating
@@ -24,6 +28,9 @@
 * TODO Third:
 * 1. Clear()
 * 2. CopyTo(TArray) function.
+*
+* TODO Fourth:
+* 1. Equality, NotEquality
 */
 
 /**
@@ -35,6 +42,8 @@ template<class KVTypeArg, class ComparerArg = TComparer<typename KVTypeArg::KeyT
 class TRBTree
 {
 public:
+	friend boost::serialization::access;
+
 	/**
 	* KeyValue
 	*/
@@ -160,7 +169,7 @@ public:
 	const KeyValueType& Min() const
 	{
 		BOOST_ASSERT_MSG( ! Empty(), "TRBTree::Min: Container must be NON-empty");
-		return GetNode(GetDeepestNodeRef(TRBTreeImpl::ChildNodeRef::RootNode(), TRBTreeImpl::LEFT_CHILD_IDX))->KV;
+		return GetNode(GetDeepestNodeRef(TRBTreeImpl::ChildNodeRef::RootNode(), TRBTreeImpl::LEFT_CHILD_IDX))->GetKV();
 	}
 
 	/**
@@ -170,8 +179,41 @@ public:
 	const KeyValueType& Max() const
 	{
 		BOOST_ASSERT_MSG( ! Empty(), "TRBTree::Max: Container must be NON-empty");
-		return GetNode(GetDeepestNodeRef(TRBTreeImpl::ChildNodeRef::RootNode(), TRBTreeImpl::RIGHT_CHILD_IDX))->KV;
+		return GetNode(GetDeepestNodeRef(TRBTreeImpl::ChildNodeRef::RootNode(), TRBTreeImpl::RIGHT_CHILD_IDX))->GetKV();
 	}
+
+	/**
+	* boost::serialization support.
+	*/
+	/*
+	template<class Archive> class SerializationSplitterHelper
+	{
+	public:
+		BOOST_SERIALIZATION_SPLIT_MEMBER();
+
+		void save(Archive& Ar, const unsigned int Version)
+		{
+			Ar & Count;
+			for (const KeyValueType& KV : *this)
+			{
+				Ar & KV;
+			}
+		}
+
+		void load(Archive& Ar, const unsigned int Version)
+		{
+			// @TODO: Optimize
+			Ar & Count;
+			for (int i = 0; i < Count; i++)
+			{
+				KeyValueType KV;
+				Ar & KV;
+				bool bAdded = Add(KV.Key, KV.Value);
+				BOOST_ASSERT_MSG(bAdded, "TRBTree: load: adding deserialized value must always succeed");
+			}
+		}
+	};
+	*/
 
 	/**
 	* Clears the container.
@@ -221,7 +263,7 @@ public:
 		{
 			return nullptr;
 		}
-		return &GetNode(NodeRef)->KV;
+		return &GetNode(NodeRef)->GetKV();
 	}
 
 	/**
@@ -246,8 +288,6 @@ public:
 	*/
 	bool Remove(const KeyType& InKey)
 	{
-		BOOST_ASSERT_MSG(false, "TRBTree::Remove: we must REALLY destroy the value (because it maybe non-pod type)");
-
 		if (Empty())
 		{
 			return false;
@@ -318,9 +358,9 @@ public:
 		for (int i = 0; i < Count; i++)
 		{
 			const NodeType* pSrcNode = GetNode(i);
-			if (pSrcNode->bExists)
+			if (pSrcNode->Exists())
 			{
-				pInBuffer[i] = pSrcNode->KV;
+				pInBuffer[i] = pSrcNode->GetKV();
 			}
 		}
 	}
@@ -590,7 +630,7 @@ public:
 		__forceinline const KeyValueType& GetKeyValue() const
 		{
 			BOOST_ASSERT(!IsEnd());
-			return pTree->GetNode(NodeRef)->KV;
+			return pTree->GetNode(NodeRef)->GetKV();
 		}
 
 		/**
@@ -622,7 +662,7 @@ public:
 		*/
 		void SetValue(const ValueType& InValue)
 		{
-			GetNode()->KV.Value = InValue;
+			GetNode()->GetKV().Value = InValue;
 		}
 
 		/**
@@ -826,7 +866,7 @@ private:
 			TraverseSubtree(LeftRef, Func);
 		}
 
-		Func(GetNode(InRootRef)->KV);
+		Func(GetNode(InRootRef)->GetKV());
 
 		TRBTreeImpl::ChildNodeRef const RightRef = GetChildNodeRef(InRootRef, TRBTreeImpl::RIGHT_CHILD_IDX);
 		if ( NodeExists(RightRef))
@@ -927,7 +967,7 @@ private:
 		}
 
 		// Deal with the deleted node (we must done it AFTER the links are updated to avoid some assertion to fire)
-		pNode->MarkRemoved();
+		pNode->Destroy();
 		Count--;
 
 		return true;

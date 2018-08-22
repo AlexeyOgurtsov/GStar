@@ -51,6 +51,12 @@ struct DefaultVectorResizePolicy
 		template<class T, template<class> class ResizePolicy>
 		friend std::string* AppendExtraDebugInfoString(std::string* pOutString, const TVector<T, ResizePolicy>& V);
 
+		/**
+		* Iterator type.
+		*/
+		using IteratorType = T*;
+		using ConstIteratorType = const T*;
+
 		~TVector();
 
 		/**
@@ -126,14 +132,38 @@ struct DefaultVectorResizePolicy
 
 		/**
 		* Boost serialization support.
+		* @BUG: buffer must be resized on load
 		*/
 		template<class Archive>
 		void serialize(Archive& ar, const unsigned int version) const
+		{
+			// @TODO: Remove, use load/save pair instead. 
+			ar & Length;
+			for (int i = 0; i < Length; i++)
+			{
+				ar & pBuf[i];
+			}
+		}
+
+		template<class Archive>
+		void save(Archive& Ar, const unsigned int Version)
 		{
 			ar & Length;
 			for (int i = 0; i < Length; i++)
 			{
 				ar & pBuf[i];
+			}
+		}
+
+		template<class Archive>
+		void load(Archive& Ar, const unsigned int Version)
+		{
+			int32_t LoadedLength;
+			Ar & LoadedLength;
+			SetLength(LoadedLength);
+			for (int i = 0; i < LoadedLength; i++)
+			{
+				Ar & pBuf[i];
 			}
 		}
 
@@ -593,6 +623,29 @@ struct DefaultVectorResizePolicy
 		*/
 		__forceinline const T* end() const { return pBuf + Length; }
 		__forceinline T* end() { return pBuf + Length; }
+
+		/**
+		* Returns iterator to the first element.
+		*/
+		ConstIteratorType Iterator() const
+		{
+			assert( ! Empty() );
+			return pBuf;
+		}
+
+		/**
+		* Returns iterator to the first element.
+		*/
+		ConstIteratorType ConstIterator() const { return Iterator(); }
+
+		/**
+		* Returns iterator to the first element.
+		*/
+		IteratorType Iterator()
+		{
+			assert(!Empty());
+			return pBuf;
+		}
 		
 		/**
 		* Length in elements
@@ -2505,6 +2558,7 @@ TVector<T, ResizePolicy>::~TVector()
 * 7.1. Serialization/CountSerializeBytes/CountTotalBytes
 * 7.2. Search
 * 7.2. Sort
+* 8. Iterator support.
 *  
 * TODO Operations:
 * 1. RemoveAtSwap (+DONE)

@@ -1,7 +1,10 @@
 #pragma once
 
-#include <boost/test/included/unit_test.hpp>
+
 #include "Core/Cont/TRBTree.h"
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/test/included/unit_test.hpp>
 #include <algorithm>
 #include <string>
 
@@ -11,6 +14,12 @@ namespace
 using IntRBTree = TRBTree<KVType<int, NoValue>>;
 using StringToIntRBTree = TRBTree<KVType<std::string, int>>;
 
+struct TestNonPOD
+{
+	bool* pbDestructed = false;
+	TestNonPOD(bool* pbInDestructed) : pbDestructed(pbInDestructed) {}
+	~TestNonPOD() { *pbDestructed = true; }
+};
 
 const std::string STR_KEY_ONE = std::string("one");
 const std::string STR_KEY_TWO = std::string("two");
@@ -58,26 +67,86 @@ BOOST_AUTO_TEST_SUITE
 	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite")
 )
 
-BOOST_AUTO_TEST_CASE(ClearingTest)
+/*
+BOOST_AUTO_TEST_CASE(SerializationTest)
 {
-	BOOST_TEST_CHECKPOINT("Preparing");
+	constexpr int COUNT = 10;
+
+	BOOST_TEST_CHECKPOINT("Initialization");
 	IntRBTree T;
-	for (int i = 0; i < 10; i++)
+	for (int i = 0; i < COUNT; i++)
 	{
 		BOOST_REQUIRE(T.Add(i, NoValue{}));
+	}
+
+	std::string serialization_buffer;
+
+	BOOST_TEST_CHECKPOINT("Output archive");
+	std::stringstream s_out_strm { serialization_buffer, std::ios::out };
+	boost::archive::text_oarchive out_archive{ s_out_strm };
+	out_archive << T;
+
+	BOOST_TEST_CHECKPOINT("Input archive");
+	std::stringstream s_input_strm { serialization_buffer, std::ios::in };
+	boost::archive::text_iarchive input_archive { s_input_strm };
+	IntRBTree T_deserialized;
+	input_archive >> T_deserialized;
+	BOOST_REQUIRE_EQUAL(T_deserialized.Num(), COUNT);
+	IntRBTree::KeyValueType buf[COUNT];
+	T_deserialized.CopyTo(buf);
+	for (int i = 0; i < COUNT; i++)
+	{
+		BOOST_REQUIRE_EQUAL(buf[i].Key, i);
+	}
+}
+*/
+
+BOOST_AUTO_TEST_CASE(ClearingTest)
+{
+	constexpr int COUNT = 10;
+
+	BOOST_TEST_CHECKPOINT("Preparing");
+	TRBTree<KVType<int, TestNonPOD>> T;
+	bool DestroyFlags[COUNT];
+	std::fill(DestroyFlags, DestroyFlags + COUNT, false);
+	for (int i = 0; i < COUNT; i++)
+	{
+		BOOST_REQUIRE(T.Add(i, TestNonPOD(&DestroyFlags[i])));
 	}
 
 	BOOST_TEST_CHECKPOINT("Clearing");
 	T.Clear();
 	BOOST_REQUIRE(T.Empty());
 
+	bool bTestFlag = false;
 	BOOST_TEST_CHECKPOINT("Checking content after cleared");
-	IntRBTree::KeyValueType buf { 0, NoValue{} };
+	TKeyValue<KVType<int, TestNonPOD>> buf { 0, TestNonPOD( &bTestFlag ) };
 	T.CopyUnorderedTo(&buf);
-	BOOST_REQUIRE_EQUAL(IntRBTree::KeyValueType( 0, NoValue{} ), buf);
+	BOOST_REQUIRE_EQUAL(0, buf.Key);
+
+	for (int i = 0; i < COUNT; i++)
+	{
+		BOOST_REQUIRE( DestroyFlags[i] );
+	}
 }
 
 BOOST_AUTO_TEST_SUITE_END() // ExtraOps
+
+BOOST_AUTO_TEST_SUITE
+(
+	NonPODTestSuite,
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/AddSuite")
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite")
+)
+BOOST_AUTO_TEST_CASE(DeletedProperlyTest)
+{
+	TRBTree<KVType<int, TestNonPOD>> T;
+	bool bDeleted = false;
+	BOOST_REQUIRE(T.Add(1, TestNonPOD(&bDeleted)));
+	BOOST_REQUIRE(T.Remove(1));
+	BOOST_REQUIRE( bDeleted );
+}
+BOOST_AUTO_TEST_SUITE_END() // NonPODTestSuite
 
 BOOST_AUTO_TEST_SUITE
 (
