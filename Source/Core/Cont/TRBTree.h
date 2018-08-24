@@ -12,12 +12,13 @@
 * 1. Remove (by key).
 * 1.1. Write more RB-Tree complex tests
 *
+* TODO Constructors:
+* 1. From other tree
+*
 * TODO Adding interface:
-* 1. Add operation version that takes TKeyValue
-* 2. Hint iterator position
-* 3. Emplace
-* 4. RValue support
-* 5. Add range of values
+* 1. Hint iterator position
+* 2. Emplace
+* 3. Add range of values
 *
 * TODO Key/Value iterator:
 * 1. Insertion while iterating
@@ -313,17 +314,61 @@ public:
 	*
 	* @Returns: true if was added (or false if already was in the tree).
 	*/
+	bool Add(const KeyValueType& InKV)
+	{
+		static_assert(std::is_copy_constructible_v<KeyValueType>, "TRBTree: Add: KeyValueType must be copy-constructible");
+		KeyValueType KV = InKV;
+		return AddImpl(std::move(KV));
+	}
+
+	/**
+	* Adds a new node to the tree by moving.
+	*
+	* @Returns: true if was added (or false if already was in the tree).
+	*/
+	bool Add(KeyValueType&& InKV)
+	{
+		return AddImpl(std::move(InKV));
+	}
+
+	/**
+	* Adds a new node to the tree.
+	*
+	* @Returns: true if was added (or false if already was in the tree).
+	*/
 	bool Add(const KeyType& InKey, const ValueType& InValue)
 	{
-		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
-		bool const bAdded = AddNewNode(KeyValueType{InKey,InValue}, /*Out*/ NodeRef);
-		if (bAdded && Num() >= 3)
-		{
-			FixupRedBlackAfterAdd(NodeRef);
-		}
-		// Uncomment for testing purposes only (will greately slow):
-		BOOST_ASSERT_MSG(DebugCheckValid(), "TRBTree::Add: tree state must be valid");
-		return bAdded;
+		return Add(KeyValueType{ InKey, InValue });
+	}
+
+	/**
+	* Adds a new node to the tree by moving.
+	*
+	* @Returns: true if was added (or false if already was in the tree).
+	*/
+	bool Add(KeyType&& InKey, ValueType&& InValue)
+	{
+		return Add(KeyValueType{ std::move(InKey), std::move(InValue) });
+	}
+
+	/**
+	* Adds a new node to the tree by moving.
+	*
+	* @Returns: true if was added (or false if already was in the tree).
+	*/
+	bool Add(KeyType&& InKey, const ValueType& InValue)
+	{
+		return Add(KeyValueType{ std::move(InKey), InValue });
+	}
+
+	/**
+	* Adds a new node to the tree by moving.
+	*
+	* @Returns: true if was added (or false if already was in the tree).
+	*/
+	bool Add(const KeyType& InKey, ValueType&& InValue)
+	{
+		return Add(KeyValueType{ InKey, std::move(InValue) });
 	}
 
 	/**
@@ -1117,16 +1162,32 @@ private:
 	}
 
 	/**
+	* Implementation of the Add function.
+	*/
+	bool AddImpl(KeyValueType&& InKV)
+	{
+		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
+		bool const bAdded = AddNewNode(std::move(InKV), /*Out*/ NodeRef);
+		if (bAdded && Num() >= 3)
+		{
+			FixupRedBlackAfterAdd(NodeRef);
+		}
+		// Uncomment for testing purposes only (will greately slow):
+		BOOST_ASSERT_MSG(DebugCheckValid(), "TRBTree::Add: tree state must be valid");
+		return bAdded;
+	}
+
+	/**
 	* Creates and adds a new node to the tree.
 	*
 	* @Returns: true if was added (or false if already was in the tree).
 	*/
-	bool AddNewNode(const KeyValueType& InKV, TRBTreeImpl::ChildNodeRef& OutNodeRef)
+	bool AddNewNode(KeyValueType&& InKV, TRBTreeImpl::ChildNodeRef& OutNodeRef)
 	{
 		if (Empty())
 		{
 			OutNodeRef = TRBTreeImpl::ChildNodeRef::RootNode();
-			RootIdx = CreateNewNode(InKV, INDEX_NONE);
+			RootIdx = CreateNewNode(std::move(InKV), INDEX_NONE);
 			GetNode(RootIdx)->MakeBlack();
 			return true;
 		}
@@ -1136,7 +1197,7 @@ private:
 			return false;
 		}
 
-		AddNewNodeAtRef(InKV, OutNodeRef);
+		AddNewNodeAtRef(std::move(InKV), OutNodeRef);
 		return true;
 	}
 
@@ -1144,10 +1205,10 @@ private:
 	* Creates a new node.
 	* Automatically increments the count of nodes.
 	*/
-	TRBTreeImpl::NodeIndex CreateNewNode(const KeyValueType& InKV, TRBTreeImpl::NodeIndex InParentIdx)
+	TRBTreeImpl::NodeIndex CreateNewNode(KeyValueType&& InKV, TRBTreeImpl::NodeIndex InParentIdx)
 	{
 		TRBTreeImpl::NodeIndex const NewNodeIndex = TRBTreeImpl::NodeIndex { Buffer.Len() };
-		NodeType NewNode { InKV, InParentIdx };
+		NodeType NewNode { std::move(InKV), InParentIdx };
 		Buffer.Add(std::move(NewNode));
 		Count++;
 		return NewNodeIndex;
@@ -1156,12 +1217,12 @@ private:
 	/**
 	* Creates and appends a node by the specific reference.
 	*/
-	void AddNewNodeAtRef(const KeyValueType& InKV, TRBTreeImpl::ChildNodeRef Where)
+	void AddNewNodeAtRef(KeyValueType&& InKV, TRBTreeImpl::ChildNodeRef Where)
 	{
 		BOOST_ASSERT_MSG( ! Empty(), "TRBTree::AddNewNodeAtRef: the container must contain at least one node");
 		BOOST_ASSERT_MSG( ! Where.IsRoot(), "TRBTree::AddNewNodeAtRef: we cannot append at the root node position" );
 		BOOST_ASSERT_MSG( ! NodeExists(Where), "TRBTree::AddNewNodeAtRef: the position must be not occupied" );
-		TRBTreeImpl::NodeIndex const NewNodeIdx = CreateNewNode(InKV, Where.ParentIdx);
+		TRBTreeImpl::NodeIndex const NewNodeIdx = CreateNewNode(std::move(InKV), Where.ParentIdx);
 		NodeType* const pParentNode = GetParentNode(Where);
 		pParentNode->SetChild(Where.ChildIdx, NewNodeIdx);
 	}

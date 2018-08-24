@@ -125,6 +125,28 @@ struct TKeyValue
 	TKeyValue(const KeyType& InKey, const ValueType& InValue) :
 		Key{InKey}
 	,	Value{InValue} {}
+
+	/**
+	* Initializes key and value with the given values by moving.
+	*/
+	TKeyValue(KeyType&& InKey, ValueType&& InValue) :
+		Key{ std::move(InKey) }
+	,	Value{ std::move(InValue) } {}
+
+	/**
+	* Initializes key and value with the given values by moving.
+	*/
+	TKeyValue(const KeyType& InKey, ValueType&& InValue) :
+		Key{ InKey }
+	,	Value{ std::move(InValue) } {}
+
+
+	/**
+	* Initializes key and value with the given values by moving.
+	*/
+	TKeyValue(KeyType&& InKey, const ValueType& InValue) :
+		Key{ std::move(InKey) }
+	,	Value{ InValue } {}
 };
 
 /*
