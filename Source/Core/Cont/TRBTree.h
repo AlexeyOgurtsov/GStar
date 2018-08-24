@@ -21,10 +21,10 @@
 *
 * TODO Key/Value iterator:
 * 1. Insertion while iterating
-* 2. Backward iteration
-* 3. end() returns floating iterator: is it ok?
-*
-* TODO:
+* 2. Backward iteration support:
+* 2.1. Function AtLast
+* 2.2. Getters (ReverseIterator)
+* 2.3. Iterator should know whether it's constant or not.
 * 1. Create the Stack-overflow unit-test for traverse;
 *
 * TODO Third:
@@ -190,22 +190,24 @@ public:
 	template<class Archive>
 	void save(Archive& Ar, const unsigned int Version) const
 	{
-		Ar & Count;
+		Ar << Count;
 		for (const KeyValueType& KV : *this)
 		{
-			Ar & KV;
+			Ar << KV;
 		}
 	}
 
 	template<class Archive>
 	void load(Archive& Ar, const unsigned int Version)
 	{
+		Clear();
 		// @TODO: Optimize
-		Ar & Count;
-		for (int i = 0; i < Count; i++)
+		int32_t CountToLoad = 0;
+		Ar >> CountToLoad;
+		for (int i = 0; i < CountToLoad; i++)
 		{
 			KeyValueType KV;
-			Ar & KV;
+			Ar >> KV;
 			bool bAdded = Add(KV.Key, KV.Value);
 			BOOST_ASSERT_MSG(bAdded, "TRBTree: load: adding deserialized value must always succeed");
 		}
@@ -565,6 +567,10 @@ public:
 		template<class OtherTreeType>
 		friend class TGeneralIterator;
 
+		using ThisType = TGeneralIterator<TreeTypeArg>;
+
+		using IsConst = std::is_const<TreeTypeArg>;
+
 		/**
 		* Key/Value type of this iterator.
 		*/
@@ -599,6 +605,7 @@ public:
 		TGeneralIterator(const TGeneralIterator<OtherTreeType>& InOther) :
 			NodeRef{TRBTreeImpl::ChildNodeRef::Invalid()}
 		{
+			static_assert(IteratorAssignableByConst<ThisType, TGeneralIterator<OtherTreeType>>::Value, "Iterators const mismatch");
 			*this = InOther;
 		}
 
@@ -608,6 +615,7 @@ public:
 		template<class OtherTreeType>
 		TGeneralIterator& operator=(const TGeneralIterator<OtherTreeType>& InOther)
 		{
+			static_assert(IteratorAssignableByConst<ThisType, TGeneralIterator<OtherTreeType>>::Value, "Iterators const mismatch");
 			pTree = InOther.pTree;
 			NodeRef = InOther.NodeRef;
 			return *this;

@@ -6,6 +6,9 @@
 */
 
 #include "Core/CoreSysMinimal.h"
+#include "UT/IteratorUtils.h"
+#include "Core/Serialization/ArchiveTraits.h"
+#include "Core/Stream/StreamTraits.h"
 #include <cstdint>
 #include <cassert>
 #include <cstdlib>

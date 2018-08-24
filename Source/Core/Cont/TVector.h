@@ -1,8 +1,9 @@
 #pragma once
 
 #include "ContainerSystem.h"
+#include <boost/serialization/access.hpp>
 #include <boost/serialization/split_member.hpp>
-#include <windows.h>
+#include "Core/Mem/MemUtils.h"
 
 /************************************************************************************************************
 * Default resize policy
@@ -63,6 +64,12 @@ struct DefaultVectorResizePolicy
 		using IteratorType = TGeneralIterator<ThisType>;
 		using ConstIteratorType = TGeneralIterator<const ThisType>;
 
+		/**
+		* Backward iterator types.
+		*/
+		using BackwardIteratorType = TReverseIterator<IteratorType>;
+		using ConstBackwardIteratorType = TReverseIterator<ConstIteratorType>;
+
 		template<class ContTypeArg>
 		class TGeneralIterator
 		{
@@ -70,7 +77,9 @@ struct DefaultVectorResizePolicy
 			template<class OtherContType>
 			friend class TGeneralIterator;
 
-			using ValueType = typename ContTypeArg::ValueType;
+			using ThisType = TGeneralIterator<ContTypeArg>;
+
+			using IsConst = std::is_const<ContTypeArg>;
 
 			/**
 			* Default ctor: Creates floating end iterator.
@@ -96,15 +105,17 @@ struct DefaultVectorResizePolicy
 			template<class OtherContType>
 			TGeneralIterator(const TGeneralIterator<OtherContType>& InOther)
 			{
+				static_assert(IteratorAssignableByConst<ThisType, TGeneralIterator<OtherContType>>::Value, "Iterators const mismatch");
 				*this = InOther;
 			}
 
-			/**
+			/**o
 			* Copies
 			*/
 			template<class OtherContType>
 			ThisType operator=(const TGeneralIterator<OtherContType>& InOther)
 			{
+				static_assert(IteratorAssignableByConst<ThisType, TGeneralIterator<OtherContType>>::Value, "Iterators const mismatch");
 				pCont = InOther.pCont;
 				Ind = InOther.Ind;
 				return *this;
@@ -177,8 +188,9 @@ struct DefaultVectorResizePolicy
 			*/
 			void Forward(int32_t Count)
 			{
-				BOOST_ASSERT_MSG( Count > 0, "TVector: Iterator: Forward: count must be positive" );
-				BOOST_ASSERT_MSG( ! IsEnd() || (Count == 0), "TVector: Iterator: Forward: iterator must be NON-end iterator or count is equal to zero");
+				if (Count == 0) { return; }
+				BOOST_ASSERT_MSG( Count >= 0, "TVector: Iterator: Forward: count must be positive" );
+				BOOST_ASSERT_MSG( ! IsEnd(), "TVector: Iterator: Forward: iterator must be NON-end iterator or count is equal to zero");
 				int32_t const NextIndex = Ind + Count;
 				if (pCont->IsIndexValid(NextIndex))
 				{
@@ -197,7 +209,8 @@ struct DefaultVectorResizePolicy
 			*/
 			void Backward(int32_t Count)
 			{
-				BOOST_ASSERT_MSG(Count > 0, "TVector: Iterator: Backward: count must be positive");
+				if (Count == 0) { return; }
+				BOOST_ASSERT_MSG(Count >= 0, "TVector: Iterator: Backward: count must be positive");
 				BOOST_ASSERT_MSG( ! IsFloatingEnd(), "TVector: Iterator: Backward: iterator must be NOT floating end iterator");
 				Ind -= Count;
 				BOOST_ASSERT_MSG(Count <= pCont->Len(), "TVector: Iterator: Backward: Count must be <= Length of the array");
@@ -211,18 +224,18 @@ struct DefaultVectorResizePolicy
 			/**
 			* Current element.
 			*/
-			__forceinline ValueType& Get() const { return pCont->operator[](Ind); }
+			__forceinline decltype(auto) Get() const { return pCont->operator[](Ind); }
 
 			/**
 			* Gets ptr.
 			*/
-			__forceinline ValueType* GetPtr() const { return &(pCont->operator[](Ind)); }
+			__forceinline decltype(auto) GetPtr() const { return &(pCont->operator[](Ind)); }
 
 
 			/**
 			* Member access by pointer.
 			*/
-			__forceinline ValueType* operator->() const
+			__forceinline decltype(auto) operator->() const
 			{
 				return GetPtr();
 			}
@@ -230,7 +243,7 @@ struct DefaultVectorResizePolicy
 			/**
 			* Current element.
 			*/
-			ValueType& operator*() const { return Get(); }
+			decltype(auto) operator*() const { return Get(); }
 
 			/**
 			* NOT Is end iterator.
@@ -263,6 +276,11 @@ struct DefaultVectorResizePolicy
 				return Ind == 0;
 			}
 
+			__forceinline bool AtLast() const
+			{
+				return Ind == (pCont->Len() - 1);
+			}
+
 			template<class OtherContType>
 			bool operator==(const TGeneralIterator<OtherContType>& InOther) const
 			{
@@ -281,7 +299,7 @@ struct DefaultVectorResizePolicy
 			template<class OtherContType>
 			bool operator!=(const TGeneralIterator<OtherContType>& InOther) const
 			{
-				return ! (InOther);
+				return ! (operator==(InOther));
 			}
 
 		private:
@@ -365,10 +383,10 @@ struct DefaultVectorResizePolicy
 		template<class Archive>
 		void save(Archive& Ar, const unsigned int Version) const
 		{
-			ar & Length;
+			Ar << Length;
 			for (int i = 0; i < Length; i++)
 			{
-				ar & pBuf[i];
+				Ar << pBuf[i];
 			}
 		}
 
@@ -376,11 +394,11 @@ struct DefaultVectorResizePolicy
 		void load(Archive& Ar, const unsigned int Version)
 		{
 			int32_t LoadedLength;
-			Ar & LoadedLength;
+			Ar >> LoadedLength;
 			SetLength(LoadedLength);
 			for (int i = 0; i < LoadedLength; i++)
 			{
-				Ar & pBuf[i];
+				Ar >> pBuf[i];
 			}
 		}
 
@@ -849,7 +867,7 @@ struct DefaultVectorResizePolicy
 		ConstIteratorType Iterator() const
 		{
 			BOOST_ASSERT_MSG(!Empty(), "TVector: Getting Iterator: Container must be NON-empty");
-			return IteratorType(this, 0);
+			return ConstIteratorAt(0);
 		}
 
 		/**
@@ -863,8 +881,65 @@ struct DefaultVectorResizePolicy
 		IteratorType Iterator()
 		{
 			BOOST_ASSERT_MSG( ! Empty(), "TVector: Getting Iterator: Container must be NON-empty" );
-			return IteratorType(this, 0);
+			return IteratorAt(0);
 		}
+
+		/**
+		* Returns backward iterator to the last element.
+		*/
+		ConstBackwardIteratorType BackwardIterator() const
+		{
+			BOOST_ASSERT_MSG( ! Empty() , "TVector: Getting backward iterator: Container must be NON-empty");
+			return ConstBackwardIteratorType( LastIndex() );
+		}
+
+		/**
+		* Returns iterator to the first element.
+		*/
+		ConstBackwardIteratorType ConstBackwardIterator() const { return BackwardIterator(); }
+
+		/**
+		* Returns backward iterator to the last element.
+		*/
+		BackwardIteratorType BackwardIterator()
+		{
+			BOOST_ASSERT_MSG( ! Empty(), "TVector: Getting backward iterator: Container must be NON-empty");
+			return BackwardIteratorType{ IteratorAt(LastIndex()) };
+		}
+
+		/**
+		* Returns iterator to the element with the given index.
+		* The index must be valid.
+		*/
+		IteratorType IteratorAt(int32_t Index)
+		{
+			BOOST_ASSERT_MSG( IsIndexValid(Index), "TVector: Getting Iterator: Index must be valid");
+			return IteratorType(this, Index);
+		}
+
+		/**
+		* Returns constant iterator to the element with the given index.
+		* The index must be valid.
+		*/
+		ConstIteratorType ConstIteratorAt(int32_t Index) const
+		{
+			BOOST_ASSERT_MSG(IsIndexValid(Index), "TVector: Getting Iterator: Index must be valid");
+			return ConstIteratorType(this, Index);
+		}
+
+		/**
+		* Returns constant iterator to the element with the given index.
+		* The index must be valid.
+		*/
+		ConstIteratorType IteratorAt(int32_t Index) const
+		{
+			return ConstIteratorAt(Index);
+		}
+
+		/**
+		* The same as Length in elements.
+		*/
+		__forceinline constexpr int32_t Num() const { return Length; }
 		
 		/**
 		* Length in elements
@@ -1916,8 +1991,24 @@ struct DefaultVectorResizePolicy
 	template<class T, template<class> class ResizePolicy>
 	__forceinline T* end(TVector<T, ResizePolicy>& V) { return V.end(); }
 
-	template<class Strm, class T, template<class> class ResizePolicy>
-	Strm& operator<<(Strm& strm, const TVector<T, ResizePolicy>& V);
+	/**
+	* Operator<< oveload.
+	*
+	* IMPLEMENTATION NOTE: Because of serialization archive usage 
+	* we must exclude non-output stream types from the compilation by the std::enable_if.
+	*/
+	template
+	<
+		class Strm, class T, 
+		template<class> class ResizePolicy, 
+		typename = typename std::enable_if<IsOutputStream<typename Strm>::Value>::type
+	>
+	Strm& operator<<(Strm& strm, const TVector<T, ResizePolicy>& V)
+	{
+		Write(strm, V);
+		return strm;
+	}
+
 
 /**
 * Returns string with extra debug info
@@ -1994,13 +2085,6 @@ void WriteDebugLn(Strm& strm, const TVector<T, ResizePolicy>& V, char sep = ' ')
 {
 	WriteDebug(Strm, V, sep);
 	strm << std::endl;
-}
-
-template<class Strm, class T, template<class> class ResizePolicy>
-Strm& operator<<(Strm& strm, const TVector<T, ResizePolicy>& V)
-{
-	Write(strm, V);
-	return strm;
 }
 
 /**
@@ -2326,7 +2410,7 @@ template<class T, template<class> class ResizePolicy>
 T* TVector<T, ResizePolicy>::AddZeroed(int32_t Count)
 {
 	T* const ptr = AddUninitialized(Count);
-	ZeroMemory(ptr, sizeof(T) * Count);
+	UT::ZeroBytes(ptr, sizeof(T) * Count);
 	return ptr;
 }
 
@@ -2334,7 +2418,7 @@ template<class T, template<class> class ResizePolicy>
 T* TVector<T, ResizePolicy>::AddBufferZeroed(int32_t Count)
 {
 	T* const ptr = AddBufferUninitialized(Count);
-	ZeroMemory(ptr, sizeof(T) * Count);
+	UT::ZeroBytes(ptr, sizeof(T) * Count);
 	return ptr;
 }
 
@@ -2488,7 +2572,7 @@ T* TVector<T, ResizePolicy>::InsertZeroed(int32_t Position, int32_t Count)
 {
 	InsertPositionValidAssert(Position);
 	T* const ptr = InsertUninitialized(Position, Count);
-	ZeroMemory(ptr, sizeof(T) * Count);
+	UT::ZeroBytes(ptr, sizeof(T) * Count);
 	return ptr;
 }
 
@@ -2497,7 +2581,7 @@ T* TVector<T, ResizePolicy>::InsertBufferZeroed(int32_t Position, int32_t Count)
 {
 	InsertPositionValidAssert(Position);
 	T* const ptr = InsertBufferUninitialized(Position, Count);
-	ZeroMemory(ptr, sizeof(T) * Count);
+	UT::ZeroBytes(ptr, sizeof(T) * Count);
 	return ptr;
 }
 

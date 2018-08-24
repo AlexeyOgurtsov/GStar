@@ -16,6 +16,110 @@ BOOST_AUTO_TEST_SUITE(TVectorTestSuite)
 
 BOOST_AUTO_TEST_SUITE(IterationSuite)
 
+BOOST_AUTO_TEST_CASE
+(
+	ReverseIteratorMath,
+	*boost::unit_test::depends_on("Core/Container/TVectorTestSuite/IterationSuite/ReverseIterationTest")
+)
+{
+	BOOST_TEST_CHECKPOINT("Initialization");
+	TVector<int> V;
+	for (int i = 0; i < 10; i++)
+	{
+		V.Add(i);
+	}
+
+	BOOST_TEST_CHECKPOINT("Addition test");
+	TVector<int>::BackwardIteratorType const ItFirstElement = V.BackwardIterator() + (V.Len() - 1);
+	BOOST_REQUIRE(ItFirstElement == V.Iterator());
+
+	BOOST_REQUIRE_EQUAL(V.BackwardIterator() + 0, V.BackwardIterator());
+	BOOST_REQUIRE_EQUAL(*(V.BackwardIterator() + 2), *(V.Iterator() + (V.Len() - 1) - 2));
+	BOOST_REQUIRE_EQUAL(*(V.BackwardIterator() + 3), *(V.Iterator() + (V.Len() - 1) - 3));
+
+	BOOST_TEST_CHECKPOINT("Addition end test");
+	BOOST_REQUIRE( ! (V.BackwardIterator() + V.Len()) );
+	BOOST_REQUIRE( ! ((V.BackwardIterator() + V.Len()) + 0));
+
+	BOOST_TEST_CHECKPOINT("Subtraction test");
+	BOOST_REQUIRE_EQUAL(ItFirstElement - 0, ItFirstElement);
+	BOOST_REQUIRE_EQUAL(V.BackwardIterator() - 0, V.BackwardIterator());
+	BOOST_REQUIRE_EQUAL(*(ItFirstElement - 2), *(V.Iterator() + 2));
+	BOOST_REQUIRE_EQUAL(*(ItFirstElement - 3), *(V.Iterator() + 3));
+}
+
+BOOST_AUTO_TEST_CASE
+(
+	ReverseIterationDecrementTest,
+	*boost::unit_test::depends_on("Core/Container/TVectorTestSuite/IterationSuite/ReverseIterationTest")
+)
+{
+	BOOST_TEST_CHECKPOINT("Initialization");
+	TVector<int> V;
+	for (int i = 0; i < 10; i++)
+	{
+		V.Add(i);
+	}
+
+	BOOST_TEST_CHECKPOINT("Iteration");
+	{
+		int RefIndex = 0;
+
+		TVector<int>::BackwardIteratorType ItInitial = V.BackwardIterator() + (V.Len() - 1);
+
+		TVector<int>::BackwardIteratorType It = ItInitial;
+		for (; ; --It)
+		{
+			BOOST_REQUIRE(!It.IsEnd());
+			BOOST_REQUIRE(!!It);
+			BOOST_REQUIRE_EQUAL(It.ToBaseIterator().Index(), RefIndex);
+			BOOST_REQUIRE_EQUAL(It.Get(), V[RefIndex]);
+			BOOST_REQUIRE_EQUAL(*It, V[RefIndex]);
+			BOOST_REQUIRE(nullptr != It.GetPtr());
+			BOOST_REQUIRE_EQUAL(*It.GetPtr(), V[RefIndex]);
+
+			RefIndex++;
+
+			if (It == V.BackwardIterator())
+			{
+				break;
+			}
+		}
+		BOOST_REQUIRE(It == V.BackwardIterator());
+	}
+}
+
+BOOST_AUTO_TEST_CASE
+(
+	ReverseIterationTest,
+	*boost::unit_test::depends_on("Core/Container/TVectorTestSuite/IterationSuite/SimpleIterationTest")
+)
+{
+	BOOST_TEST_CHECKPOINT("Initialization");
+	TVector<int> V;
+	for (int i = 0; i < 10; i++)
+	{
+		V.Add(i);
+	}
+
+	BOOST_TEST_CHECKPOINT("Iteration");
+	{
+		int RefIndex = V.LastIndex();
+		for (TVector<int>::BackwardIteratorType It = V.BackwardIterator(); It; ++It)
+		{
+			BOOST_REQUIRE(!It.IsEnd());
+			BOOST_REQUIRE(!!It);
+			BOOST_REQUIRE_EQUAL(It.ToBaseIterator().Index(), RefIndex);
+			BOOST_REQUIRE_EQUAL(It.Get(), V[RefIndex]);
+			BOOST_REQUIRE_EQUAL(*It, V[RefIndex]);
+			BOOST_REQUIRE(nullptr != It.GetPtr());
+			BOOST_REQUIRE_EQUAL(*It.GetPtr(), V[RefIndex]);
+
+			RefIndex--;
+		}
+	}
+}
+
 BOOST_AUTO_TEST_CASE(SimpleIterationTest)
 {
 	BOOST_TEST_CHECKPOINT("Initialization");
@@ -31,7 +135,7 @@ BOOST_AUTO_TEST_CASE(SimpleIterationTest)
 		for (TVector<int>::IteratorType It = V.Iterator(); It; ++It)
 		{
 			BOOST_REQUIRE(!It.IsEnd());
-			BOOST_REQUIRE(!!It.IsEnd());
+			BOOST_REQUIRE(!!It);
 			BOOST_REQUIRE_EQUAL(It.Index(), RefIndex);
 			BOOST_REQUIRE_EQUAL(It.Get(), V[RefIndex]);
 			BOOST_REQUIRE_EQUAL(*It, V[RefIndex]);
@@ -76,13 +180,13 @@ BOOST_AUTO_TEST_CASE(SimpleIterationTest)
 	TVector<int>::IteratorType FowardedIt = V.Iterator();
 
 	FowardedIt.Forward(0);
-	BOOST_REQUIRE(FowardedIt, V.Iterator());
+	BOOST_REQUIRE(FowardedIt == V.Iterator());
 
 	FowardedIt.Forward(1);
-	BOOST_REQUIRE(*FowardedIt, V[1]);
+	BOOST_REQUIRE_EQUAL(*FowardedIt, V[1]);
 
 	FowardedIt.Forward(V.Len() - 2);
-	BOOST_REQUIRE(*FowardedIt, V[V.LastIndex()]);
+	BOOST_REQUIRE_EQUAL(*FowardedIt, V[V.LastIndex()]);
 	FowardedIt.Forward(1);
 	BOOST_REQUIRE( ! FowardedIt );
 
@@ -95,7 +199,9 @@ BOOST_AUTO_TEST_CASE(SimpleIterationTest)
 	BOOST_REQUIRE(V.Iterator() - 0 == V.Iterator());
 	BOOST_REQUIRE(AdvancedIt - 0 == AdvancedIt);
 	BOOST_REQUIRE(*(AdvancedIt - V.Len()) == V.First());
-	BOOST_REQUIRE(*(AdvancedIt - 1) == V.Last(1));
+	BOOST_REQUIRE(*(AdvancedIt - 1) == V.Last(0));
+
+	BOOST_REQUIRE((AdvancedIt - 1).AtLast());
 
 	BOOST_TEST_CHECKPOINT("BackwardIteration");
 	{
@@ -103,7 +209,7 @@ BOOST_AUTO_TEST_CASE(SimpleIterationTest)
 		for (TVector<int>::IteratorType It = V.Iterator() + RefIndex; ; It--)
 		{			
 			BOOST_REQUIRE(!It.IsEnd());
-			BOOST_REQUIRE(!!It.IsEnd());
+			BOOST_REQUIRE(!!It);
 			BOOST_REQUIRE_EQUAL(It.Index(), RefIndex);
 			BOOST_REQUIRE_EQUAL(It.Get(), V[RefIndex]);
 			BOOST_REQUIRE_EQUAL(*It, V[RefIndex]);
@@ -125,7 +231,7 @@ BOOST_AUTO_TEST_CASE(SimpleIterationTest)
 		for (TVector<int>::ConstIteratorType It = V.ConstIterator(); It; ++It)
 		{
 			BOOST_REQUIRE(!It.IsEnd());
-			BOOST_REQUIRE(!!It.IsEnd());
+			BOOST_REQUIRE(!!It);
 			BOOST_REQUIRE_EQUAL(It.Index(), RefIndex);
 			BOOST_REQUIRE_EQUAL(It.Get(), V[RefIndex]);
 			BOOST_REQUIRE_EQUAL(*It, V[RefIndex]);
@@ -152,16 +258,19 @@ BOOST_AUTO_TEST_CASE(SerializationTest)
 		V.Add(i);
 	}
 
+
 	std::string serialization_buffer;
+	serialization_buffer.resize(100);
 
 	BOOST_TEST_CHECKPOINT("Output archive");
-	std::stringstream s_out_strm{ serialization_buffer, std::ios::out };
-	boost::archive::text_oarchive out_archive { s_out_strm };
+	std::stringstream s_in_out_strm{ serialization_buffer, std::ios::out | std::ios::in };
+
+	boost::archive::text_oarchive out_archive { s_in_out_strm };
 	out_archive << V;
 
 	BOOST_TEST_CHECKPOINT("Input archive");
-	std::stringstream s_input_strm{ serialization_buffer, std::ios::in };
-	boost::archive::text_iarchive input_archive { s_input_strm };
+	s_in_out_strm.seekg(0);
+	boost::archive::text_iarchive input_archive{ s_in_out_strm };
 	TVector<int> T_deserialized;
 	input_archive >> T_deserialized;
 	BOOST_REQUIRE_EQUAL(T_deserialized.Len(), COUNT);

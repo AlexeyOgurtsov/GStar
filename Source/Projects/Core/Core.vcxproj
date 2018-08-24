@@ -149,6 +149,7 @@
     <ClInclude Include="..\..\Core\Cont\TRBTree.h" />
     <ClInclude Include="..\..\Core\Cont\TSortedSet.h" />
     <ClInclude Include="..\..\Core\Cont\TVector.h" />
+    <ClInclude Include="..\..\Core\Cont\UT\IteratorUtils.h" />
     <ClInclude Include="..\..\Core\Cont\UT\Test\TKeyValueTester.h" />
     <ClInclude Include="..\..\Core\Cont\UT\TKeyValue.h" />
     <ClInclude Include="..\..\Core\CoreSysCommon.h" />
@@ -157,8 +158,11 @@
     <ClInclude Include="..\..\Core\Mem\BlockHeap.h" />
     <ClInclude Include="..\..\Core\Mem\Helper\LinearAllocHelper.h" />
     <ClInclude Include="..\..\Core\Mem\Helper\Test\LinearAllocHelperTest.h" />
+    <ClInclude Include="..\..\Core\Mem\MemUtils.h" />
     <ClInclude Include="..\..\Core\Mem\Priv\BlockHeapImpl.h" />
     <ClInclude Include="..\..\Core\Mem\Test\BlockHeapTest.h" />
+    <ClInclude Include="..\..\Core\Serialization\ArchiveTraits.h" />
+    <ClInclude Include="..\..\Core\Stream\StreamTraits.h" />
     <ClInclude Include="..\..\Core\Str\IdentStr.h" />
     <ClInclude Include="..\..\Core\Templ\TComparer.h" />
     <ClInclude Include="..\..\Core\Templ\Test\ComparerTest.h" />
@@ -168,6 +172,7 @@
     <ClCompile Include="..\..\Core\Cont\Priv\TRBTreeImpl.cpp" />
     <ClCompile Include="..\..\Core\Mem\Helper\Priv\LinearAllocHelper.cpp" />
     <ClCompile Include="..\..\Core\Mem\Priv\BlockHeapImpl.cpp" />
+    <ClCompile Include="..\..\Core\Mem\Priv\MemUtils.cpp" />
     <ClCompile Include="..\..\Core\Str\Priv\IdentStr.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

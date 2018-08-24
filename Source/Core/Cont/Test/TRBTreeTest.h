@@ -81,13 +81,13 @@ BOOST_AUTO_TEST_CASE(SerializationTest)
 	std::string serialization_buffer;
 
 	BOOST_TEST_CHECKPOINT("Output archive");
-	std::stringstream s_out_strm { serialization_buffer, std::ios::out };
-	boost::archive::text_oarchive out_archive{ s_out_strm };
+	std::stringstream s_in_out_strm { serialization_buffer, std::ios::in | std::ios::out };
+	boost::archive::text_oarchive out_archive{ s_in_out_strm };
 	out_archive << T;
 
 	BOOST_TEST_CHECKPOINT("Input archive");
-	std::stringstream s_input_strm { serialization_buffer, std::ios::in };
-	boost::archive::text_iarchive input_archive { s_input_strm };
+	s_in_out_strm.seekg(0);
+	boost::archive::text_iarchive input_archive { s_in_out_strm };
 	IntRBTree T_deserialized;
 	input_archive >> T_deserialized;
 	BOOST_REQUIRE_EQUAL(T_deserialized.Num(), COUNT);

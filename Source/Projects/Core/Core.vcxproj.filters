@@ -46,6 +46,12 @@
     <Filter Include="Templ\Test">
       <UniqueIdentifier>{8c8eda12-cb51-4bfe-9bbd-43b77b580a9f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Serialization">
+      <UniqueIdentifier>{362c20f3-f779-499e-b05d-8c3b1b6d17c4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Stream">
+      <UniqueIdentifier>{b69fe854-2f48-4347-b8b8-b64ea6f162be}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Core\Str\IdentStr.h">
@@ -108,6 +114,18 @@
     <ClInclude Include="..\..\Core\Templ\TComparer.h">
       <Filter>Templ</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\UT\IteratorUtils.h">
+      <Filter>Cont\UT</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Serialization\ArchiveTraits.h">
+      <Filter>Serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Stream\StreamTraits.h">
+      <Filter>Stream</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Mem\MemUtils.h">
+      <Filter>Mem</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Core\Mem\Helper\Priv\LinearAllocHelper.cpp">
@@ -121,6 +139,9 @@
     </ClCompile>
     <ClCompile Include="..\..\Core\Cont\Priv\TRBTreeImpl.cpp">
       <Filter>Cont\Priv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Core\Mem\Priv\MemUtils.cpp">
+      <Filter>Mem\Priv</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -18,3 +18,7 @@ LATER:
 * Core operations:
 Neg (to avoid nasty hard-to-debug minus sign)
 * Hash provider
+
+BUGS:
+1. MemoryLeak after constructed boost::serialization::text_oarchive (strstream_var /*or std::cout*/) 
+(nothing else was done within the function).

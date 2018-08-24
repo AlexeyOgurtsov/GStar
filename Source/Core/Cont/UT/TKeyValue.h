@@ -3,6 +3,7 @@
 #include "Core/CoreSysMinimal.h"
 #include <boost/functional/hash_fwd.hpp>
 #include <type_traits>
+#include "Core/Stream/StreamTraits.h"
 
 /**
 * TODO:
@@ -135,7 +136,11 @@ TKeyValue<KVType<KeyType, ValueType>> MakeKeyValue(const KeyType& K, const Value
 }
 */
 
-template<class Strm, class KVTypeArg>
+template
+<
+	class Strm, class KVTypeArg,
+	typename = typename std::enable_if<IsOutputStream<Strm>::Value>::type
+>
 Strm& operator<<(Strm& S, const TKeyValue<KVTypeArg>& KV)
 {
 	if constexpr (std::is_base_of_v<NoValue, typename KVTypeArg::ValueType>)

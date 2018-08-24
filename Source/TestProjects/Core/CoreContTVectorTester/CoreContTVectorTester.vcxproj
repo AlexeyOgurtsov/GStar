@@ -92,7 +92,7 @@
       <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;DCore.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;DCore.lib;boost/libboost_serialization-vc141-mt-gd-x32-1_67.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>C:\Windows\System32\cmd.exe /K "C:\GStar\Out\Test\Core\Cont\TCoreContTVectorTester.exe --log_sink=C:\GStar\Out\Test\Core\Cont\TCoreContTVectorTester.txt"</Command>
