@@ -209,7 +209,7 @@ public:
 		{
 			KeyValueType KV;
 			Ar >> KV;
-			bool bAdded = Add(KV.Key, KV.Value);
+			bool bAdded = AddCheck(KV.Key, KV.Value);
 			BOOST_ASSERT_MSG(bAdded, "TRBTree: load: adding deserialized value must always succeed");
 		}
 	}
@@ -310,15 +310,80 @@ public:
 	}
 
 	/**
-	* Adds a new node to the tree.
-	*
-	* @Returns: true if was added (or false if already was in the tree).
+	* Adds a new node from the given hint position.
+	* Not guaranteed that this position will be accounted, but may optimize.
 	*/
-	bool Add(const KeyValueType& InKV)
+	bool AddHint(ConstIteratorType ItPos, KeyValueType&& InKV)
+	{
+		return AddCheck(InKV);
+	}
+
+	/**
+	* Adds a new node from the given hint position.
+	* Not guaranteed that this position will be accounted, but may optimize.
+	*/
+	bool AddHint(ConstIteratorType ItPos, const KeyValueType& InKV)
+	{
+		return AddCheck(InKV);
+	}
+
+	/**
+	* Adds a new node to the tree if it was not there already.
+	* Otherwise just returns the stored key/value WITHOUT updating old value of the key.
+	*
+	* @Returns: iterator to the added or existed element.
+	*/
+	IteratorType GetOrAdd(const KeyValueType& InKV)
 	{
 		static_assert(std::is_copy_constructible_v<KeyValueType>, "TRBTree: Add: KeyValueType must be copy-constructible");
 		KeyValueType KV = InKV;
-		return AddImpl(std::move(KV));
+		return GetOrAdd(std::move(KV));
+	}
+
+	/**
+	* Adds a new node to the tree if it was not there already.
+	* Otherwise just returns the stored key/value WITHOUT updating old value of the key.
+	*
+	* @Returns: iterator to the added or existed element.
+	*/
+	IteratorType GetOrAdd(KeyValueType&& InKV)
+	{
+		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
+		AddImpl(std::move(InKV), /*Out*/NodeRef);
+		return IteratorType(this, NodeRef);
+	}
+
+	/**
+	* Adds a new node to the tree if it was not there already.
+	* Otherwise just returns the stored key/value WITHOUT updating old value of the key.
+	*
+	* @Returns: iterator to the added or existed element.
+	*/
+	IteratorType GetOrAdd(const KeyType& InKey, const ValueType& InValue)
+	{
+		return GetOrAdd(KeyValueType{ InKey, InValue });
+	}
+
+	/**
+	* Adds a new node to the tree if it was not there already.
+	* Otherwise just returns the stored key/value WITHOUT updating old value of the key.
+	*
+	* @Returns: iterator to the added or existed element.
+	*/
+	IteratorType GetOrAdd(KeyType&& InKey, ValueType&& InValue)
+	{
+		return GetOrAdd(KeyValueType{ std::move(InKey), std::move(InValue) });
+	}
+
+	/**
+	* Adds a new node to the tree if it was not there already.
+	* Otherwise just returns the stored key/value WITHOUT updating old value of the key.
+	*
+	* @Returns: iterator to the added or existed element.
+	*/
+	IteratorType GetOrAdd(KeyType&& InKey, const ValueType& InValue)
+	{
+		return GetOrAdd(KeyValueType{ std::move(InKey), InValue });
 	}
 
 	/**
@@ -326,9 +391,9 @@ public:
 	*
 	* @Returns: true if was added (or false if already was in the tree).
 	*/
-	bool Add(KeyValueType&& InKV)
+	IteratorType GetOrAdd(const KeyType& InKey, ValueType&& InValue)
 	{
-		return AddImpl(std::move(InKV));
+		return GetOrAdd(KeyValueType{ InKey, std::move(InValue) });
 	}
 
 	/**
@@ -336,9 +401,12 @@ public:
 	*
 	* @Returns: true if was added (or false if already was in the tree).
 	*/
-	bool Add(const KeyType& InKey, const ValueType& InValue)
+	bool AddCheck(const KeyValueType& InKV)
 	{
-		return Add(KeyValueType{ InKey, InValue });
+		static_assert(std::is_copy_constructible_v<KeyValueType>, "TRBTree: AddCheck: KeyValueType must be copy-constructible");
+		KeyValueType KV = InKV;
+		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
+		return AddImpl(std::move(KV), /*Out*/NodeRef);
 	}
 
 	/**
@@ -346,9 +414,20 @@ public:
 	*
 	* @Returns: true if was added (or false if already was in the tree).
 	*/
-	bool Add(KeyType&& InKey, ValueType&& InValue)
+	bool AddCheck(KeyValueType&& InKV)
 	{
-		return Add(KeyValueType{ std::move(InKey), std::move(InValue) });
+		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
+		return AddImpl(std::move(InKV), /*Out*/NodeRef);
+	}
+
+	/**
+	* Adds a new node to the tree.
+	*
+	* @Returns: true if was added (or false if already was in the tree).
+	*/
+	bool AddCheck(const KeyType& InKey, const ValueType& InValue)
+	{
+		return AddCheck(KeyValueType{ InKey, InValue });
 	}
 
 	/**
@@ -356,9 +435,9 @@ public:
 	*
 	* @Returns: true if was added (or false if already was in the tree).
 	*/
-	bool Add(KeyType&& InKey, const ValueType& InValue)
+	bool AddCheck(KeyType&& InKey, ValueType&& InValue)
 	{
-		return Add(KeyValueType{ std::move(InKey), InValue });
+		return AddCheck(KeyValueType{ std::move(InKey), std::move(InValue) });
 	}
 
 	/**
@@ -366,9 +445,19 @@ public:
 	*
 	* @Returns: true if was added (or false if already was in the tree).
 	*/
-	bool Add(const KeyType& InKey, ValueType&& InValue)
+	bool AddCheck(KeyType&& InKey, const ValueType& InValue)
 	{
-		return Add(KeyValueType{ InKey, std::move(InValue) });
+		return AddCheck(KeyValueType{ std::move(InKey), InValue });
+	}
+
+	/**
+	* Adds a new node to the tree by moving.
+	*
+	* @Returns: true if was added (or false if already was in the tree).
+	*/
+	bool AddCheck(const KeyType& InKey, ValueType&& InValue)
+	{
+		return AddCheck(KeyValueType{ InKey, std::move(InValue) });
 	}
 
 	/**
@@ -749,7 +838,7 @@ public:
 		*/
 		__forceinline bool IsFloatingEnd() const
 		{
-			return NodeRef.IsNull();;
+			return NodeRef.IsNull();
 		}
 
 		/**
@@ -1162,27 +1251,57 @@ private:
 	}
 
 	/**
+	* Implementation of the Add function that inserts exactly before or after element with the given reference
+	*/
+	bool AddHintImpl(KeyValueType&& InKV, TRBTreeImpl::ChildNodeRef& InOutNodeRef)
+	{
+		BOOST_ASSERT_MSG(false, "TRBTree: AddImpl: NOT yet impl"); return false;
+	}
+
+	/**
 	* Implementation of the Add function.
 	*/
-	bool AddImpl(KeyValueType&& InKV)
+	bool AddImpl(KeyValueType&& InKV, TRBTreeImpl::ChildNodeRef& OutNodeRef)
 	{
-		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
-		bool const bAdded = AddNewNode(std::move(InKV), /*Out*/ NodeRef);
-		if (bAdded && Num() >= 3)
+		bool bWasAlreadyInContainer = false;
+
+		if ( ! TryHandleAddEmptyCase(std::move(InKV), /*Out*/OutNodeRef) )
+		{
+			if ( FindNode(InKV.Key, /*Out*/OutNodeRef, ComparerArg()))
+			{
+				bWasAlreadyInContainer = true;
+			}
+			else
+			{
+				AddNewNodeAtRef(std::move(InKV), OutNodeRef);
+			}
+		}
+		bool const bAddedNow = ( ! bWasAlreadyInContainer );
+
+		return PostAddImpl(bAddedNow, OutNodeRef);
+	}
+
+	/**
+	* Common finishing code for all AddImpl functions.
+	*/
+	bool PostAddImpl(bool bInAddedNow, TRBTreeImpl::ChildNodeRef NodeRef)
+	{
+		if (bInAddedNow && Num() >= 3)
 		{
 			FixupRedBlackAfterAdd(NodeRef);
 		}
 		// Uncomment for testing purposes only (will greately slow):
 		BOOST_ASSERT_MSG(DebugCheckValid(), "TRBTree::Add: tree state must be valid");
-		return bAdded;
+		return bInAddedNow;
 	}
 
 	/**
-	* Creates and adds a new node to the tree.
+	* Handles the case when the container is empty.
 	*
-	* @Returns: true if was added (or false if already was in the tree).
+	* @returns: true if was handled as empty.
+	* @argument: InKV: will only be moved if contained is empty.
 	*/
-	bool AddNewNode(KeyValueType&& InKV, TRBTreeImpl::ChildNodeRef& OutNodeRef)
+	bool TryHandleAddEmptyCase(KeyValueType&& InKV, TRBTreeImpl::ChildNodeRef& OutNodeRef)
 	{
 		if (Empty())
 		{
@@ -1191,14 +1310,7 @@ private:
 			GetNode(RootIdx)->MakeBlack();
 			return true;
 		}
-
-		if ( FindNode(InKV.Key, /*Out*/OutNodeRef, ComparerArg()) )
-		{
-			return false;
-		}
-
-		AddNewNodeAtRef(std::move(InKV), OutNodeRef);
-		return true;
+		return false;
 	}
 
 	/**
