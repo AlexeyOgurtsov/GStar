@@ -3,6 +3,15 @@
 #include "Core/CoreSysMinimal.h"
 
 /**
+* Returns true if the given class is iterator.
+*/
+template<class T>
+struct IsIterator
+{
+	static constexpr bool Value = false;
+};
+
+/**
 * Returns true if the right iterator is assignable to the left one according to constantness rules.
 */
 template<class LeftType, class RightType>

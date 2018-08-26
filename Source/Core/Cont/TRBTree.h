@@ -15,10 +15,21 @@
 * TODO Constructors:
 * 1. From other tree
 *
+* TODO Getters
+* 1. operator[] 
+* 2. Get with moving KeyValue pair (actually removing)
+* 3. Get with moving value only
+* 4. Get pointer to KeyValue for the given key.
+*
+* TODO Setters
+* 1. Setter
+*
 * TODO Adding interface:
 * 1. Hint iterator position
 * 2. Emplace
 * 3. Add range of values
+* 3.1. Moving from RBTree - perform REAL moving and uncomment the unit-test.
+* 3.2. Add IsIterator checks (the checks must be implemented)
 *
 * TODO Key/Value iterator:
 * 1. Insertion while iterating
@@ -34,6 +45,9 @@
 *
 * TODO Fourth:
 * 1. Equality, NotEquality
+*
+* TODO Key extra:
+* 1. Filter keys by given predicate
 */
 
 /**
@@ -215,6 +229,33 @@ public:
 	}
 
 	BOOST_SERIALIZATION_SPLIT_MEMBER()
+
+
+	/**
+	* Count bytes needed to store this class without overhead of capacity.
+	* Include both the class layout and dynamic memory.
+	*/
+	int32_t CountTotalBytes() const
+	{
+		return sizeof(*this) + ElementSize() * Count;
+	}
+
+	/**
+	* Count only bytes that are to be serialized.
+	*/
+	int32_t CountSerializeBytes() const
+	{
+		return sizeof(Count) + ElementSize() * Count;
+	}
+
+	/**
+	* Size of a single element instance.
+	* NOTE: For pointers accounts only pointer size and not the size of pointed-to content.
+	*/
+	int32_t ElementSize() const
+	{
+		return sizeof(NodeType);
+	}
 
 	/**
 	* Clears the container.
@@ -408,6 +449,201 @@ public:
 		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
 		return AddImpl(std::move(KV), /*Out*/NodeRef);
 	}
+
+	/**
+	* Adds key/value pairs from C-array buffer. 
+	* Key/Value pairs are copied.
+	*/
+	void Add(const KeyValueType* pInSource, int32_t InCount)
+	{
+		for (int i = 0; i < InCount; i++) 
+		{
+			AddCheck(pInSource[i]);
+		}
+	}
+
+	/**
+	* Adds the given range of elements, assuming that the range is sorted.
+	*/
+	void AddSorted(const KeyValueType* pInSource, int32_t InCount)
+	{
+		// @TODO: optimize
+		if (InCount == 0) { return; }
+		const KeyValueType* pPrev = pInSource;
+		AddCheck(*pPrev);
+		for (int i = 1; i < InCount; i++)
+		{
+			BOOST_ASSERT_MSG(CompareLessOrEqual(ComparerArg().Compare(pPrev->Key, pInSource[i].Key)), "TRBTree: AddSorted: C-array values are not sorted by ascending key");
+			AddCheck(pInSource[i]);
+			pPrev = pInSource + i;
+		}
+	}
+
+	/**
+	* Adds key/value pairs from C-array buffer.
+	* Key/Value pairs are moved.
+	*/
+	void AddMoved(KeyValueType* pInSource, int32_t InCount)
+	{
+		for (int i = 0; i < InCount; i++)
+		{
+			AddCheck(std::move(pInSource[i]));
+		}
+	}
+
+	/**
+	* Adds key/value pairs from C-array buffer, assuming that the range is sorted
+	*/
+	void AddMovedSorted(KeyValueType* pInSource, int32_t InCount)
+	{
+		AddMoved(pInSource, InCount);
+	}
+
+	/**
+	* Adds key/value pairs from range specified by a pair of iterators.
+	*
+	* Iterator must satisfy the Iterator concept requirements (see IteratorUtils.h).
+	*/
+	template<class SourceIteratorType>
+	void AddRange(SourceIteratorType FirstIt, SourceIteratorType LastIt)
+	{
+		//static_assert(IsIterator<SourceIteratorType>::Value, "TVector: AddRange: First It must be iterator");
+		//static_assert(IsIterator<SourceIteratorType>::Value, "TVector: AddRange: Last It must be iterator");
+		// @TODO: Check that iterator is NOT iterator of this particular RBTree.
+		static_assert(std::is_same<std::remove_cv_t<std::remove_reference_t<decltype(*FirstIt)>>, KeyValueType>::value, "TRBTree: Append iterator range: first iterator must return type convertible to KeyValue pair");
+		static_assert(std::is_same<std::remove_cv_t<std::remove_reference_t<decltype(*LastIt)>>, KeyValueType>::value, "TRBTree: Append iterator range: last iterator must return type convertible to KeyValue pair");
+		for (SourceIteratorType It = FirstIt; It != LastIt; ++It)
+		{
+			AddCheck(*It);
+		}
+	}
+
+	/**
+	* Adds key/value pairs from range specified by a pair of iterators,
+	* Assuming that the range is sorted.
+	*
+	* Iterator must satisfy the Iterator concept requirements (see IteratorUtils.h).
+	*/
+	template<class SourceIteratorType>
+	void AddRangeSorted(SourceIteratorType FirstIt, SourceIteratorType LastIt)
+	{
+		// @TODO: Optimize
+		AddRange(FirstIt, LastIt);
+	}
+
+
+	/**
+	* Adds key/value pairs from range specified by the given iterator
+	* (Iterated to the end).
+	*
+	* Iterator must satisfy the Iterator concept requirements (see IteratorUtils.h).
+	*/
+	template<class SourceIteratorType>
+	void AddRange(SourceIteratorType It)
+	{
+		//static_assert(IsIterator<SourceIteratorType>::Value, "TVector: AddRange: It must be iterator");
+		// @TODO: Check that iterator is NOT iterator of this particular RBTree.
+		for (SourceIteratorType CurrIt = It; CurrIt; ++CurrIt)
+		{
+			AddCheck(*CurrIt);
+		}
+	}
+
+	/**
+	* Adds key/value pairs from range specified by the given iterator
+	* (Iterated to the end).
+	* Assuming that the range is sorted.
+	*
+	* Iterator must satisfy the Iterator concept requirements (see IteratorUtils.h).
+	*/
+	template<class SourceIteratorType>
+	void AddRangeSorted(SourceIteratorType It)
+	{
+		AddRange(It);
+	}
+
+	/**
+	* Adds the given initializer-list of key/value pairs.
+	*
+	* Warning: All keys in the initializer list must be unique.
+	*/
+	void Add(std::initializer_list<KeyValueType> Source)
+	{
+		for(const KeyValueType& KV : Source)
+		{
+			AddCheck(KV);
+		}
+	}
+
+	/**
+	* Adds the TRBTree pairs.
+	*/
+	template<class OtherComparerArg>
+	void Add(const TRBTree<KVTypeArg, OtherComparerArg>& InSource)
+	{
+		for (const KeyValueType& KV : InSource)
+		{
+			AddCheck(KV);
+		}
+	}
+
+	/**
+	* Adds the TRBTree Key/Value pairs by moving.
+	*/
+	template<class OtherComparerArg>
+	void Add(TRBTree<KVTypeArg, OtherComparerArg>&& InSource)
+	{
+		// @TODO: Perform the real moving here
+		for (const KeyValueType& KV : InSource)
+		{
+			AddCheck(KV);
+		}
+	}
+
+	/**
+	* Adds the TVector Key/Value pairs.
+	*/
+	template<template<class> class OtherResizePolicy>
+	void AddSorted(const TVector<KeyValueType, OtherResizePolicy>& InSource)
+	{
+		// @TODO: Optimize
+		Add(InSource);
+	}
+
+	/**
+	* Adds the TVector Key/Value pairs.
+	*/
+	template<template<class> class OtherResizePolicy>
+	void Add(const TVector<KeyValueType, OtherResizePolicy>& InSource)
+	{
+		for (const KeyValueType& KV : InSource)
+		{
+			AddCheck(KV);
+		}
+	}
+
+	/**
+	* Move the TVector Key/Value pairs.
+	*/
+	template<template<class> class OtherResizePolicy>
+	void Add(TVector<KeyValueType, OtherResizePolicy>&& Source)
+	{
+		AddMoved(Source);
+	}
+
+	/**
+	* Move the TVector Key/Value pairs.
+	*/
+	template<template<class> class OtherResizePolicy>
+	void AddMoved(TVector<KeyValueType, OtherResizePolicy>& InSource)
+	{
+		for (KeyValueType& KV : InSource)
+		{
+			AddCheck(std::move(KV));
+		}
+	}
+
+
 
 	/**
 	* Adds a new node to the tree by moving.
@@ -1962,4 +2198,3 @@ private:
 	*/
 	int Count;
 };
-

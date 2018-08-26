@@ -104,6 +104,347 @@ BOOST_AUTO_TEST_SUITE
 	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite")
 )
 
+BOOST_AUTO_TEST_SUITE(ExtraAddOpsSuite)
+
+BOOST_AUTO_TEST_CASE(AddRange)
+{
+	const int COUNT = 6;
+
+	TVector<IntStringRBTree::KeyValueType> Source;
+	Source.Add(IntStringRBTree::KeyValueType(2, std::string("one")));
+	Source.Add(IntStringRBTree::KeyValueType(1, std::string("one")));
+	Source.Add(IntStringRBTree::KeyValueType(3, std::string("one")));
+	Source.Add(IntStringRBTree::KeyValueType(4, std::string("one")));
+	Source.Add(IntStringRBTree::KeyValueType(5, std::string("five"))); // this element will be OUT of range
+
+	IntStringRBTree T;
+	T.AddCheck(0, "zero");
+
+	T.AddRange(Source.Iterator(), Source.IteratorAt(Source.LastIndex()));
+
+	for (int i = 0; i < (COUNT - 1); i++)
+	{
+		BOOST_REQUIRE(T.Contains(i));
+	}
+}
+
+BOOST_AUTO_TEST_CASE(AddAllRange)
+{
+	const int COUNT = 6;
+
+	IntStringRBTree Source;
+	Source.AddCheck(5, std::string("five"));
+	Source.AddCheck(2, std::string("one"));
+	Source.AddCheck(1, std::string("one"));
+	Source.AddCheck(3, std::string("one"));
+	Source.AddCheck(4, std::string("one"));
+
+	IntStringRBTree T;
+	T.AddCheck(0, "zero");
+	T.AddCheck(2, "two_second");
+
+	T.AddRange(Source.Iterator());
+
+	for (int i = 0; i < COUNT; i++)
+	{
+		BOOST_REQUIRE(T.Contains(i));
+	}
+}
+
+BOOST_AUTO_TEST_CASE(AddFromRBTreeTest)
+{
+	constexpr int COUNT = 5;
+
+	IntStringRBTree Source;
+	Source.AddCheck(3, "three");
+	Source.AddCheck(1, "one");
+	Source.AddCheck(2, "two");
+	Source.AddCheck(4, "four");
+
+	IntStringRBTree T;
+	T.AddCheck(0, "zero");
+	T.AddCheck(2, "two_second");
+
+	T.Add(Source);
+
+	for (int i = 0; i < COUNT; i++)
+	{
+		BOOST_REQUIRE(T.Contains(i));
+	}
+}
+
+/*
+BOOST_AUTO_TEST_CASE(AddMoveFromRBTreeTest)
+{
+	constexpr int COUNT = 5;
+
+	IntStringRBTree Source;
+	Source.AddCheck(3, "three");
+	Source.AddCheck(1, "one");
+	Source.AddCheck(2, "two");
+	Source.AddCheck(4, "four");
+
+	IntStringRBTree T;
+	T.AddCheck(0, "zero");
+
+	T.Add(std::move(Source));
+
+	for (int i = 0; i < COUNT; i++)
+	{
+		BOOST_REQUIRE(T.Contains(i));
+	}
+
+	for (const IntStringRBTree::KeyValueType& KV : Source)
+	{
+		BOOST_REQUIRE(KV.Value.empty());
+	}
+}
+*/
+
+
+BOOST_AUTO_TEST_CASE(AddSortedFromVectorTest)
+{
+	constexpr int COUNT = 6;
+
+	BOOST_TEST_CHECKPOINT("Vector initialization");
+	TVector<IntRBTree::KeyValueType> Source
+	{
+		IntRBTree::KeyValueType{ 0, NoValue{} },
+		IntRBTree::KeyValueType{ 1, NoValue{} },
+		IntRBTree::KeyValueType{ 2, NoValue{} },
+		IntRBTree::KeyValueType{ 3, NoValue{} },
+		IntRBTree::KeyValueType{ 4, NoValue{} }
+	};
+
+	BOOST_TEST_CHECKPOINT("Initialization");
+	IntRBTree T;
+	T.AddCheck(5, NoValue{});
+	T.AddCheck(1, NoValue{});
+
+	BOOST_TEST_CHECKPOINT("Adding");
+	T.AddSorted(Source);
+	for (int i = 0; i < COUNT; i++)
+	{
+		BOOST_REQUIRE(T.Contains(i));
+	}
+}
+
+BOOST_AUTO_TEST_CASE(AddFromVectorTest)
+{
+	constexpr int COUNT = 6;
+
+	BOOST_TEST_CHECKPOINT("Vector initialization");
+	TVector<IntRBTree::KeyValueType> Source
+	{
+		IntRBTree::KeyValueType {3, NoValue{} },
+		IntRBTree::KeyValueType {1, NoValue{} },
+		IntRBTree::KeyValueType {2, NoValue{} },
+		IntRBTree::KeyValueType {4, NoValue{} },
+		IntRBTree::KeyValueType {0, NoValue{} }
+	};
+
+	BOOST_TEST_CHECKPOINT("Initialization");
+	IntRBTree T;
+	T.AddCheck(5, NoValue{});
+	T.AddCheck(1, NoValue{});
+
+	BOOST_TEST_CHECKPOINT("Adding");
+	T.Add(Source);
+	for (int i = 0; i < COUNT; i++)
+	{
+		BOOST_REQUIRE(T.Contains(i));
+	}
+}
+
+BOOST_AUTO_TEST_CASE(AddMovedFromVectorTest)
+{
+	constexpr int COUNT = 8;
+
+	BOOST_TEST_CHECKPOINT("Vector initialization");
+	TVector<IntStringRBTree::KeyValueType> Source
+	{
+		IntStringRBTree::KeyValueType{ 3, std::string{ "three" } },
+		IntStringRBTree::KeyValueType{ 1, std::string{ "one" } },
+		IntStringRBTree::KeyValueType{ 2, std::string{ "two" } },
+		IntStringRBTree::KeyValueType{ 4, std::string{ "four" } },
+		IntStringRBTree::KeyValueType{ 0, std::string{ "zero" } }
+	};
+
+	BOOST_TEST_CHECKPOINT("Initialization");
+	IntStringRBTree T;
+	T.AddCheck(7, std::string{ "seven" });
+	T.AddCheck(5, std::string{ "five" });
+	T.AddCheck(6, std::string{ "six" });
+
+	BOOST_TEST_CHECKPOINT("Adding");
+	T.AddMoved(Source);
+	for (int i = 0; i < COUNT; i++)
+	{
+		BOOST_REQUIRE(T.Contains(i));
+	}
+
+	for (int i = 0; i < Source.Num(); i++)
+	{
+		BOOST_REQUIRE(Source[i].Value.empty());
+	}
+}
+
+BOOST_AUTO_TEST_CASE(AddInitializeListTest)
+{
+	std::initializer_list<IntRBTree::KeyValueType> const lst = 
+	{
+		IntRBTree::KeyValueType{0, NoValue{}},
+		IntRBTree::KeyValueType{3, NoValue{}},
+		IntRBTree::KeyValueType{5, NoValue{}},
+		IntRBTree::KeyValueType{1, NoValue{}},
+		IntRBTree::KeyValueType{2, NoValue{}},
+		IntRBTree::KeyValueType{4, NoValue{}}
+	};
+
+	BOOST_TEST_CHECKPOINT("Initialization");
+	IntRBTree T;
+	T.AddCheck(0, NoValue{});
+
+	BOOST_TEST_CHECKPOINT("Adding");
+	T.Add(lst);
+
+	for (int i = 0; i <= 5; i++)
+	{
+		BOOST_REQUIRE(T.Contains(i));
+	}
+}
+
+BOOST_AUTO_TEST_CASE(ExtraAddTest)
+{
+	const int COUNT = 10;
+	// NOTE: At the end will must have all elements from ZERO to [COUNT-1] inclusively.
+
+	BOOST_TEST_CHECKPOINT("Filling source array");
+	std::vector<IntRBTree::KeyValueType> SourceArray;
+	SourceArray.push_back(IntRBTree::KeyValueType(3, NoValue{}));
+	SourceArray.push_back(IntRBTree::KeyValueType(7, NoValue{}));
+	SourceArray.push_back(IntRBTree::KeyValueType(1, NoValue{}));
+	SourceArray.push_back(IntRBTree::KeyValueType(9, NoValue{}));
+	SourceArray.push_back(IntRBTree::KeyValueType(2, NoValue{}));
+
+	BOOST_TEST_CHECKPOINT("Initializing RBTree");
+	IntRBTree T;
+	T.AddCheck(3, NoValue{});
+	T.AddCheck(0, NoValue{});
+	T.AddCheck(8, NoValue{});
+	T.AddCheck(6, NoValue{});
+	T.AddCheck(9, NoValue{});
+	T.AddCheck(5, NoValue{});
+	T.AddCheck(4, NoValue{});
+
+	BOOST_TEST_CHECKPOINT("Adding elements from SourceArray");
+	T.Add(SourceArray.data(), SourceArray.size());
+	for (int i = 0; i < COUNT; i++)
+	{
+		BOOST_REQUIRE(T.Contains(i));
+	}
+}
+
+BOOST_AUTO_TEST_CASE(ExtraAddSortedTest)
+{
+	const int COUNT = 10;
+	// NOTE: At the end will must have all elements from ZERO to [COUNT-1] inclusively.
+
+	BOOST_TEST_CHECKPOINT("Filling source array");
+	std::vector<IntRBTree::KeyValueType> SourceArray;
+	SourceArray.push_back(IntRBTree::KeyValueType(1, NoValue{}));
+	SourceArray.push_back(IntRBTree::KeyValueType(2, NoValue{}));
+	SourceArray.push_back(IntRBTree::KeyValueType(3, NoValue{}));
+	SourceArray.push_back(IntRBTree::KeyValueType(7, NoValue{}));
+	SourceArray.push_back(IntRBTree::KeyValueType(9, NoValue{}));
+
+	BOOST_TEST_CHECKPOINT("Initializing RBTree");
+	IntRBTree T;
+	T.AddCheck(3, NoValue{});
+	T.AddCheck(0, NoValue{});
+	T.AddCheck(8, NoValue{});
+	T.AddCheck(6, NoValue{});
+	T.AddCheck(9, NoValue{});
+	T.AddCheck(5, NoValue{});
+	T.AddCheck(4, NoValue{});
+
+	BOOST_TEST_CHECKPOINT("Adding elements from SourceArray");
+	T.AddSorted(SourceArray.data(), SourceArray.size());
+	for (int i = 0; i < COUNT; i++)
+	{
+		BOOST_REQUIRE(T.Contains(i));
+	}
+}
+
+BOOST_AUTO_TEST_CASE(MovingFromPartOfCArrayTest)
+{
+	const int COUNT = 10;
+	// NOTE: At the end will must have all elements from ZERO to [COUNT-1] inclusively.
+
+	BOOST_TEST_CHECKPOINT("Filling source array");
+	std::vector<IntStringRBTree::KeyValueType> SourceArray;
+	SourceArray.push_back(IntStringRBTree::KeyValueType(7, std::string("seventh")));
+	SourceArray.push_back(IntStringRBTree::KeyValueType(2, std::string("second")));
+	SourceArray.push_back(IntStringRBTree::KeyValueType(3, std::string("third")));	
+	SourceArray.push_back(IntStringRBTree::KeyValueType(9, std::string("ninth")));
+	SourceArray.push_back(IntStringRBTree::KeyValueType(1, std::string("first")));
+
+	BOOST_TEST_CHECKPOINT("Initializing RBTree");
+	IntStringRBTree T;
+	T.AddCheck(0, std::string("third_zero"));
+	T.AddCheck(8, std::string("third_eight"));
+	T.AddCheck(6, std::string("third_six"));
+	T.AddCheck(5, std::string("third_five"));
+	T.AddCheck(4, std::string("third_fourth"));
+
+	BOOST_TEST_CHECKPOINT("Moving elements from SourceArray");
+	T.AddMoved(SourceArray.data(), SourceArray.size());
+	for (int i = 0; i < COUNT; i++)
+	{
+		BOOST_REQUIRE(T.Contains(i));
+	}
+	for (int i = 0; i < SourceArray.size(); i++)
+	{
+		BOOST_REQUIRE(SourceArray[i].Value.empty());
+	}
+}
+
+BOOST_AUTO_TEST_CASE(MovingSortedFromPartOfCArrayTest)
+{
+	const int COUNT = 10;
+	// NOTE: At the end will must have all elements from ZERO to [COUNT-1] inclusively.
+
+	BOOST_TEST_CHECKPOINT("Filling source array");
+	std::vector<IntStringRBTree::KeyValueType> SourceArray;
+	SourceArray.push_back(IntStringRBTree::KeyValueType(1, std::string("first")));
+	SourceArray.push_back(IntStringRBTree::KeyValueType(2, std::string("second")));
+	SourceArray.push_back(IntStringRBTree::KeyValueType(3, std::string("third")));
+	SourceArray.push_back(IntStringRBTree::KeyValueType(7, std::string("seventh")));
+	SourceArray.push_back(IntStringRBTree::KeyValueType(9, std::string("ninth")));
+
+	BOOST_TEST_CHECKPOINT("Initializing RBTree");
+	IntStringRBTree T;
+	T.AddCheck(0, std::string("third_zero"));
+	T.AddCheck(8, std::string("third_eight"));
+	T.AddCheck(6, std::string("third_six"));
+	T.AddCheck(5, std::string("third_five"));
+	T.AddCheck(4, std::string("third_fourth"));
+
+	BOOST_TEST_CHECKPOINT("Moving elements from SourceArray");
+	T.AddMovedSorted(SourceArray.data(), SourceArray.size());
+	for (int i = 0; i < COUNT; i++)
+	{
+		BOOST_REQUIRE(T.Contains(i));
+	}
+	for (int i = 0; i < SourceArray.size(); i++)
+	{
+		BOOST_REQUIRE(SourceArray[i].Value.empty());
+	}
+}
+
+
+BOOST_AUTO_TEST_SUITE_END() // ExtraAddOpsSuite
+
 BOOST_AUTO_TEST_CASE(SerializationTest)
 {
 	constexpr int COUNT = 10;

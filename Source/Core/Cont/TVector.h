@@ -405,7 +405,7 @@ struct DefaultVectorResizePolicy
 		BOOST_SERIALIZATION_SPLIT_MEMBER()
 
 		/**
-		* Count bytes needed to store this class.
+		* Count bytes needed to store this class overhead of capacity.
 		* Include both the class layout and dynamic memory.
 		* TODO: Special case for pointers.
 		*/
@@ -424,7 +424,7 @@ struct DefaultVectorResizePolicy
 
 		/**
 		* Size of a single element instance.
-		* TODO: Special case for pointers.
+		* NOTE: For pointers accounts only pointer size and not the size of pointed-to content.
 		*/
 		int32_t ElementSize() const
 		{
@@ -1068,7 +1068,7 @@ struct DefaultVectorResizePolicy
 		__forceinline T* Add(T&& Val);
 
 		/**
-		* The same as Ad, but never performs reallocation 
+		* The same as Add, but never performs reallocation 
 		*/
 		__forceinline T* AddBuffer(T&& Val);
 

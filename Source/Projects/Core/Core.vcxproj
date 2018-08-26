@@ -155,6 +155,8 @@
     <ClInclude Include="..\..\Core\CoreSysCommon.h" />
     <ClInclude Include="..\..\Core\CoreSysMinimal.h" />
     <ClInclude Include="..\..\Core\CoreSysTypes.h" />
+    <ClInclude Include="..\..\Core\Math\MathUtils.h" />
+    <ClInclude Include="..\..\Core\Math\Vector.h" />
     <ClInclude Include="..\..\Core\Mem\BlockHeap.h" />
     <ClInclude Include="..\..\Core\Mem\Helper\LinearAllocHelper.h" />
     <ClInclude Include="..\..\Core\Mem\Helper\Test\LinearAllocHelperTest.h" />
@@ -170,6 +172,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Core\Cont\Priv\TRBTreeImpl.cpp" />
+    <ClCompile Include="..\..\Core\Math\Priv\MathUtils.cpp" />
+    <ClCompile Include="..\..\Core\Math\Priv\Vector.cpp" />
     <ClCompile Include="..\..\Core\Mem\Helper\Priv\LinearAllocHelper.cpp" />
     <ClCompile Include="..\..\Core\Mem\Priv\BlockHeapImpl.cpp" />
     <ClCompile Include="..\..\Core\Mem\Priv\MemUtils.cpp" />

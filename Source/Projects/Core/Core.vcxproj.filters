@@ -52,6 +52,12 @@
     <Filter Include="Stream">
       <UniqueIdentifier>{b69fe854-2f48-4347-b8b8-b64ea6f162be}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Math">
+      <UniqueIdentifier>{3e78737d-d1e2-4e65-adff-22dfd9516645}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Math\Priv">
+      <UniqueIdentifier>{6cc1a7e6-33f3-4985-b088-b6fd5dc78d4f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Core\Str\IdentStr.h">
@@ -126,6 +132,12 @@
     <ClInclude Include="..\..\Core\Mem\MemUtils.h">
       <Filter>Mem</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Core\Math\MathUtils.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Math\Vector.h">
+      <Filter>Math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Core\Mem\Helper\Priv\LinearAllocHelper.cpp">
@@ -142,6 +154,12 @@
     </ClCompile>
     <ClCompile Include="..\..\Core\Mem\Priv\MemUtils.cpp">
       <Filter>Mem\Priv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Core\Math\Priv\MathUtils.cpp">
+      <Filter>Math\Priv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Core\Math\Priv\Vector.cpp">
+      <Filter>Math\Priv</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
