@@ -442,6 +442,20 @@ BOOST_AUTO_TEST_CASE(MovingSortedFromPartOfCArrayTest)
 	}
 }
 
+BOOST_AUTO_TEST_CASE(AccessTestCase)
+{
+	IntStringRBTree T;
+	BOOST_REQUIRE(T.AddCheck(1, std::string("one")));
+	BOOST_REQUIRE(T.AddCheck(2, std::string("two")));
+
+	BOOST_REQUIRE_EQUAL(T[1], std::string("one"));
+	BOOST_REQUIRE_EQUAL(T[2], std::string("two"));
+
+	BOOST_REQUIRE(T.GetValueOrNull(1234) == nullptr);
+	IntStringRBTree::ValueType* pValue = T.GetValueOrNull(1);
+	BOOST_REQUIRE(pValue);
+	BOOST_REQUIRE_EQUAL(*pValue, std::string("one"));
+}
 
 BOOST_AUTO_TEST_SUITE_END() // ExtraAddOpsSuite
 

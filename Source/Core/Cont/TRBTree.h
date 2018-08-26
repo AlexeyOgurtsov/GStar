@@ -269,6 +269,79 @@ public:
 	}
 
 	/**
+	* Returns reference to value for the given key.
+	* WARNING! Key/Value with the given Key must be registered.
+	*/
+	const ValueType& operator[](const KeyType& InKey) const
+	{
+		const ValueType* pValue = GetValueOrNull(InKey);
+		BOOST_ASSERT_MSG(pValue, "TRBTree: using indexing ([]) assumes that the given key/value pair is registered");
+		return *pValue;
+	}
+
+	/**
+	* Returns reference to value for the given key.
+	* WARNING! Key/Value with the given Key must be registered.
+	*/
+	ValueType& operator[](const KeyType& InKey)
+	{
+		ValueType* pValue = GetValueOrNull(InKey);
+		BOOST_ASSERT_MSG(pValue, "TRBTree: using indexing ([]) assumes that the given key/value pair is registered");
+		return *pValue;
+	}
+
+	/**
+	* Returns pointer to value for the given key.
+	* Or returns nullptr, if not found.
+	*/
+	const ValueType* GetValueOrNull(const KeyType& InKey) const
+	{
+		return GetValueOrNull(InKey, ComparerArg());
+	}
+
+	/**
+	* Returns pointer to value for the given key.
+	* Or returns nullptr, if not found.
+	*/
+	ValueType* GetValueOrNull(const KeyType& InKey)
+	{
+		return GetValueOrNull(InKey, ComparerArg());
+	}
+
+	/**
+	* Returns pointer to value for the given key.
+	* Or returns nullptr, if not found.
+	*/
+	template<class ComparerTypeArg>
+	const ValueType* GetValueOrNull(const KeyType& InKey, ComparerTypeArg InComparer) const
+	{
+		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
+		bool bFound = FindNode(InKey, /*OutNodeRef*/ NodeRef, InComparer);
+		if (!bFound)
+		{
+			return nullptr;
+		}
+		return &GetNode(NodeRef)->GetValue();
+	}
+
+	/**
+	* Returns pointer to value for the given key.
+	* Or returns nullptr, if not found.
+	*/
+	template<class  ComparerTypeArg>
+	ValueType* GetValueOrNull(const KeyType& InKey, ComparerTypeArg InComparer)
+	{
+		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
+		bool bFound = FindNode(InKey, /*OutNodeRef*/ NodeRef, InComparer);
+		if (!bFound)
+		{
+			return nullptr;
+		}
+		return &GetNode(NodeRef)->GetValue();
+	}
+	
+
+	/**
 	* Returns true, if contains the given key.
 	*/
 	bool Contains(const KeyType& InKey) const

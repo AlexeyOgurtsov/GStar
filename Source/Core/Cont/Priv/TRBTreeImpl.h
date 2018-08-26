@@ -149,7 +149,8 @@ namespace TRBTreeImpl
 		/**
 		* Payload data.
 		*/
-		__forceinline ValueType GetValue() const { return GetKV().Value; }
+		__forceinline const ValueType& GetValue() const { return OptKV.value().Value; }
+		__forceinline ValueType& GetValue() { return OptKV.value().Value; }
 
 		/**
 		* If false, the node was removed.
