@@ -58,6 +58,9 @@
     <Filter Include="Math\Priv">
       <UniqueIdentifier>{6cc1a7e6-33f3-4985-b088-b6fd5dc78d4f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Math\Test">
+      <UniqueIdentifier>{26bc02af-bdfb-456e-b7af-cc43afa18c4d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Core\Str\IdentStr.h">
@@ -137,6 +140,12 @@
     </ClInclude>
     <ClInclude Include="..\..\Core\Math\Vector.h">
       <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Math\Test\BLASTest.h">
+      <Filter>Math\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Math\Test\BLASVectorTest.h">
+      <Filter>Math\Test</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
