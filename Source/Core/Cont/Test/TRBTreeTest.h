@@ -99,6 +99,56 @@ BOOST_AUTO_TEST_SUITE_END() // MovingTestSuite
 
 BOOST_AUTO_TEST_SUITE
 (
+	CopyingSuite,
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/AddSuite")
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite")
+)
+BOOST_AUTO_TEST_CASE(SimpleCopyConstruct)
+{
+	const IntStringRBTree::KeyValueType KV_1 { 1, std::string("one") };
+	const IntStringRBTree::KeyValueType KV_2 { 2, std::string("two") };
+	const IntStringRBTree::KeyValueType KV_3 { 3, std::string("three") };
+
+	IntStringRBTree Source;
+	Source.AddCheck(KV_1);
+	Source.AddCheck(KV_2);
+	Source.AddCheck(KV_3);
+	
+	IntStringRBTree T { Source };
+	BOOST_REQUIRE_EQUAL(T.Num(), 3);
+	BOOST_REQUIRE(T.Contains(KV_1.Key));
+	BOOST_REQUIRE(T.Contains(KV_2.Key));
+	BOOST_REQUIRE(T.Contains(KV_3.Key));
+}
+
+BOOST_AUTO_TEST_CASE(SimpleCopyAssign)
+{
+	const IntStringRBTree::KeyValueType KV_1{ 1, std::string("one") };
+	const IntStringRBTree::KeyValueType KV_2{ 2, std::string("two") };
+	const IntStringRBTree::KeyValueType KV_3{ 3, std::string("three") };
+
+	IntStringRBTree Source;
+	BOOST_REQUIRE(Source.AddCheck(KV_1));
+	BOOST_REQUIRE(Source.AddCheck(KV_2));
+	BOOST_REQUIRE(Source.AddCheck(KV_3));
+
+	IntStringRBTree T;
+	const IntStringRBTree::KeyValueType OTHER_KV_1{ 11, std::string("eleven") };
+	const IntStringRBTree::KeyValueType OTHER_KV_2{ 12, std::string("twelve") };
+	BOOST_REQUIRE(T.AddCheck(OTHER_KV_1));
+	BOOST_REQUIRE(T.AddCheck(OTHER_KV_2));
+
+
+	T = Source;
+	BOOST_REQUIRE_EQUAL(T.Num(), 3);
+	BOOST_REQUIRE(T.Contains(KV_1.Key));
+	BOOST_REQUIRE(T.Contains(KV_2.Key));
+	BOOST_REQUIRE(T.Contains(KV_3.Key));
+}
+BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_AUTO_TEST_SUITE
+(
 	ExtraOps,
 	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/AddSuite")
 	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite")

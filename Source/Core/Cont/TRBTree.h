@@ -77,7 +77,7 @@ public:
 	using ValueType = typename KeyValueType::ValueType;
 
 private:
-	static auto GetThisTypeHelper() -> std::remove_reference_t<decltype(*this)>;
+	static auto GetThisTypeHelper()->std::remove_reference_t<decltype(*this)>;
 
 public:
 	/**
@@ -93,7 +93,7 @@ public:
 
 	using IteratorType = TGeneralIterator<ThisType>;
 	using ConstIteratorType = TGeneralIterator<const ThisType>;
-	
+
 	/**
 	* Capacity to be used for the buffer by default.
 	*/
@@ -108,10 +108,31 @@ public:
 	* Constructs with the given capacity.
 	*/
 	explicit TRBTree(int InCapacity) :
-		RootIdx{INDEX_NONE}
-	,	Count{0}
+		RootIdx{ INDEX_NONE }
+		, Count{ 0 }
 	{
 		Buffer.ReserveGrow(InCapacity);
+	}
+
+	/**
+	* Constructs as a copy of another container.
+	*/
+	TRBTree(const ThisType& InOther) :
+		RootIdx { INDEX_NONE }
+	,	Count {0}
+	{
+		Buffer.ReserveGrow(InOther.Count);
+		Add(InOther);
+	}
+
+	/**
+	* Copy-assigns another container.
+	*/
+	TRBTree& operator=(const ThisType& InOther)
+	{
+		Clear();
+		Add(InOther);
+		return *this;
 	}
 
 	/**
