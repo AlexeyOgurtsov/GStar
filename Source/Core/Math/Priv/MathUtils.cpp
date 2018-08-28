@@ -1,5 +1,6 @@
 #include "../MathUtils.h"
 
+#include "../Vector.h"
 
 /**
 * Warning!!! Put all math static variable definitions in this file to avoid initialization order errors!

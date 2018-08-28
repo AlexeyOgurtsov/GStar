@@ -15,6 +15,9 @@
 * TODO Constructors:
 * 1. From other tree
 *
+* TODO Get/Update
+* 1. GetOrUpdate
+*
 * TODO Getters
 * 1. operator[] 
 * 2. Get with moving KeyValue pair (actually removing)
@@ -23,6 +26,22 @@
 *
 * TODO Setters
 * 1. Setter
+*
+* TODO Output
+* 1. Simple output
+* 2. Debug print
+*
+* CopyTo/CopyUnorderedTo functions:
+* 1. CopyTo(TArray) function.
+* 2. We need Move versions of this functions (i.e. moving entire tree to C-array).
+*
+* TODO Remove by moving
+* 1. We must destruct and mark removed the node that the key was moved to in any case
+* (to avoid in to be enumerated again when using the CopyUnorderedTo etc.)
+*
+* TODO Remove:
+* 1. Remove by custom CompareArg
+* 2. Remove by predicate
 *
 * TODO Adding interface:
 * 1. Hint iterator position
@@ -41,7 +60,6 @@
 *
 * TODO Third:
 * 1. Clear()
-* 2. CopyTo(TArray) function.
 *
 * TODO Fourth:
 * 1. Equality, NotEquality
@@ -331,7 +349,7 @@ public:
 
 	/**
 	* Returns pointer to value for the given key.
-	* Or returns nullptr, if not found.
+	* Or returns nullptr, if not foundd.
 	*/
 	template<class ComparerTypeArg>
 	const ValueType* GetValueOrNull(const KeyType& InKey, ComparerTypeArg InComparer) const
@@ -368,6 +386,59 @@ public:
 	bool Contains(const KeyType& InKey) const
 	{
 		return nullptr != Find(InKey);
+	}
+
+	/**
+	* Searches iterator by the given Key.
+	*
+	* @Returns: Iterator to the element (or end iterator, if NOT found)
+	*/
+	ConstIteratorType FindIteratorFor(const KeyType& InKey) const
+	{
+		return FindIteratorFor(InKey, ComparerArg());
+	}
+
+	/**
+	* Searches iterator by the given Key according to the given criteria.
+	*
+	* @Returns: Iterator to the element (or end iterator, if NOT found)
+	*/
+	template<class ComparerType>
+	ConstIteratorType FindIteratorFor(const KeyType& InKey, ComparerType InComparer) const
+	{
+		return FindIteratorAtImpl<ConstIteratorType>(InKey, this, InComparer);
+	}
+
+	/**
+	* Searches iterator by the given Key.
+	*
+	* @Returns: Iterator to the element (or end iterator, if NOT found)
+	*/
+	IteratorType FindIteratorFor(const KeyType& InKey)
+	{
+		return FindIteratorFor(InKey, ComparerArg());
+	}
+
+	/**
+	* Searches iterator by the given Key according to the given criteria.
+	*
+	* @Returns: Iterator to the element (or end iterator, if NOT found)
+	*/
+	template<class ComparerType>
+	IteratorType FindIteratorFor(const KeyType& InKey, ComparerType InComparer)
+	{
+		return FindIteratorAtImpl<IteratorType>(InKey, this, InComparer);
+	}
+
+	template<class IteratorTypeArg, class ThisTypeArg, class ComparerType> IteratorTypeArg FindIteratorAtImpl(const KeyType& InKey, ThisTypeArg* pInThis, ComparerType InComparer) const
+	{
+		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
+		bool bFound = FindNode(InKey, /*OutNodeRef*/ NodeRef, InComparer);
+		if (!bFound)
+		{
+			return IteratorTypeArg::EndIterator(pInThis);
+		}
+		return IteratorTypeArg(pInThis, NodeRef);
 	}
 
 	/**
@@ -417,6 +488,28 @@ public:
 	*/
 	ValueType* FindValue(const KeyType& InKey) { return const_cast<ValueType*>(FindValueImpl(InKey)); }
 
+	/**
+	* Removes key/value pair that the given iterator points to.
+	*
+	* The iterator must be valid NON-end iterator.
+	*/
+	void RemoveAt(ConstIteratorType InIt)
+	{
+		BOOST_ASSERT_MSG(InIt, "TRBTree: RemoveAt: The iterator must be valid NON-end iterator");
+		RemoveAndDestroy(InIt.NodeRef);
+	}
+
+	/**
+	* Moves the key/value as return value.
+	*
+	* The iterator must be valid NON-end iterator.
+	*/
+	KeyValueType GetMovedByIterator(ConstIteratorType InIt)
+	{
+		BOOST_ASSERT_MSG(InIt, "TRBTree: RemoveAt: The iterator must be valid NON-end iterator");
+		return std::move(RemoveAndMove(InIt.NodeRef));
+	}
+
 	/*
 	* Removes value with the given key from the tree.
 	*
@@ -429,21 +522,38 @@ public:
 			return false;
 		}
 
-		TRBTreeImpl::ChildNodeRef NodeSubstitutorRef = TRBTreeImpl::ChildNodeRef::Invalid();
-		bool bNeedsFixup = false;
-		bool const bRemoved = RemoveNode(InKey, /*Out*/NodeSubstitutorRef, /*Out*/bNeedsFixup);
-
-		if ( bRemoved && bNeedsFixup && ( ! Empty() ))
+		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
+		bool const bFound = FindNode(InKey, NodeRef, ComparerArg());
+		if (bFound)
 		{
-			FixupRedBlackAfterRemove(NodeSubstitutorRef);
+			RemoveAndDestroy(NodeRef);
 		}
 
-		// Uncomment for testing purposes only (will greately slow):
-		BOOST_ASSERT_MSG(DebugCheckValid(), "TRBTree::Remove: tree state must be valid");
-
-		return bRemoved;
+		return bFound;
 	}
 
+	/*
+	* Moves value with the given key from the tree.
+	*
+	* @returns: true, if was found and moved (otherwise false).
+	*/
+	bool MoveByKey(const KeyType& InKey, KeyValueType& OutMovedKV)
+	{
+		if (Empty())
+		{
+			return false;
+		}
+
+		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
+		bool const bFound = FindNode(InKey, NodeRef, ComparerArg());
+		if (bFound)
+		{
+			OutMovedKV = std::move(RemoveAndMove(NodeRef));
+		}
+
+		return bFound;
+	}
+	
 	/**
 	* Adds a new node from the given hint position.
 	* Not guaranteed that this position will be accounted, but may optimize.
@@ -672,8 +782,7 @@ public:
 	/**
 	* Adds the TRBTree pairs.
 	*/
-	template<class OtherComparerArg>
-	void Add(const TRBTree<KVTypeArg, OtherComparerArg>& InSource)
+	void Add(const TRBTree<KVTypeArg, ComparerArg>& InSource)
 	{
 		for (const KeyValueType& KV : InSource)
 		{
@@ -684,14 +793,45 @@ public:
 	/**
 	* Adds the TRBTree Key/Value pairs by moving.
 	*/
-	template<class OtherComparerArg>
-	void Add(TRBTree<KVTypeArg, OtherComparerArg>&& InSource)
+	void Add(TRBTree<KVTypeArg, ComparerArg>&& InSource)
 	{
-		// @TODO: Perform the real moving here
-		for (const KeyValueType& KV : InSource)
+		// @TODO: Perform real moving
+		AddMoved(InSource);
+	}
+
+	/**
+	* Adds the TRBTree Key/Value pairs by moving.
+	*/
+	void AddMoved(TRBTree<KVTypeArg, ComparerArg>& InSource)
+	{
+		// @NOTE: Temporary workaround while iteration does NOT work correctly when removing in the middle of iteration
 		{
-			AddCheck(KV);
+			for (int i = 0; i < InSource.Count; i++)
+			{
+				NodeType* pSrcNode = &InSource.Buffer[i];
+				if (pSrcNode->Exists())
+				{
+					AddCheck(std::move(pSrcNode->GetKV()));
+				}
+			}
+
+			InSource.Clear();
 		}
+
+		/*111
+		TRBTree<KVTypeArg, ComparerArg>::IteratorType It = InSource.Iterator();
+		while (true)
+		{
+			if ( ! It )
+			{
+				break;
+			}
+			TRBTree<KVTypeArg, ComparerArg>::IteratorType NextIt = It;
+			++NextIt;
+			AddCheck(std::move(InSource.GetMovedByIterator(It)));
+			It = NextIt;
+		}
+		*/
 	}
 
 	/**
@@ -1030,6 +1170,9 @@ public:
 	public:
 		template<class OtherTreeType>
 		friend class TGeneralIterator;
+		
+		// To make NodeRef accessible within the tree
+		friend typename TreeTypeArg;
 
 		using ThisType = TGeneralIterator<TreeTypeArg>;
 
@@ -1438,31 +1581,24 @@ private:
 	}
 
 	/**
-	* Removes node with the given key from the tree.
+	* Removes node by the given reference.
+	* WARNING!!! The node content is still alive, however 
+	* (key/value is NOT destroyed).
 	*
-	* @returns: true, if was found and removed (otherwise false)
+	* Returns pointer to the removed node.
 	*/
-	bool RemoveNode(const KeyType& InKey, TRBTreeImpl::ChildNodeRef& OutSubstitutorRef, bool& bOutNeedsFixup)
+	NodeType* DoRemoveNodeByRef(TRBTreeImpl::ChildNodeRef NodeRef, TRBTreeImpl::ChildNodeRef& OutSubstitutorRef, bool& bOutNeedsFixup)
 	{
-		BOOST_ASSERT_MSG( ! Empty(), "TRBTree::RemoveNode: The tree must be NON-empty before calling this function" );
-
-		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
-		bool const bFound = FindNode(InKey, NodeRef, ComparerArg());
-		if ( ! bFound )
-		{
-			return false;
-		}
-
 		// Save node to mark it deleted later
 		NodeType* const pNode = GetNode(NodeRef);
-		
+
 		TRBTreeImpl::NodeChildIndex ChildToRelinkToIdx = INDEX_NONE;
-		if ( ! pNode->HasChild(TRBTreeImpl::LEFT_CHILD_IDX) )
+		if (!pNode->HasChild(TRBTreeImpl::LEFT_CHILD_IDX))
 		{
 			// Warning!!! We relink to other (possibly existing) node!!!
-			ChildToRelinkToIdx = TRBTreeImpl::RIGHT_CHILD_IDX;	
+			ChildToRelinkToIdx = TRBTreeImpl::RIGHT_CHILD_IDX;
 		}
-		else if ( ! pNode->HasChild(TRBTreeImpl::RIGHT_CHILD_IDX))
+		else if (!pNode->HasChild(TRBTreeImpl::RIGHT_CHILD_IDX))
 		{
 			// Warning!!! We relink to other (possibly existing) node!!!
 			ChildToRelinkToIdx = TRBTreeImpl::LEFT_CHILD_IDX;
@@ -1480,11 +1616,9 @@ private:
 			RemoveNode_LinkToChild(NodeRef, ChildToRelinkToIdx, OutSubstitutorRef, bOutNeedsFixup);
 		}
 
-		// Deal with the deleted node (we must done it AFTER the links are updated to avoid some assertion to fire)
-		pNode->Destroy();
+		// We decrement count here, however, the node is still alive.
 		Count--;
-
-		return true;
+		return pNode;
 	}
 
 	void RemoveNode_MakeRightSubtreeChildOfPredecessor(TRBTreeImpl::ChildNodeRef InNodeRef, TRBTreeImpl::ChildNodeRef& OutSubstitutorRef, bool& bOutNeedsFixup)
@@ -1667,6 +1801,52 @@ private:
 		TRBTreeImpl::NodeIndex const NewNodeIdx = CreateNewNode(std::move(InKV), Where.ParentIdx);
 		NodeType* const pParentNode = GetParentNode(Where);
 		pParentNode->SetChild(Where.ChildIdx, NewNodeIdx);
+	}
+
+	/**
+	* Removes element by the given ref and destroys it.
+	*/
+	void RemoveAndDestroy(TRBTreeImpl::ChildNodeRef NodeRef)
+	{
+		NodeType* const pNode = RemoveImpl(NodeRef);
+		pNode->Destroy();
+	}
+
+	/**
+	* Removes element by the given ref and moves the corresponding Key/Value pair as the result.
+	*/
+	KeyValueType RemoveAndMove(TRBTreeImpl::ChildNodeRef NodeRef)
+	{
+		NodeType* const pNode = RemoveImpl(NodeRef);
+		KeyValueType MoveKV = std::move(pNode->GetKV());
+		// NOTE: We must mark destroyed the node anyway
+		pNode->Destroy();
+		return std::move(MoveKV);
+	}
+
+	/**
+	* Removes element by the given ref.
+	* Node by the given reference must exist.
+	* Common code path for all remove operations.
+	*
+	* @returns: Removed node.
+	*/
+	NodeType* RemoveImpl(TRBTreeImpl::ChildNodeRef NodeRef)
+	{
+		BOOST_ASSERT_MSG(NodeExists(NodeRef), "TRBTree: RemoveImpl: Referenced node must exist");
+
+		bool bNeedsFixup = false;
+		TRBTreeImpl::ChildNodeRef NodeSubstitutorRef = TRBTreeImpl::ChildNodeRef::Invalid();
+		NodeType* const pNode = DoRemoveNodeByRef(NodeRef, /*Out*/NodeSubstitutorRef, /*Out*/bNeedsFixup);
+		// Deal with the deleted node (we must done it AFTER the links are updated to avoid some assertion to fire)
+		if (bNeedsFixup && (!Empty()))
+		{
+			FixupRedBlackAfterRemove(NodeSubstitutorRef);
+		}
+
+		// Uncomment for testing purposes only (will greately slow):
+		BOOST_ASSERT_MSG(DebugCheckValid(), "TRBTree::Remove: tree state must be valid");
+		return pNode;
 	}
 
 	/**

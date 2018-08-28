@@ -14,6 +14,7 @@ namespace
 
 using IntRBTree = TRBTree<KVType<int, NoValue>>;
 using StringToIntRBTree = TRBTree<KVType<std::string, int>>;
+using IntToUniquePtStr = TRBTree<KVType<int, std::unique_ptr<std::string>>>;
 using IntStringRBTree = TRBTree<KVType<int, std::string>>;
 
 struct TestNonPOD
@@ -149,6 +150,73 @@ BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_AUTO_TEST_SUITE
 (
+	ExtraFindSuite,
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/AddSuite")
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite")
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/IterationSuite")
+)
+
+BOOST_AUTO_TEST_CASE(FindIterator)
+{
+	IntRBTree T;
+	BOOST_REQUIRE(T.AddCheck(2, NoValue{}));
+	BOOST_REQUIRE(T.AddCheck(1, NoValue{}));
+	BOOST_REQUIRE(T.AddCheck(3, NoValue{}));
+
+	BOOST_REQUIRE( ! T.FindIteratorFor(4) );
+	BOOST_REQUIRE( T.FindIteratorFor(1) );
+	BOOST_REQUIRE_EQUAL(T.FindIteratorFor(1).GetKey(), 1 );
+	BOOST_REQUIRE(T.FindIteratorFor(2));
+	BOOST_REQUIRE_EQUAL(T.FindIteratorFor(2).GetKey(), 2);
+	BOOST_REQUIRE(T.FindIteratorFor(3));
+	BOOST_REQUIRE_EQUAL(T.FindIteratorFor(3).GetKey(), 3);
+}
+
+BOOST_AUTO_TEST_CASE(FindIteratorInConst)
+{
+	IntRBTree T;
+	BOOST_REQUIRE(T.AddCheck(2, NoValue{}));
+	BOOST_REQUIRE(T.AddCheck(1, NoValue{}));
+	BOOST_REQUIRE(T.AddCheck(3, NoValue{}));
+
+	const IntRBTree* const pConstT = &T;
+	BOOST_REQUIRE( ! pConstT->FindIteratorFor(4) );
+	BOOST_REQUIRE(pConstT->FindIteratorFor(1));
+	BOOST_REQUIRE_EQUAL(pConstT->FindIteratorFor(1).GetKey(), 1);
+	BOOST_REQUIRE(pConstT->FindIteratorFor(2));
+	BOOST_REQUIRE_EQUAL(pConstT->FindIteratorFor(2).GetKey(), 2);
+	BOOST_REQUIRE(pConstT->FindIteratorFor(3));
+	BOOST_REQUIRE_EQUAL(pConstT->FindIteratorFor(3).GetKey(), 3);
+}
+
+BOOST_AUTO_TEST_SUITE_END() // ExtraFindSuite
+
+BOOST_AUTO_TEST_SUITE
+(
+	ExtraRemoveSuite,
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/AddSuite")
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite")
+)
+BOOST_AUTO_TEST_CASE(RemoveAtTest)
+{
+	constexpr int INITIAL_COUNT = 3;
+
+	IntRBTree T;
+	BOOST_REQUIRE(T.AddCheck(2, NoValue{}));
+	BOOST_REQUIRE(T.AddCheck(1, NoValue{}));
+	BOOST_REQUIRE(T.AddCheck(3, NoValue{}));
+
+	T.RemoveAt(T.Iterator());
+
+	BOOST_REQUIRE_EQUAL(T.Num(), (INITIAL_COUNT - 1));
+	BOOST_REQUIRE( ! T.Contains(1) );
+	BOOST_REQUIRE(T.Contains(2));
+	BOOST_REQUIRE(T.Contains(3));
+}
+BOOST_AUTO_TEST_SUITE_END() // ExtraRemoveSuite
+
+BOOST_AUTO_TEST_SUITE
+(
 	ExtraOps,
 	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/AddSuite")
 	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite")
@@ -223,7 +291,6 @@ BOOST_AUTO_TEST_CASE(AddFromRBTreeTest)
 	}
 }
 
-/*
 BOOST_AUTO_TEST_CASE(AddMoveFromRBTreeTest)
 {
 	constexpr int COUNT = 5;
@@ -244,12 +311,8 @@ BOOST_AUTO_TEST_CASE(AddMoveFromRBTreeTest)
 		BOOST_REQUIRE(T.Contains(i));
 	}
 
-	for (const IntStringRBTree::KeyValueType& KV : Source)
-	{
-		BOOST_REQUIRE(KV.Value.empty());
-	}
+	BOOST_REQUIRE(Source.Empty());
 }
-*/
 
 
 BOOST_AUTO_TEST_CASE(AddSortedFromVectorTest)
@@ -425,6 +488,58 @@ BOOST_AUTO_TEST_CASE(ExtraAddSortedTest)
 		BOOST_REQUIRE(T.Contains(i));
 	}
 }
+
+BOOST_AUTO_TEST_CASE(GetMovedByIteratorTest)
+{
+	constexpr int INITIAL_COUNT = 3;
+
+	IntToUniquePtStr T;
+	BOOST_REQUIRE(T.AddCheck(1, std::make_unique<std::string>("one")));
+	BOOST_REQUIRE(T.AddCheck(2, std::make_unique<std::string>("two")));
+	BOOST_REQUIRE(T.AddCheck(3, std::make_unique<std::string>("three")));
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+
+	IntToUniquePtStr::KeyValueType MovedKV = T.GetMovedByIterator(T.FindIteratorFor(2));
+	BOOST_REQUIRE(!T.Contains(2));
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT - 1);
+}
+
+BOOST_AUTO_TEST_CASE(MoveByKeyTest)
+{
+	constexpr int INITIAL_COUNT = 3;
+
+	IntToUniquePtStr T;
+	BOOST_REQUIRE(T.AddCheck(1, std::make_unique<std::string>("one")));
+	BOOST_REQUIRE(T.AddCheck(2, std::make_unique<std::string>("two")));
+	BOOST_REQUIRE(T.AddCheck(3, std::make_unique<std::string>("three")));
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+
+	IntToUniquePtStr::KeyValueType MovedKV;
+	BOOST_REQUIRE( ! T.MoveByKey(111, /*Out*/MovedKV) );
+	BOOST_REQUIRE_EQUAL( T.Num(), INITIAL_COUNT );
+
+	BOOST_REQUIRE( T.MoveByKey(1, /*Out*/MovedKV) );
+	BOOST_REQUIRE( ! T.Contains(1) );
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT - 1);
+
+	// TODO: Here we would check that the moved value is NOT enumerated second time, however have no MoveUnorderedTo function yet.
+	/*
+	BOOST_TEST_CHECKPOINT("Output sequence must NOT contain the removed KeyValue!!!");
+	IntToUniquePtStr::KeyValueType buf[(INITIAL_COUNT-1)];
+	T.CopyUnorderedTo(buf);
+
+	IntToUniquePtStr::KeyValueType* const End = buf + INITIAL_COUNT - 1;
+	BOOST_REQUIRE(End == std::find_if
+	(
+		buf, End, 
+		[](const IntToUniquePtStr::KeyValueType& InKV) 
+		{
+			return InKV.Key == /*Removed key*//*1;
+		}
+	));
+	*/
+}
+
 
 BOOST_AUTO_TEST_CASE(MovingFromPartOfCArrayTest)
 {
