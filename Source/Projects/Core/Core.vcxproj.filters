@@ -147,6 +147,9 @@
     <ClInclude Include="..\..\Core\Math\Test\BLASVectorTest.h">
       <Filter>Math\Test</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Core\Math\MathUtilsMinimal.h">
+      <Filter>Math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Core\Mem\Helper\Priv\LinearAllocHelper.cpp">

@@ -156,6 +156,7 @@
     <ClInclude Include="..\..\Core\CoreSysMinimal.h" />
     <ClInclude Include="..\..\Core\CoreSysTypes.h" />
     <ClInclude Include="..\..\Core\Math\MathUtils.h" />
+    <ClInclude Include="..\..\Core\Math\MathUtilsMinimal.h" />
     <ClInclude Include="..\..\Core\Math\Test\BLASTest.h" />
     <ClInclude Include="..\..\Core\Math\Test\BLASVectorTest.h" />
     <ClInclude Include="..\..\Core\Math\Vector.h" />

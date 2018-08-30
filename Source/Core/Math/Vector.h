@@ -1,6 +1,8 @@
 #pragma once
 
-#include "../CoreSysMinimal.h"
+#include "MathUtilsMinimal.h"
+#include <boost/functional/hash_fwd.hpp>
+#include "Core/Stream/StreamTraits.h"
 
 /**
 * 3D vector.
@@ -61,6 +63,11 @@ struct Vector
 	void Normalize();
 
 	/**
+	* Performs normalization on this vector object.
+	*/
+	void Normalize(float& OutLength);
+
+	/**
 	* Returns length.
 	*/
 	float Length() const;
@@ -95,6 +102,17 @@ struct Vector
 		default:
 			BOOST_ASSERT_MSG(false, "Math: Vector: operator[] const: unknown index");
 		}
+	}
+
+	/**
+	* boost::serialization support.
+	*/
+	template<class Archive>
+	void serialize(Archive& Ar, const unsigned int Version)
+	{
+		Ar & X;
+		Ar & Y;
+		Ar & Z;
 	}
 };
 __forceinline Vector operator-(const Vector& V)
@@ -148,12 +166,107 @@ __forceinline float Dot(const Vector& A, const Vector& B)
 	return A.X * B.X + A.Y + B.Y + A.Z * B.Z;
 }
 
+__forceinline float SqrDistance(const Vector& A, const Vector& B)
+{
+	return (A - B).SqrLength();
+}
+
+__forceinline Vector NormalizedDirection(const Vector& From, const Vector& To, float& OutLength)
+{
+	Vector Dir = (To - From);
+	Dir.Normalize(OutLength);
+	return Dir;
+}
+
+__forceinline Vector NormalizedDirection(const Vector& From, const Vector& To)
+{
+	float Length;
+	return NormalizedDirection(From, To, /*Out*/Length);
+}
+
+__forceinline float Distance(const Vector& A, const Vector& B)
+{
+	return M::Sqrt(SqrDistance(A, B));
+}
+
+inline bool operator==(const Vector& A, const Vector& B)
+{
+	return A.X == B.X && A.Y == B.Y && A.Z == B.Z;
+}
+
+inline bool operator!=(const Vector& A, const Vector& B)
+{
+	return !(A == B);
+}
+
+bool operator<(const Vector& A, const Vector& B);
+inline bool operator<=(const Vector& A, const Vector& B)
+{
+	return A < B || A == B;
+}
+inline bool operator>(const Vector& A, const Vector& B)
+{
+	return ! (A <= B);
+}
+inline bool operator>=(const Vector& A, const Vector& B)
+{
+	return ! (A < B);
+}
+
+constexpr float VEC_EQUAL_EPS = M::EPS;
+
+inline bool Equals(const Vector& A, const Vector& B, float Tolerance = VEC_EQUAL_EPS)
+{
+	return M::Abs(A.X - B.X) <= Tolerance 
+		&& M::Abs(A.Y - B.Y) <= Tolerance 
+		&& M::Abs(A.Z - B.Z) <= Tolerance;
+}
+
+inline bool NotEquals(const Vector& A, const Vector& B, float Tolerance = VEC_EQUAL_EPS)
+{
+	return ! Equals(A, B, Tolerance);
+}
+
+template<class Strm, typename = typename std::enable_if<IsOutputStream<Strm>::Value>::type>
+Strm& operator<<(Strm& S, const Vector& V)
+{
+	return S << "{" << V.X << ";" << V.Y << ";" << V.Z << "}";
+}
+
+template<class Strm, typename = typename std::enable_if<IsInputStream<Strm>::Value>::type>
+Strm& operator>>(Strm& S, Vector& V)
+{
+	return S >> V.X >> V.Y >> V.Z;
+}
+
+/**
+* Prints C-str representation of the vector into the given buffer.
+* If buffer is not enough, the rest of the characters are discarded.
+*
+* @returns: count of characters printed.
+*/
+int PrintVector(char* pBuf, int BufSize, const Vector& V);
+
+namespace std
+{
+	template<> struct hash<Vector>
+	{
+		size_t operator() (const Vector& V) const
+		{
+			size_t H = 0;
+			boost::hash_combine(H, V.X);
+			boost::hash_combine(H, V.Y);
+			boost::hash_combine(H, V.Z);
+			return H;
+		}
+	};
+}
+
 /**
 * TODO:
 *
-* 1. Serialization support.
-* 2. Hash functions.
-* 3. Stream operators.
+* 1. Stream operators.
+* 2. Compare operators.
 *
 * Optimization:
 * 1. SSE etc.
