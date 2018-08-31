@@ -71,15 +71,13 @@ struct DefaultVectorResizePolicy
 		using ConstBackwardIteratorType = TReverseIterator<ConstIteratorType>;
 
 		template<class ContTypeArg>
-		class TGeneralIterator
+		class TGeneralIterator : public TIteratorBase<std::is_const<ContTypeArg>>
 		{
 		public:
 			template<class OtherContType>
 			friend class TGeneralIterator;
 
 			using ThisType = TGeneralIterator<ContTypeArg>;
-
-			using IsConst = std::is_const<ContTypeArg>;
 
 			/**
 			* Default ctor: Creates floating end iterator.

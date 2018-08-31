@@ -46,16 +46,12 @@
 * TODO Adding interface:
 * 1. Hint iterator position
 * 2. Emplace
-* 3. Add range of values
-* 3.1. Moving from RBTree - perform REAL moving and uncomment the unit-test.
-* 3.2. Add IsIterator checks (the checks must be implemented)
 *
 * TODO Key/Value iterator:
 * 1. Insertion while iterating
 * 2. Backward iteration support:
 * 2.1. Function AtLast
 * 2.2. Getters (ReverseIterator)
-* 2.3. Iterator should know whether it's constant or not.
 * 1. Create the Stack-overflow unit-test for traverse;
 *
 * TODO Third:
@@ -770,7 +766,7 @@ public:
 	template<class SourceIteratorType>
 	void AddRange(SourceIteratorType It)
 	{
-		//static_assert(IsIterator<SourceIteratorType>::Value, "TVector: AddRange: It must be iterator");
+		static_assert(IsIterator<SourceIteratorType>::Value, "TVector: AddRange: It must be iterator");
 		// @TODO: Check that iterator is NOT iterator of this particular RBTree.
 		for (SourceIteratorType CurrIt = It; CurrIt; ++CurrIt)
 		{
@@ -1190,7 +1186,7 @@ public:
 	* Iterates KeyValue pairs in the order of their keys.
 	*/
 	template<class TreeTypeArg>
-	class TGeneralIterator
+	class TGeneralIterator : public TIteratorBase<std::is_const<TreeTypeArg>>
 	{
 	public:
 		template<class OtherTreeType>
@@ -1200,8 +1196,6 @@ public:
 		friend typename TreeTypeArg;
 
 		using ThisType = TGeneralIterator<TreeTypeArg>;
-
-		using IsConst = std::is_const<TreeTypeArg>;
 
 		/**
 		* Key/Value type of this iterator.

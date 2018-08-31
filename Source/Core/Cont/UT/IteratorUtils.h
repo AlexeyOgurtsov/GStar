@@ -1,6 +1,25 @@
 #pragma once
 
 #include "Core/CoreSysMinimal.h"
+#include <type_traits>
+
+/**
+* Non-template part of the iterator state (to facilitate the IsIterator check)
+*/
+class IteratorBase
+{
+public:
+};
+
+/**
+* Base class for all iterators.
+*/
+template<class bIsConstArg>
+class TIteratorBase : public IteratorBase
+{
+public:
+	using IsConst = bIsConstArg;
+};
 
 /**
 * Returns true if the given class is iterator.
@@ -8,7 +27,7 @@
 template<class T>
 struct IsIterator
 {
-	static constexpr bool Value = false;
+	static constexpr bool Value = std::is_base_of_v<IteratorBase, T>;
 };
 
 /**
