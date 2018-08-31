@@ -685,6 +685,30 @@ BOOST_AUTO_TEST_CASE(ClearingTest)
 	}
 }
 
+BOOST_AUTO_TEST_CASE(ReplaceTest)
+{
+	BOOST_TEST_CHECKPOINT("Preparing");
+	IntStringRBTree T;
+	const IntStringRBTree::KeyValueType RefKV = IntStringRBTree::KeyValueType{ 1, std::string("first") };
+	const IntStringRBTree::KeyValueType RefKV_2 = IntStringRBTree::KeyValueType{ 1, std::string("first_one") };
+
+	const IntStringRBTree::KeyValueType RefKV_Two = IntStringRBTree::KeyValueType{ 2, std::string("second") };
+
+	IntStringRBTree::IteratorType It = T.Replace(RefKV);
+	BOOST_REQUIRE( It );
+	BOOST_REQUIRE( It.GetKeyValue() == RefKV  );
+
+	IntStringRBTree::IteratorType ItSecond = T.Replace(RefKV_Two);
+	BOOST_REQUIRE(ItSecond);
+	BOOST_REQUIRE(ItSecond.GetKeyValue() == RefKV_Two);
+	BOOST_REQUIRE(It);
+	BOOST_REQUIRE(It.GetKeyValue() == RefKV);
+
+	It = T.Replace(RefKV_2);
+	BOOST_REQUIRE(It);
+	BOOST_REQUIRE(It.GetKeyValue() == RefKV_2);
+}
+
 BOOST_AUTO_TEST_CASE(GetOrAddTest)
 {
 	BOOST_TEST_CHECKPOINT("Preparing");

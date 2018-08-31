@@ -71,7 +71,7 @@
 /**
 * Red-black tree.
 *
-* WARNING!!! This implementation does NOT automatically frees the node memory.
+* WARNING!!! This implementation does NOT automatically free the node memory.
 */
 template<class KVTypeArg, class ComparerArg = TComparer<typename KVTypeArg::KeyType>>
 class TRBTree
@@ -432,8 +432,12 @@ public:
 
 	template<class IteratorTypeArg, class ThisTypeArg, class ComparerType> IteratorTypeArg FindIteratorAtImpl(const KeyType& InKey, ThisTypeArg* pInThis, ComparerType InComparer) const
 	{
+		bool bFound = ! Empty();
 		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
-		bool bFound = FindNode(InKey, /*OutNodeRef*/ NodeRef, InComparer);
+		if (bFound)
+		{
+			bFound = FindNode(InKey, /*OutNodeRef*/ NodeRef, InComparer);
+		}
 		if (!bFound)
 		{
 			return IteratorTypeArg::EndIterator(pInThis);
@@ -570,6 +574,28 @@ public:
 	bool AddHint(ConstIteratorType ItPos, const KeyValueType& InKV)
 	{
 		return AddCheck(InKV);
+	}
+
+	/**
+	* Registers the given key/value.
+	* If key/value with the given key is already registered, removes it.
+	*
+	* @Returns: iterator to the element.
+	*/
+	IteratorType Replace(KeyValueType&& InKV)
+	{
+		return ReplaceImpl(std::move(InKV));
+	}
+
+	/**
+	* Registers the given key/value.
+	* If key/value with the given key is already registered, removes it.
+	*
+	* @Returns: iterator to the element.
+	*/
+	IteratorType Replace(const KeyValueType& InKV)
+	{
+		return ReplaceImpl(InKV);
 	}
 
 	/**
@@ -711,8 +737,7 @@ public:
 	template<class SourceIteratorType>
 	void AddRange(SourceIteratorType FirstIt, SourceIteratorType LastIt)
 	{
-		//static_assert(IsIterator<SourceIteratorType>::Value, "TVector: AddRange: First It must be iterator");
-		//static_assert(IsIterator<SourceIteratorType>::Value, "TVector: AddRange: Last It must be iterator");
+		static_assert(IsIterator<SourceIteratorType>::Value, "RBTree: AddRange: Provided type is NOT iterator");
 		// @TODO: Check that iterator is NOT iterator of this particular RBTree.
 		static_assert(std::is_same<std::remove_cv_t<std::remove_reference_t<decltype(*FirstIt)>>, KeyValueType>::value, "TRBTree: Append iterator range: first iterator must return type convertible to KeyValue pair");
 		static_assert(std::is_same<std::remove_cv_t<std::remove_reference_t<decltype(*LastIt)>>, KeyValueType>::value, "TRBTree: Append iterator range: last iterator must return type convertible to KeyValue pair");
@@ -1489,6 +1514,20 @@ private:
 		const TRBTree *pTree;
 		TRBTreeImpl::ChildNodeRef NodeRef;
 	};
+
+	template<class KeyValueTypeArg>
+	IteratorType ReplaceImpl(KeyValueTypeArg&& InKV)
+	{
+		IteratorType It = FindIteratorFor(InKV.Key);
+		if (It)
+		{
+			bool bReplaced = Remove(InKV.Key);
+			BOOST_ASSERT(bReplaced);
+		}
+		It = GetOrAdd(std::forward<KeyValueTypeArg>(InKV));
+		return It;
+	}
+
 
 	/**
 	* Searches Value by the given key.
