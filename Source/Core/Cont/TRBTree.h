@@ -15,9 +15,6 @@
 * TODO Constructors:
 * 1. From other tree
 *
-* TODO Get/Update
-* 1. GetOrUpdate
-*
 * TODO Getters
 * 1. operator[] 
 * 2. Get with moving KeyValue pair (actually removing)
@@ -30,6 +27,9 @@
 * TODO Output
 * 1. Simple output
 * 2. Debug print
+*
+* CopyConstruction/Asignment
+* 1. Move copy-construction/assignment
 *
 * CopyTo/CopyUnorderedTo functions:
 * 1. CopyTo(TArray) function.
@@ -52,16 +52,18 @@
 * 2. Backward iteration support:
 * 2.1. Function AtLast
 * 2.2. Getters (ReverseIterator)
+*
+* TODO Traverse:
 * 1. Create the Stack-overflow unit-test for traverse;
 *
 * TODO Third:
-* 1. Clear()
+* 1. ShrinkToFit
 *
 * TODO Fourth:
 * 1. Equality, NotEquality
 *
 * TODO Key extra:
-* 1. Filter keys by given predicate
+* 1. Filter keys by the given predicate
 */
 
 /**
@@ -74,6 +76,11 @@ class TRBTree
 {
 public:
 	friend boost::serialization::access;
+
+	/**
+	* Any TRBTree instance is to be treated as a friend to make it possible to optimize some operations.
+	*/
+	friend class TRBTree;
 
 	/**
 	* KeyValue
@@ -123,7 +130,7 @@ public:
 	*/
 	explicit TRBTree(int InCapacity) :
 		RootIdx{ INDEX_NONE }
-		, Count{ 0 }
+	,	Count{ 0 }
 	{
 		Buffer.ReserveGrow(InCapacity);
 	}
@@ -132,10 +139,22 @@ public:
 	* Constructs as a copy of another container.
 	*/
 	TRBTree(const ThisType& InOther) :
-		RootIdx { INDEX_NONE }
-	,	Count {0}
+		RootIdx{ INDEX_NONE }
+	,	Count{ 0 }
 	{
 		Buffer.ReserveGrow(InOther.Count);
+		Add(InOther);
+	}
+
+	/**
+	* Constructs as a copy of another container.
+	*/
+	template<class OtherComparerArg>
+	TRBTree(const TRBTree<KVTypeArg, OtherComparerArg>& InOther) :
+		RootIdx{ INDEX_NONE }
+	,	Count{ 0 }
+	{
+		Buffer.ReserveGrow(InOther.Num());
 		Add(InOther);
 	}
 
@@ -147,6 +166,68 @@ public:
 		Clear();
 		Add(InOther);
 		return *this;
+	}
+
+	/**
+	* Copy-assigns another container.
+	*/
+	template<class OtherComparerArg>
+	TRBTree& operator=(const TRBTree<KVTypeArg, OtherComparerArg>& InOther)
+	{
+		Clear();
+		Add(InOther);
+		return *this;
+	}
+
+	/**
+	* Move-constructs.
+	*/
+	TRBTree(TRBTree&& InOther) :
+		Count(InOther.Count)
+	,	RootIdx(InOther.RootIdx)
+	,	Buffer(std::move(InOther.Buffer))
+	{
+		// @TODO: Refactor: Code duplication
+		InOther.Count = 0;
+		InOther.RootIdx = INDEX_NONE;
+	}
+
+	/**
+	* Move-assigns another container.
+	*/
+	TRBTree& operator=(ThisType&& InOther)
+	{
+		Count = InOther.Count;
+		RootIdx = InOther.RootIdx;
+		Buffer = std::move(InOther.Buffer);
+
+		// @TODO: Refactor: Code duplication
+		InOther.Count = 0;
+		InOther.RootIdx = INDEX_NONE;
+
+		return *this;
+	}
+
+	/**
+	* Move-assigns another container.
+	*/
+	template<class OtherComparerArg>
+	TRBTree& operator=(TRBTree<KVTypeArg, OtherComparerArg>&& InOther)
+	{
+		Clear();
+		Add(std::move(InOther));
+		return *this;
+	}
+
+	/**
+	* Move-constructs.
+	*/
+	template<class OtherComparerArg>
+	TRBTree(TRBTree<KVTypeArg, OtherComparerArg>&& InOther) :
+		RootIdx{ INDEX_NONE }
+	,	Count{ 0 }
+	{
+		Add(std::move(InOther));
 	}
 
 	/**
@@ -682,6 +763,7 @@ public:
 	*/
 	void Add(const KeyValueType* pInSource, int32_t InCount)
 	{
+		Buffer.ReserveGrow(Count + InCount);
 		for (int i = 0; i < InCount; i++) 
 		{
 			AddCheck(pInSource[i]);
@@ -695,6 +777,7 @@ public:
 	{
 		// @TODO: optimize
 		if (InCount == 0) { return; }
+		Buffer.ReserveGrow(Count + InCount);
 		const KeyValueType* pPrev = pInSource;
 		AddCheck(*pPrev);
 		for (int i = 1; i < InCount; i++)
@@ -711,6 +794,7 @@ public:
 	*/
 	void AddMoved(KeyValueType* pInSource, int32_t InCount)
 	{
+		Buffer.ReserveGrow(Count + InCount);
 		for (int i = 0; i < InCount; i++)
 		{
 			AddCheck(std::move(pInSource[i]));
@@ -803,7 +887,8 @@ public:
 	/**
 	* Adds the TRBTree pairs.
 	*/
-	void Add(const TRBTree<KVTypeArg, ComparerArg>& InSource)
+	template<class OtherComparerArg>
+	void Add(const TRBTree<KVTypeArg, OtherComparerArg>& InSource)
 	{
 		for (const KeyValueType& KV : InSource)
 		{
@@ -814,7 +899,8 @@ public:
 	/**
 	* Adds the TRBTree Key/Value pairs by moving.
 	*/
-	void Add(TRBTree<KVTypeArg, ComparerArg>&& InSource)
+	template<class OtherComparerArg>
+	void Add(TRBTree<KVTypeArg, OtherComparerArg>&& InSource)
 	{
 		// @TODO: Perform real moving
 		AddMoved(InSource);
@@ -823,7 +909,8 @@ public:
 	/**
 	* Adds the TRBTree Key/Value pairs by moving.
 	*/
-	void AddMoved(TRBTree<KVTypeArg, ComparerArg>& InSource)
+	template<class OtherComparerArg>
+	void AddMoved(TRBTree<KVTypeArg, OtherComparerArg>& InSource)
 	{
 		// @NOTE: Temporary workaround while iteration does NOT work correctly when removing in the middle of iteration
 		{
@@ -839,7 +926,7 @@ public:
 			InSource.Clear();
 		}
 
-		/*111
+		/*
 		TRBTree<KVTypeArg, ComparerArg>::IteratorType It = InSource.Iterator();
 		while (true)
 		{
@@ -2505,3 +2592,33 @@ private:
 	*/
 	int Count;
 };
+template<class KVTypeArg, class ComparerArg, class OtherComparerArg>
+bool operator==(const TRBTree<KVTypeArg, ComparerArg>& A, const TRBTree<KVTypeArg, OtherComparerArg>& B)
+{
+	if (A.Num() != B.Num())
+	{
+		return false;
+	}
+
+	// @TODO: Optimize: for the case when Comparer arg is the same
+	for (const auto& KV : A)
+	{
+		const auto pOtherKV = B.Find(KV.Key);
+		if (nullptr == pOtherKV)
+		{
+			return false;
+		}
+		if (pOtherKV->Value != KV.Value)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+template<class KVTypeArg, class ComparerArg, class OtherComparerArg>
+bool operator!=(const TRBTree<KVTypeArg, ComparerArg>& A, const TRBTree<KVTypeArg, OtherComparerArg>& B)
+{
+	return ! operator==(A, B);
+}

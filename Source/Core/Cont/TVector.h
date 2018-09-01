@@ -2861,6 +2861,7 @@ TVector<T, ResizePolicy>::~TVector()
 * 7.2. Sort
 * 8. Iterator support
 * 8.1. Reverse iterators
+* 8.2. Difference between iterators
 *  
 * TODO Operations:
 * 1. RemoveAtSwap (+DONE)

@@ -104,6 +104,156 @@ BOOST_AUTO_TEST_SUITE
 	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/AddSuite")
 	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite")
 )
+
+
+struct TemplateCopyTestIntComparer
+{
+	int Compare(int A, int B) const
+	{
+		return DefaultCompare(A, B);
+	}
+};
+
+
+BOOST_AUTO_TEST_CASE(TemplateCopyConstruct)
+{
+	const IntStringRBTree::KeyValueType KV_1{ 1, std::string("one") };
+	const IntStringRBTree::KeyValueType KV_2{ 2, std::string("two") };
+	const IntStringRBTree::KeyValueType KV_3{ 3, std::string("three") };
+
+	IntStringRBTree Source;
+	Source.AddCheck(KV_1);
+	Source.AddCheck(KV_2);
+	Source.AddCheck(KV_3);
+
+	TRBTree<KVType<int, std::string>, TemplateCopyTestIntComparer> T{ Source };
+	BOOST_REQUIRE_EQUAL(T.Num(), 3);
+	BOOST_REQUIRE(T.Contains(KV_1.Key));
+	BOOST_REQUIRE(T.Contains(KV_2.Key));
+	BOOST_REQUIRE(T.Contains(KV_3.Key));
+}
+
+BOOST_AUTO_TEST_CASE(TemplateCopyAssign)
+{
+	const IntStringRBTree::KeyValueType KV_1{ 1, std::string("one") };
+	const IntStringRBTree::KeyValueType KV_2{ 2, std::string("two") };
+	const IntStringRBTree::KeyValueType KV_3{ 3, std::string("three") };
+
+	IntStringRBTree Source;
+	BOOST_REQUIRE(Source.AddCheck(KV_1));
+	BOOST_REQUIRE(Source.AddCheck(KV_2));
+	BOOST_REQUIRE(Source.AddCheck(KV_3));
+
+	TRBTree<KVType<int, std::string>, TemplateCopyTestIntComparer> T;
+	const IntStringRBTree::KeyValueType OTHER_KV_1{ 11, std::string("eleven") };
+	const IntStringRBTree::KeyValueType OTHER_KV_2{ 12, std::string("twelve") };
+	BOOST_REQUIRE(T.AddCheck(OTHER_KV_1));
+	BOOST_REQUIRE(T.AddCheck(OTHER_KV_2));
+
+
+	T = Source;
+	BOOST_REQUIRE_EQUAL(T.Num(), 3);
+	BOOST_REQUIRE(T.Contains(KV_1.Key));
+	BOOST_REQUIRE(T.Contains(KV_2.Key));
+	BOOST_REQUIRE(T.Contains(KV_3.Key));
+}
+
+BOOST_AUTO_TEST_CASE(TemplateMoveConstruct)
+{
+	const IntStringRBTree::KeyValueType KV_1{ 1, std::string("one") };
+	const IntStringRBTree::KeyValueType KV_2{ 2, std::string("two") };
+	const IntStringRBTree::KeyValueType KV_3{ 3, std::string("three") };
+
+	IntStringRBTree Source;
+	Source.AddCheck(KV_1);
+	Source.AddCheck(KV_2);
+	Source.AddCheck(KV_3);
+
+	TRBTree<KVType<int, std::string>, TemplateCopyTestIntComparer> T{ std::move(Source) };
+	BOOST_REQUIRE_EQUAL(T.Num(), 3);
+	BOOST_REQUIRE(T.Contains(KV_1.Key));
+	BOOST_REQUIRE(T.Contains(KV_2.Key));
+	BOOST_REQUIRE(T.Contains(KV_3.Key));
+
+	BOOST_REQUIRE(Source.Empty());
+}
+
+BOOST_AUTO_TEST_CASE(TemplateMoveAssignment)
+{
+	const IntStringRBTree::KeyValueType KV_1{ 1, std::string("one") };
+	const IntStringRBTree::KeyValueType KV_2{ 2, std::string("two") };
+	const IntStringRBTree::KeyValueType KV_3{ 3, std::string("three") };
+
+	IntStringRBTree Source;
+	BOOST_REQUIRE(Source.AddCheck(KV_1));
+	BOOST_REQUIRE(Source.AddCheck(KV_2));
+	BOOST_REQUIRE(Source.AddCheck(KV_3));
+
+	TRBTree<KVType<int, std::string>, TemplateCopyTestIntComparer> T;
+	const IntStringRBTree::KeyValueType OTHER_KV_1{ 11, std::string("eleven") };
+	const IntStringRBTree::KeyValueType OTHER_KV_2{ 12, std::string("twelve") };
+	BOOST_REQUIRE(T.AddCheck(OTHER_KV_1));
+	BOOST_REQUIRE(T.AddCheck(OTHER_KV_2));
+
+	T = std::move(Source);
+	BOOST_REQUIRE_EQUAL(T.Num(), 3);
+	BOOST_REQUIRE(T.Contains(KV_1.Key));
+	BOOST_REQUIRE(T.Contains(KV_2.Key));
+	BOOST_REQUIRE(T.Contains(KV_3.Key));
+	BOOST_REQUIRE(!T.Contains(OTHER_KV_1.Key));
+	BOOST_REQUIRE(!T.Contains(OTHER_KV_2.Key));
+
+	BOOST_REQUIRE(Source.Empty());
+}
+
+BOOST_AUTO_TEST_CASE(MoveConstruct)
+{
+	const IntStringRBTree::KeyValueType KV_1{ 1, std::string("one") };
+	const IntStringRBTree::KeyValueType KV_2{ 2, std::string("two") };
+	const IntStringRBTree::KeyValueType KV_3{ 3, std::string("three") };
+
+	IntStringRBTree Source;
+	Source.AddCheck(KV_1);
+	Source.AddCheck(KV_2);
+	Source.AddCheck(KV_3);
+
+	IntStringRBTree T{ std::move(Source) };
+	BOOST_REQUIRE_EQUAL(T.Num(), 3);
+	BOOST_REQUIRE(T.Contains(KV_1.Key));
+	BOOST_REQUIRE(T.Contains(KV_2.Key));
+	BOOST_REQUIRE(T.Contains(KV_3.Key));
+
+	BOOST_REQUIRE(Source.Empty());
+}
+
+BOOST_AUTO_TEST_CASE(MoveAssignment)
+{
+	const IntStringRBTree::KeyValueType KV_1{ 1, std::string("one") };
+	const IntStringRBTree::KeyValueType KV_2{ 2, std::string("two") };
+	const IntStringRBTree::KeyValueType KV_3{ 3, std::string("three") };
+
+	IntStringRBTree Source;
+	BOOST_REQUIRE(Source.AddCheck(KV_1));
+	BOOST_REQUIRE(Source.AddCheck(KV_2));
+	BOOST_REQUIRE(Source.AddCheck(KV_3));
+
+	IntStringRBTree T;
+	const IntStringRBTree::KeyValueType OTHER_KV_1{ 11, std::string("eleven") };
+	const IntStringRBTree::KeyValueType OTHER_KV_2{ 12, std::string("twelve") };
+	BOOST_REQUIRE(T.AddCheck(OTHER_KV_1));
+	BOOST_REQUIRE(T.AddCheck(OTHER_KV_2));
+
+	T = std::move(Source);
+	BOOST_REQUIRE_EQUAL(T.Num(), 3);
+	BOOST_REQUIRE(T.Contains(KV_1.Key));
+	BOOST_REQUIRE(T.Contains(KV_2.Key));
+	BOOST_REQUIRE(T.Contains(KV_3.Key));
+	BOOST_REQUIRE( ! T.Contains(OTHER_KV_1.Key) );
+	BOOST_REQUIRE( ! T.Contains(OTHER_KV_2.Key) );
+
+	BOOST_REQUIRE(Source.Empty());
+}
+
 BOOST_AUTO_TEST_CASE(SimpleCopyConstruct)
 {
 	const IntStringRBTree::KeyValueType KV_1 { 1, std::string("one") };
@@ -145,6 +295,8 @@ BOOST_AUTO_TEST_CASE(SimpleCopyAssign)
 	BOOST_REQUIRE(T.Contains(KV_1.Key));
 	BOOST_REQUIRE(T.Contains(KV_2.Key));
 	BOOST_REQUIRE(T.Contains(KV_3.Key));
+	BOOST_REQUIRE( ! T.Contains(OTHER_KV_1.Key) );
+	BOOST_REQUIRE( ! T.Contains(OTHER_KV_2.Key) );
 }
 BOOST_AUTO_TEST_SUITE_END()
 
@@ -223,6 +375,48 @@ BOOST_AUTO_TEST_SUITE
 )
 
 BOOST_AUTO_TEST_SUITE(ExtraAddOpsSuite)
+
+struct EqualityTestStringComparer
+{
+	int Compare(const std::string& A, const std::string& B) const
+	{
+		return DefaultCompare(A, B);
+	}
+};
+
+BOOST_AUTO_TEST_CASE(EqualityTest)
+{
+	StringToIntRBTree A;
+	TRBTree<KVType<std::string, int>, EqualityTestStringComparer> B;
+
+	BOOST_TEST_CHECKPOINT("Equality for empty");
+	BOOST_REQUIRE(A == B);
+	BOOST_REQUIRE(B == A);
+	BOOST_REQUIRE(! ( A != B) );
+
+	BOOST_TEST_CHECKPOINT("Inequality by first element (A > B)");
+	A.AddCheck(std::string("one"), 1);
+	BOOST_REQUIRE(A != B);
+	BOOST_REQUIRE(B != A);
+
+	BOOST_TEST_CHECKPOINT("Equality of one-element containers");
+	B.AddCheck(std::string("one"), 1);
+	BOOST_REQUIRE(A == B);
+	BOOST_REQUIRE(B == A);
+
+	BOOST_TEST_CHECKPOINT("Inequality by first element (B > A)");
+	B.AddCheck(std::string("two"), 2);
+	BOOST_REQUIRE(A != B);
+
+	BOOST_TEST_CHECKPOINT("Equality of two-element containers");
+	A.AddCheck(std::string("two"), 2);
+	BOOST_REQUIRE(A == B);
+
+	BOOST_TEST_CHECKPOINT("Non equality if key is the same by value differs");
+	A.AddCheck(std::string("three"), 3);
+	B.AddCheck(std::string("three"), 2);
+	BOOST_REQUIRE(A != B);
+}
 
 BOOST_AUTO_TEST_CASE(AddRange)
 {
