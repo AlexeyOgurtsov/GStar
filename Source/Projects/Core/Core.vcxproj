@@ -157,6 +157,8 @@
     <ClInclude Include="..\..\Core\CoreSysTypes.h" />
     <ClInclude Include="..\..\Core\Math\MathUtils.h" />
     <ClInclude Include="..\..\Core\Math\MathUtilsMinimal.h" />
+    <ClInclude Include="..\..\Core\Math\Matrix.h" />
+    <ClInclude Include="..\..\Core\Math\Test\BLASMatrixTest.h" />
     <ClInclude Include="..\..\Core\Math\Test\BLASTest.h" />
     <ClInclude Include="..\..\Core\Math\Test\BLASVectorTest.h" />
     <ClInclude Include="..\..\Core\Math\Vector.h" />
@@ -176,6 +178,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\Core\Cont\Priv\TRBTreeImpl.cpp" />
     <ClCompile Include="..\..\Core\Math\Priv\MathUtils.cpp" />
+    <ClCompile Include="..\..\Core\Math\Priv\Matrix.cpp" />
     <ClCompile Include="..\..\Core\Math\Priv\Vector.cpp" />
     <ClCompile Include="..\..\Core\Mem\Helper\Priv\LinearAllocHelper.cpp" />
     <ClCompile Include="..\..\Core\Mem\Priv\BlockHeapImpl.cpp" />

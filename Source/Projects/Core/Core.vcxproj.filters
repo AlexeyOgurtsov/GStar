@@ -150,6 +150,12 @@
     <ClInclude Include="..\..\Core\Math\MathUtilsMinimal.h">
       <Filter>Math</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Core\Math\Matrix.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Math\Test\BLASMatrixTest.h">
+      <Filter>Math\Test</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Core\Mem\Helper\Priv\LinearAllocHelper.cpp">
@@ -171,6 +177,9 @@
       <Filter>Math\Priv</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Core\Math\Priv\Vector.cpp">
+      <Filter>Math\Priv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Core\Math\Priv\Matrix.cpp">
       <Filter>Math\Priv</Filter>
     </ClCompile>
   </ItemGroup>
