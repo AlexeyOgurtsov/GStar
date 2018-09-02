@@ -3,7 +3,7 @@
 #include "Priv/TRBTreeImpl.h"
 #include "../Cont/TVector.h"
 #include "../Templ/TComparer.h"
-#include <tuple>
+#include <tuple> // @TODO: Refactor: Do we really used a tuple here?
 #include <type_traits>
 #include <boost/serialization/split_member.hpp>
 
@@ -25,8 +25,7 @@
 * 1. Setter
 *
 * TODO Output
-* 1. Simple output
-* 2. Debug print
+* 1. Debug print
 *
 * CopyConstruction/Asignment
 * 1. Move copy-construction/assignment
@@ -53,17 +52,25 @@
 * 2.1. Function AtLast
 * 2.2. Getters (ReverseIterator)
 *
+* TODO Key only iterator:
+* 1. 
+*
 * TODO Traverse:
 * 1. Create the Stack-overflow unit-test for traverse;
 *
-* TODO Third:
+* TODO Capacity:
 * 1. ShrinkToFit
-*
-* TODO Fourth:
-* 1. Equality, NotEquality
+* 2. Reserve
 *
 * TODO Key extra:
 * 1. Filter keys by the given predicate
+*
+* TODO Size functions:
+* 1. Should we make it static?
+*
+* TODO:
+* 1. Move key only
+* 2. Move value only
 */
 
 /**
@@ -102,7 +109,7 @@ private:
 
 public:
 	/**
-	* Type of this tree
+	* Type of this tree.
 	*/
 	using ThisType = decltype(GetThisTypeHelper());
 
@@ -132,6 +139,7 @@ public:
 		RootIdx{ INDEX_NONE }
 	,	Count{ 0 }
 	{
+		// @TODO: Optimize: Initialize capacity using TVector argument
 		Buffer.ReserveGrow(InCapacity);
 	}
 
@@ -142,6 +150,7 @@ public:
 		RootIdx{ INDEX_NONE }
 	,	Count{ 0 }
 	{
+		// @TODO: Optimize: Initialize capacity using TVector argument
 		Buffer.ReserveGrow(InOther.Count);
 		Add(InOther);
 	}
@@ -154,6 +163,7 @@ public:
 		RootIdx{ INDEX_NONE }
 	,	Count{ 0 }
 	{
+		// @TODO: Optimize: Initialize capacity using TVector argument
 		Buffer.ReserveGrow(InOther.Num());
 		Add(InOther);
 	}
@@ -313,6 +323,24 @@ public:
 	{
 		BOOST_ASSERT_MSG( ! Empty(), "TRBTree::Max: Container must be NON-empty");
 		return GetNode(GetDeepestNodeRef(TRBTreeImpl::ChildNodeRef::RootNode(), TRBTreeImpl::RIGHT_CHILD_IDX))->GetKV();
+	}
+
+	/**
+	* Returns minimal key.
+	* Container must be NON-empty.
+	*/
+	const KeyType& MinKey() const
+	{
+		return Min().Key;
+	}
+
+	/**
+	* Returns maximal key.
+	* Container must be NON-empty.
+	*/
+	const KeyType& MaxKey() const
+	{
+		return Max().Key;
 	}
 
 	/**
@@ -761,10 +789,11 @@ public:
 	* Adds key/value pairs from C-array buffer. 
 	* Key/Value pairs are copied.
 	*/
-	void Add(const KeyValueType* pInSource, int32_t InCount)
+	void Add(const KeyValueType* pInSource, int32_t InCopiedCount)
 	{
-		Buffer.ReserveGrow(Count + InCount);
-		for (int i = 0; i < InCount; i++) 
+		BOOST_ASSERT(pInSource);
+		Buffer.ReserveGrow(Count + InCopiedCount);
+		for (int i = 0; i < InCopiedCount; i++) 
 		{
 			AddCheck(pInSource[i]);
 		}
@@ -773,14 +802,15 @@ public:
 	/**
 	* Adds the given range of elements, assuming that the range is sorted.
 	*/
-	void AddSorted(const KeyValueType* pInSource, int32_t InCount)
+	void AddSorted(const KeyValueType* pInSource, int32_t InCopiedCount)
 	{
+		BOOST_ASSERT(pInSource);
 		// @TODO: optimize
 		if (InCount == 0) { return; }
-		Buffer.ReserveGrow(Count + InCount);
+		Buffer.ReserveGrow(Count + InCopiedCount);
 		const KeyValueType* pPrev = pInSource;
 		AddCheck(*pPrev);
-		for (int i = 1; i < InCount; i++)
+		for (int i = 1; i < InCopiedCount; i++)
 		{
 			BOOST_ASSERT_MSG(CompareLessOrEqual(ComparerArg().Compare(pPrev->Key, pInSource[i].Key)), "TRBTree: AddSorted: C-array values are not sorted by ascending key");
 			AddCheck(pInSource[i]);
@@ -792,21 +822,22 @@ public:
 	* Adds key/value pairs from C-array buffer.
 	* Key/Value pairs are moved.
 	*/
-	void AddMoved(KeyValueType* pInSource, int32_t InCount)
+	void AddMoved(KeyValueType* pInSource, int32_t InCopiedCount)
 	{
-		Buffer.ReserveGrow(Count + InCount);
-		for (int i = 0; i < InCount; i++)
+		BOOST_ASSERT(pInSource);
+		Buffer.ReserveGrow(Count + InCopiedCount);
+		for (int i = 0; i < InCopiedCount; i++)
 		{
 			AddCheck(std::move(pInSource[i]));
 		}
 	}
 
 	/**
-	* Adds key/value pairs from C-array buffer, assuming that the range is sorted
+	* Adds key/value pairs from C-array buffer, assuming that the range is sorted.
 	*/
-	void AddMovedSorted(KeyValueType* pInSource, int32_t InCount)
+	void AddMovedSorted(KeyValueType* pInSource, int32_t InCopiedCount)
 	{
-		AddMoved(pInSource, InCount);
+		AddMoved(pInSource, InCopiedCount);
 	}
 
 	/**
@@ -994,6 +1025,7 @@ public:
 	*/
 	bool AddCheck(KeyValueType&& InKV)
 	{
+		static_assert(std::is_move_constructible_v<KeyValueType>, "TRBTree: AddCheck (&&): KeyValueType must be move-constructible");
 		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
 		return AddImpl(std::move(InKV), /*Out*/NodeRef);
 	}
@@ -2621,4 +2653,18 @@ template<class KVTypeArg, class ComparerArg, class OtherComparerArg>
 bool operator!=(const TRBTree<KVTypeArg, ComparerArg>& A, const TRBTree<KVTypeArg, OtherComparerArg>& B)
 {
 	return ! operator==(A, B);
+}
+
+template
+<
+	class Strm, class KVTypeArg, class ComparerArg, 
+	typename = typename std::enable_if<typename IsOutputStream<Strm>::Value>::type
+>
+Strm& operator<<(Strm& S, const TRBTree<KVTypeArg, ComparerArg>& InCont)
+{
+	for(const auto& KV : InCont)
+	{
+		S << KV << std::endl;
+	}
+	return S;
 }
