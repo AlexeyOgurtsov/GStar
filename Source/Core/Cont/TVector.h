@@ -3,6 +3,7 @@
 #include "ContainerSystem.h"
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/split_member.hpp>
+#include <tuple>
 #include "Core/Mem/MemUtils.h"
 
 /************************************************************************************************************
@@ -48,6 +49,7 @@ struct DefaultVectorResizePolicy
 		using ThisType = TVector<T, ResizePolicy>;
 		using ResizePolicyType = ResizePolicy<T>;
 		using ValueType = T;
+		using ElementType = T;
 
 		template<class T, template<class> class OtherResizePolicy> friend class TVector;
 		friend class boost::serialization::access;
@@ -78,6 +80,12 @@ struct DefaultVectorResizePolicy
 			friend class TGeneralIterator;
 
 			using ThisType = TGeneralIterator<ContTypeArg>;
+			using ElementType = 
+				std::tuple_element_t
+				<
+					std::is_const<ContTypeArg>::value,
+					std::tuple<typename ContTypeArg::ElementType, const typename ContTypeArg::ElementType>
+				>;
 
 			/**
 			* Default ctor: Creates floating end iterator.
@@ -298,6 +306,12 @@ struct DefaultVectorResizePolicy
 			bool operator!=(const TGeneralIterator<OtherContType>& InOther) const
 			{
 				return ! (operator==(InOther));
+			}
+
+			template<class OtherContType>
+			int operator-(const TGeneralIterator<OtherContType>& InOther) const
+			{
+				return Ind - InOther.Ind;
 			}
 
 		private:

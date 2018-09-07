@@ -150,8 +150,12 @@
     <ClInclude Include="..\..\Core\Cont\TSortedSet.h" />
     <ClInclude Include="..\..\Core\Cont\TVector.h" />
     <ClInclude Include="..\..\Core\Cont\UT\IteratorUtils.h" />
+    <ClInclude Include="..\..\Core\Cont\UT\Test\IteratorUtilsTester.h" />
+    <ClInclude Include="..\..\Core\Cont\UT\Test\TKeValueIteratorTester.h" />
     <ClInclude Include="..\..\Core\Cont\UT\Test\TKeyValueTester.h" />
+    <ClInclude Include="..\..\Core\Cont\UT\Test\UTTester.h" />
     <ClInclude Include="..\..\Core\Cont\UT\TKeyValue.h" />
+    <ClInclude Include="..\..\Core\Cont\UT\TKeyValueIterator.h" />
     <ClInclude Include="..\..\Core\CoreSysCommon.h" />
     <ClInclude Include="..\..\Core\CoreSysMinimal.h" />
     <ClInclude Include="..\..\Core\CoreSysTypes.h" />

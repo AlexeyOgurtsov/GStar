@@ -40,15 +40,26 @@ struct IteratorAssignableByConst
 };
 
 /**
+* Returns true if left and right iterators are comparable with operator== or operator!=.
+*
+* Automatically removes qualifiers.
+*/
+template<class LeftType, class RightType>
+struct AreIteratorsComparable
+{
+	static constexpr bool Value = true; // @TODO
+};
+
+/**
 * Reverses order of iteration for the given iterator.
 */
 template<class IteratorTypeArg>
-class TReverseIterator
+class TReverseIterator : public TIteratorBase<typename IteratorTypeArg::IsConst>
 {
 public:
-	using IteratorType = typename IteratorTypeArg;
+	using ThisType = TReverseIterator<IteratorTypeArg>;
 
-	using IsConst = typename IteratorType::IsConst;
+	using IteratorType = typename IteratorTypeArg;
 
 	/**
 	* Creates iterator in Default state.
@@ -75,7 +86,7 @@ public:
 	template<class OtherIteratorType>
 	TReverseIterator& operator=(const TReverseIterator<OtherIteratorType>& InIt)
 	{
-		static_assert( IteratorAssignableByConst::Value, "TReverse iterator: copy: const/non-const iterator mismatch");
+		static_assert( IteratorAssignableByConst<ThisType, OtherIteratorType>::Value, "TReverse iterator: copy: const/non-const iterator mismatch");
 		It = InIt;
 		return *this;
 	}
@@ -227,12 +238,14 @@ public:
 	template<class OtherIteratorType>
 	bool operator==(const TReverseIterator<OtherIteratorType>& InOther) const
 	{
+		static_assert(AreIteratorsComparable<IteratorType, OtherIteratorType>::Value, "TReverseIterator: operator==: iterators must be comparable");
 		return It == InOther.It;
 	}
 
 	template<class OtherIteratorType>
 	bool operator!=(const TReverseIterator<OtherIteratorType>& InOther) const
 	{
+		static_assert(AreIteratorsComparable<IteratorType, OtherIteratorType>::Value, "TReverseIterator: operator!=: iterators must be comparable");
 		return !(operator==(InOther));
 	}
 

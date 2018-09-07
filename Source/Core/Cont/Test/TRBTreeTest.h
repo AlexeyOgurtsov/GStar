@@ -1122,6 +1122,92 @@ BOOST_AUTO_TEST_SUITE
 	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/FirstMinimal")
 	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/MinMax")
 )
+
+BOOST_AUTO_TEST_CASE(KeyIteration)
+{
+	IntStringRBTree T;
+	const IntStringRBTree* pCT = &T;
+	T.AddCheck(1, std::string("one"));
+	T.AddCheck(2, std::string("two"));
+	T.AddCheck(3, std::string("three"));
+	
+	IntStringRBTree::IteratorType It = T.Iterator();
+	IntStringRBTree::KeyIteratorType KeyIt = T.KeyIterator();
+	while (It != T.EndIterator())
+	{
+		BOOST_REQUIRE_EQUAL(It.GetKey(), *KeyIt);
+		BOOST_REQUIRE_EQUAL(It.GetKey(), KeyIt.Get());
+
+		BOOST_REQUIRE( ! KeyIt.IsEnd() );
+		BOOST_REQUIRE(!!KeyIt);
+		BOOST_REQUIRE(KeyIt);
+		BOOST_REQUIRE(KeyIt.GetPtr() != nullptr);
+		BOOST_REQUIRE_EQUAL(It.GetKey(), *KeyIt.GetPtr());
+
+		++KeyIt;
+		++It;
+	}
+	BOOST_REQUIRE(KeyIt.IsEnd());
+
+	BOOST_TEST_CHECKPOINT("Comparison");
+	BOOST_REQUIRE(T.KeyIterator() == T.KeyIterator());
+	BOOST_REQUIRE(T.KeyIterator() == pCT->KeyIterator());
+	BOOST_REQUIRE(T.EndKeyIterator() == T.EndKeyIterator());
+	BOOST_REQUIRE(T.EndKeyIterator() == pCT->EndKeyIterator());
+	BOOST_REQUIRE(T.EndKeyIterator() != T.KeyIterator());
+	BOOST_REQUIRE(pCT->EndKeyIterator() != T.KeyIterator());
+
+	BOOST_TEST_CHECKPOINT("Assignment");
+	IntStringRBTree::KeyIteratorType AssignedIt = T.EndKeyIterator();
+	AssignedIt = T.KeyIterator();
+	BOOST_REQUIRE(AssignedIt);
+	BOOST_REQUIRE(AssignedIt == T.KeyIterator());
+	AssignedIt = pCT->KeyIterator();
+	BOOST_REQUIRE(AssignedIt);
+	BOOST_REQUIRE(AssignedIt == T.KeyIterator());
+	AssignedIt = pCT->EndKeyIterator();
+	BOOST_REQUIRE(AssignedIt == T.EndKeyIterator());
+	AssignedIt = T.EndKeyIterator();
+	BOOST_REQUIRE(AssignedIt == T.EndKeyIterator());
+}
+
+BOOST_AUTO_TEST_CASE(IteratorElementType)
+{
+	static_assert
+	(
+		std::is_same
+		<
+			const TRBTree<KVType<int, std::string>>::IteratorType::ElementType, 
+			const TKeyValue<KVType<int, std::string>>
+		>::value
+	);
+	static_assert
+	(
+		std::is_same
+		<
+			const TRBTree<KVType<int, std::string>>::IteratorType::ElementType, 
+			const TKeyValue<KVType<int, std::string>>
+		>::value
+	);
+	static_assert
+	(
+		std::is_same
+		<
+			const TRBTree<KVType<int, std::string>>::ConstIteratorType::ElementType,
+			const TKeyValue<KVType<int, std::string>>
+		>::value
+	);
+	static_assert
+	(
+		std::is_same
+		<
+			const TRBTree<KVType<int, std::string>>::ConstIteratorType::ElementType,
+			const TKeyValue<KVType<int, std::string>>
+		>::value
+	);
+}
+
+
 BOOST_AUTO_TEST_CASE(IterationEmpty)
 {
 	IntRBTree T;

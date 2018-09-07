@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Priv/TRBTreeImpl.h"
+#include "UT/TKeyValueIterator.h"
 #include "../Cont/TVector.h"
 #include "../Templ/TComparer.h"
 #include <tuple> // @TODO: Refactor: Do we really used a tuple here?
@@ -41,6 +42,8 @@
 * TODO Remove:
 * 1. Remove by custom CompareArg
 * 2. Remove by predicate
+* 2.1. RemoveFirstByPredicate
+* 2.2. RemoveAllByPredicate
 *
 * TODO Adding interface:
 * 1. Hint iterator position
@@ -95,6 +98,11 @@ public:
 	using KeyValueType = typename TKeyValue<KVTypeArg>;
 
 	/**
+	* Element is always const.
+	*/
+	using ElementType = const KeyValueType;
+
+	/**
 	* Key type.
 	*/
 	using KeyType = typename KeyValueType::KeyType;
@@ -121,6 +129,8 @@ public:
 
 	using IteratorType = TGeneralIterator<ThisType>;
 	using ConstIteratorType = TGeneralIterator<const ThisType>;
+
+	using KeyIteratorType = TForwardKeyIterator<ConstIteratorType>;
 
 	/**
 	* Capacity to be used for the buffer by default.
@@ -268,11 +278,35 @@ public:
 	}
 
 	/**
+	* Returns end iterator.
+	*/
+	IteratorType EndIterator()
+	{
+		return IteratorType::EndIterator(this);
+	}
+
+	/**
 	* Returns const iterator to the first Key/Value pair.
 	*/
 	ConstIteratorType ConstIterator() const
 	{
 		return GetFirstIteratorImpl<ConstIteratorType>(this);
+	}
+
+	/**
+	* Returns const end iterator.
+	*/
+	ConstIteratorType ConstEndIterator() const
+	{
+		return ConstIteratorType::EndIterator(this);
+	}
+
+	/**
+	* Returns const end iterator.
+	*/
+	ConstIteratorType EndIterator() const
+	{
+		return ConstEndIterator();
 	}
 
 	/**
@@ -293,17 +327,27 @@ public:
 	/**
 	* C++ range iteration support.
 	*/
-	IteratorType end() { return IteratorType::EndIterator(this); }
+	IteratorType end() { return EndIterator(); }
 
 	/**
 	* C++ range iteration support.
 	*/
-	ConstIteratorType end() const { return ConstIteratorType::EndIterator(this); }
+	ConstIteratorType end() const { return ConstEndIterator(); }
 
 	/**
 	* C++ range iteration support.
 	*/
 	ConstIteratorType cend() const { return end(); }
+
+	/**
+	* Returns key iterator to the first element.
+	*/
+	KeyIteratorType KeyIterator() const { return KeyIteratorType{ Iterator() }; }
+
+	/**
+	* Returns key iterator to the last element.
+	*/
+	KeyIteratorType EndKeyIterator() const { return KeyIteratorType{ EndIterator() }; }
 
 	/**
 	* Returns KeyValue with a minimal key.
@@ -806,7 +850,7 @@ public:
 	{
 		BOOST_ASSERT(pInSource);
 		// @TODO: optimize
-		if (InCount == 0) { return; }
+		if (InCopiedCount == 0) { return; }
 		Buffer.ReserveGrow(Count + InCopiedCount);
 		const KeyValueType* pPrev = pInSource;
 		AddCheck(*pPrev);
@@ -1320,6 +1364,8 @@ public:
 		* Key/Value type of this iterator.
 		*/
 		using KeyValueType = typename TreeTypeArg::KeyValueType;
+
+		using ElementType = const KeyValueType;
 
 		/**
 		* Key that this iterator iterates.

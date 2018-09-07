@@ -156,6 +156,18 @@
     <ClInclude Include="..\..\Core\Math\Test\BLASMatrixTest.h">
       <Filter>Math\Test</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\UT\Test\IteratorUtilsTester.h">
+      <Filter>Cont\UT\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\UT\Test\UTTester.h">
+      <Filter>Cont\UT\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\UT\Test\TKeValueIteratorTester.h">
+      <Filter>Cont\UT\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\UT\TKeyValueIterator.h">
+      <Filter>Cont\UT</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Core\Mem\Helper\Priv\LinearAllocHelper.cpp">

@@ -14,7 +14,17 @@ BOOST_AUTO_TEST_SUITE(Core)
 BOOST_AUTO_TEST_SUITE(Container)
 BOOST_AUTO_TEST_SUITE(TVectorTestSuite)
 
-BOOST_AUTO_TEST_SUITE(IterationSuite)
+BOOST_AUTO_TEST_SUITE
+(
+	IterationSuite
+)
+
+BOOST_AUTO_TEST_CASE(IteratorElementType)
+{
+	static_assert(std::is_same<TVector<int>::IteratorType::ElementType, int>::value);
+	static_assert(std::is_same<const TVector<int>::IteratorType::ElementType, const int>::value);
+}
+
 
 BOOST_AUTO_TEST_CASE
 (
