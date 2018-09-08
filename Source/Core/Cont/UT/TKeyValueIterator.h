@@ -10,7 +10,11 @@
 * Key is always provided for const access only.
 */
 template<class IteratorTypeArg>
-class TForwardKeyIterator : public TIteratorBase</*bIsConstArg*/std::true_type>
+class TForwardKeyIterator : public TIteratorBase
+<
+	TForwardKeyIterator<IteratorTypeArg>, 
+	/*bIsConstArg*/std::true_type, EIteratorClass::Forward
+>
 {
 public:
 	using ThisType = TForwardKeyIterator<IteratorTypeArg>;
@@ -22,7 +26,7 @@ public:
 	/**
 	* Default ctor: Creates end iterator
 	*/
-	TForwardKeyIterator();
+	TForwardKeyIterator() = default;
 
 	/**
 	* Constructs from iterator.

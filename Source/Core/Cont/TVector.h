@@ -73,7 +73,11 @@ struct DefaultVectorResizePolicy
 		using ConstBackwardIteratorType = TReverseIterator<ConstIteratorType>;
 
 		template<class ContTypeArg>
-		class TGeneralIterator : public TIteratorBase<std::is_const<ContTypeArg>>
+		class TGeneralIterator : public TIteratorBase
+		<
+			TGeneralIterator<ContTypeArg>,
+			std::is_const<ContTypeArg>, EIteratorClass::RandomAccess
+		>
 		{
 		public:
 			template<class OtherContType>
@@ -167,6 +171,24 @@ struct DefaultVectorResizePolicy
 				TGeneralIterator OldIt = *this;
 				TGeneralIterator::operator--();
 				return OldIt;
+			}
+
+			/**
+			* += operator.
+			*/
+			TGeneralIterator& operator+=(int32_t Count)
+			{
+				NextIterator.Forward(Count);
+				return *this;
+			}
+
+			/**
+			* -= operator.
+			*/
+			TGeneralIterator& operator-=(int32_t Count)
+			{
+				NextIterator.Backward(Count);
+				return *this;
 			}
 
 			/**

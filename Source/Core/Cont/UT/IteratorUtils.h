@@ -3,6 +3,13 @@
 #include "Core/CoreSysMinimal.h"
 #include <type_traits>
 
+enum class EIteratorClass
+{
+	RandomAccess,
+	Forward,
+	Bidirectional
+};
+
 /**
 * Non-template part of the iterator state (to facilitate the IsIterator check)
 */
@@ -13,12 +20,24 @@ public:
 
 /**
 * Base class for all iterators.
+*
+* @Argument: SubclassTypeArg: Concrete subclass of the iterator. 
 */
-template<class bIsConstArg>
+template<class SubclassTypeArg, class bIsConstArg, EIteratorClass IteratorClassArg>
 class TIteratorBase : public IteratorBase
 {
 public:
+	using SubclassType = SubclassTypeArg;
 	using IsConst = bIsConstArg;
+	static constexpr EIteratorClass IteratorClass = IteratorClassArg;
+
+	/**
+	* TODO: Provide operator+=, operator-= etc. for the IteratorClass::RandomAccess
+	*/
+
+private:
+	SubclassType* ToSubclass() { return static_cast<SubclassType*>(this); }
+	const SubclassType* ToSubclass() const { return static_cast<const SubclassType*>(this); }
 };
 
 /**
@@ -27,7 +46,7 @@ public:
 template<class T>
 struct IsIterator
 {
-	static constexpr bool Value = std::is_base_of_v<IteratorBase, T>;
+	static constexpr bool Value = std::is_base_of<IteratorBase, T>::value;
 };
 
 /**
@@ -54,7 +73,11 @@ struct AreIteratorsComparable
 * Reverses order of iteration for the given iterator.
 */
 template<class IteratorTypeArg>
-class TReverseIterator : public TIteratorBase<typename IteratorTypeArg::IsConst>
+class TReverseIterator : public TIteratorBase
+<
+	TReverseIterator<IteratorTypeArg>,
+	typename IteratorTypeArg::IsConst, IteratorTypeArg::IteratorClass
+>
 {
 public:
 	using ThisType = TReverseIterator<IteratorTypeArg>;
@@ -161,6 +184,19 @@ public:
 		return NextIterator;
 	}
 
+	TReverseIterator operator+=(int32_t Count)
+	{
+		It += Count;
+		return *this;
+	}
+
+
+	TReverseIterator operator-=(int32_t Count)
+	{
+		It -= Count;
+		return *this;
+	}
+
 	/**
 	* Advances iterator forward by the given number of elements.
 	*/
@@ -254,9 +290,46 @@ private:
 };
 
 
+template<class IterTypeArg>
+IterTypeArg GetNextIt(IterTypeArg It)
+{
+	static_assert(IsIterator<IterTypeArg>::Value, "Next: Iterator must be passed");
+	IterTypeArg NextIt = It;
+	++NextIt;
+	return NextIt;
+}
+
+template<class Iterator>
+Iterator GetPrevIt(Iterator It)
+{
+	static_assert(IsIterator<Iterator>::Value, "Next: Iterator must be passed");
+	Iterator NextIt = It;
+	--NextIt;
+	return NextIt;
+}
+
+template<class Iterator>
+Iterator GetAdvancedIt(Iterator It, int InCount)
+{
+	static_assert(IsIterator<Iterator>::Value, "Next: Iterator must be passed");
+	BOOST_ASSERT(InCount >= 0);
+	Iterator AdvancedIt = It;
+	if constexpr(Iterator::IteratorClass == EIteratorClass::RandomAccess)
+	{
+		AdvancedIt += InCount;
+	}
+	else
+	{
+		for (int i = 0; i < InCount; ++i)
+		{
+			++AdvancedIt;
+		}
+	}
+	return AdvancedIt;
+}
+
 /**
 * TODO:
-* 1. Next/Prev operations.
 * 2. IsConstIterator check.
 * 3. AtStart:
 * 3.1. Implement AtLast operation (points to the last element, NOT end).

@@ -67,6 +67,79 @@ using MoveOnlyTree = TRBTree<KVType<int, std::unique_ptr<std::string>>>;
 
 BOOST_AUTO_TEST_SUITE
 (
+	MemoryTestSuite,
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal")
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/MovingTestSuite")
+)
+
+BOOST_AUTO_TEST_CASE(ReserveGrowTest)
+{
+	constexpr int INITIAL_COUNT = 7;
+
+	MoveOnlyTree T;
+	T.AddCheck(MoveOnlyTree::KeyValueType{ 5, std::make_unique<std::string>("five") });
+	T.AddCheck(MoveOnlyTree::KeyValueType{ 1, std::make_unique<std::string>("one") });
+	T.AddCheck(MoveOnlyTree::KeyValueType{ 7, std::make_unique<std::string>("seven") });
+	T.AddCheck(MoveOnlyTree::KeyValueType{ 3, std::make_unique<std::string>("three") });
+	T.AddCheck(MoveOnlyTree::KeyValueType{ 2, std::make_unique<std::string>("two") });
+	T.AddCheck(MoveOnlyTree::KeyValueType{ 4, std::make_unique<std::string>("four") });
+	T.AddCheck(MoveOnlyTree::KeyValueType{ 6, std::make_unique<std::string>("six") });
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+
+	T.ReserveGrow(INITIAL_COUNT * 10);
+	
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+	for (int i = 1; i <= INITIAL_COUNT; i++)
+	{
+		BOOST_REQUIRE(T.Contains(i));
+	}
+}
+
+BOOST_AUTO_TEST_CASE
+(
+	ShrinkToFitTest,
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/MemoryTestSuite/ReserveGrowTest")
+)
+{
+	constexpr int INITIAL_COUNT = 50;
+
+	MoveOnlyTree T;
+	for (int i = 1; i <= INITIAL_COUNT; i++)
+	{
+		char buf[64];
+		snprintf(buf, 64, "%d", i);
+		T.AddCheck(MoveOnlyTree::KeyValueType{ i, std::make_unique<std::string>(buf) });
+	}
+
+	T.ShrinkToFit();
+
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+	for (int i = 1; i <= INITIAL_COUNT; i++)
+	{
+		BOOST_REQUIRE(T.Contains(i));
+	}
+
+	int removeKey = 1;
+	while (true)
+	{
+		if ( ! T.Remove(removeKey) )
+		{
+			break;
+		}
+		removeKey += 3;
+	}
+
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+	for (int i = 1; i <= INITIAL_COUNT; i++)
+	{
+		BOOST_REQUIRE(T.Contains(i));
+	}
+}
+
+BOOST_AUTO_TEST_SUITE_END() // MemoryTestSuite
+
+BOOST_AUTO_TEST_SUITE
+(
 	MovingTestSuite,
 	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal")
 )
@@ -308,6 +381,398 @@ BOOST_AUTO_TEST_SUITE
 	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/IterationSuite")
 )
 
+BOOST_AUTO_TEST_CASE
+(
+	FindValueTest,
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/ExtraFindSuite/FindIterator")
+)
+{
+	std::string const VALUE_TO_FIND { "FIND" };
+	std::string const OTHER_VALUE { "OTHER_VALUE" };
+
+	BOOST_TEST_CHECKPOINT("Empty");
+	IntStringRBTree T;
+	const IntStringRBTree* pCT = &T;
+	BOOST_REQUIRE( ! pCT->ContainsValue(0) );
+	BOOST_REQUIRE( ! pCT->ContainsOtherValue(0) );
+
+	BOOST_REQUIRE( ! pCT->ContainsValue_InRange(0, pCT->Iterator(), pCT->EndIterator() ) );
+	BOOST_REQUIRE( ! pCT->ContainsOtherValue_InRange(0, pCT->Iterator(), pCT->EndIterator() ) );
+
+	IntStringRBTree::IteratorType It = T.FindIteratorByValue(0);
+	BOOST_REQUIRE( It.IsEnd() );
+	IntStringRBTree::ConstIteratorType ConstIt = pCT->FindIteratorByValue(0);
+	BOOST_REQUIRE( ConstIt.IsEnd() );
+
+	IntStringRBTree::IteratorType ItNot = T.FindIteratorByNotValue(0);
+	BOOST_REQUIRE(ItNot.IsEnd());
+	IntStringRBTree::ConstIteratorType ConstItNot = pCT->FindIteratorByNotValue(0);
+	BOOST_REQUIRE(ConstItNot.IsEnd());
+
+	IntStringRBTree::IteratorType It_InRange = T.FindIteratorByValue_InRange(0, T.Iterator(), T.EndIterator());
+	BOOST_REQUIRE(It_InRange.IsEnd());
+	IntStringRBTree::ConstIteratorType ConstIt_InRange = pCT->FindIteratorByValue_InRange(0, pCT->Iterator(), pCT->EndIterator());
+	BOOST_REQUIRE(ConstIt_InRange.IsEnd());
+
+	IntStringRBTree::IteratorType ItNotValue_InRange = T.FindIteratorByNotValue_InRange(0, T.Iterator(), T.EndIterator());
+	BOOST_REQUIRE(ItNotValue_InRange.IsEnd());
+	IntStringRBTree::ConstIteratorType ConstItNotValue_InRange = pCT->FindIteratorByNotValue_InRange(0, pCT->Iterator(), pCT->EndIterator());
+	BOOST_REQUIRE(ConstItNotValue_InRange.IsEnd());
+
+	BOOST_TEST_CHECKPOINT("Filling");
+	IntStringRBTree::IteratorType const RefIt_First = T.GetOrAdd(1, OTHER_VALUE);
+	IntStringRBTree::IteratorType const RefIt_FirstOtherValue = T.GetOrAdd(2, OTHER_VALUE);
+	IntStringRBTree::IteratorType const RefIt_Value = T.GetOrAdd(3, VALUE_TO_FIND);
+	IntStringRBTree::IteratorType const RefIt_SecondOtherValue = T.GetOrAdd(4, OTHER_VALUE);
+	IntStringRBTree::IteratorType const RefIt_OtherValue = T.GetOrAdd(5, VALUE_TO_FIND);
+
+
+
+	BOOST_TEST_CHECKPOINT("Find");
+	It = T.FindIteratorByValue(VALUE_TO_FIND);
+	BOOST_REQUIRE(It);
+	BOOST_REQUIRE_EQUAL(It.GetValue(), VALUE_TO_FIND);
+	BOOST_REQUIRE(It == RefIt_Value);
+
+	BOOST_TEST_CHECKPOINT("Find In Range");
+	It_InRange = T.FindIteratorByValue_InRange(VALUE_TO_FIND, RefIt_SecondOtherValue, T.EndIterator());
+	BOOST_REQUIRE(It_InRange);
+	BOOST_REQUIRE(It_InRange == RefIt_OtherValue);
+}
+
+BOOST_AUTO_TEST_CASE
+(
+	FindByPredicateTest,
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/ExtraFindSuite/FindIterator")
+)
+{
+	constexpr int INITIAL_COUNT = 10;
+	constexpr int KEY_TO_SEARCH = 5;
+	constexpr int KEY_FIRST = 1;
+	constexpr int KEY_AFTER_FIRST = 2;
+
+	BOOST_TEST_CHECKPOINT("Empty");
+	IntRBTree T;
+	const IntRBTree* pCT = &T;
+	IntRBTree::ConstIteratorType It = pCT->FindIteratorByPredicate
+	(
+		[KEY_TO_SEARCH](const IntRBTree::KeyValueType& KV)->bool { return KV.Key == KEY_TO_SEARCH; }
+	);
+	IntRBTree::ConstIteratorType ItKey = pCT->FindIteratorByKeyPredicate
+	(
+		[KEY_TO_SEARCH](const IntRBTree::KeyType& K)->bool { return K == KEY_TO_SEARCH; }
+	);
+	IntRBTree::IteratorType ItMutable = T.FindIteratorByPredicate
+	(
+		[KEY_TO_SEARCH](const IntRBTree::KeyValueType& KV)->bool { return KV.Key == KEY_TO_SEARCH; }
+	);
+	IntRBTree::IteratorType ItKeyMutable = T.FindIteratorByKeyPredicate
+	(
+		[KEY_TO_SEARCH](const IntRBTree::KeyType& K)->bool { return K == KEY_TO_SEARCH; }
+	);
+	IntRBTree::ConstIteratorType ItNotFirst = pCT->FindIteratorByNotPredicate
+	(
+		[KEY_FIRST](const IntRBTree::KeyValueType& KV)->bool { return KV.Key == KEY_FIRST; }
+	);
+	IntRBTree::ConstIteratorType ItNotKeyFirst = pCT->FindIteratorByNotKeyPredicate
+	(
+		[KEY_FIRST](const IntRBTree::KeyType& K)->bool { return K == KEY_FIRST; }
+	);
+	BOOST_REQUIRE(It.IsEnd());
+	BOOST_REQUIRE(ItKey.IsEnd());
+	BOOST_REQUIRE(ItMutable.IsEnd());
+	BOOST_REQUIRE(ItKeyMutable.IsEnd());
+	BOOST_REQUIRE(ItNotFirst.IsEnd());
+	BOOST_REQUIRE(ItNotKeyFirst.IsEnd());
+	BOOST_REQUIRE
+	(
+		! T.ContainsPredicate([KEY_TO_SEARCH](const IntRBTree::KeyValueType& KV)->bool { return KV.Key == KEY_TO_SEARCH; })
+	);
+	BOOST_REQUIRE
+	(
+		! T.ContainsKeyPredicate([KEY_TO_SEARCH](const IntRBTree::KeyType& K)->bool { return K == KEY_TO_SEARCH; })
+	);
+	BOOST_REQUIRE
+	(
+		! pCT->ContainsPredicate([KEY_TO_SEARCH](const IntRBTree::KeyValueType& KV)->bool { return KV.Key == KEY_TO_SEARCH; })
+	);
+	BOOST_REQUIRE
+	(
+		! pCT->ContainsKeyPredicate([KEY_TO_SEARCH](const IntRBTree::KeyType& K)->bool { return K == KEY_TO_SEARCH; })
+	);
+	BOOST_REQUIRE
+	(
+		! pCT->ContainsNotPredicate([KEY_TO_SEARCH](const IntRBTree::KeyValueType& KV)->bool { return KV.Key == KEY_TO_SEARCH; })
+	);
+	BOOST_REQUIRE
+	(
+		! pCT->ContainsNotKeyPredicate([KEY_TO_SEARCH](const IntRBTree::KeyType& K)->bool { return K == KEY_TO_SEARCH; })
+	);
+
+	BOOST_TEST_CHECKPOINT("Prepare");
+	for (int i = 1; i <= INITIAL_COUNT; i++)
+	{
+		T.AddCheck(i, NoValue{});
+	}
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+
+	BOOST_TEST_CHECKPOINT("Check");
+	It = pCT->FindIteratorByPredicate
+	(
+		[KEY_TO_SEARCH](const IntRBTree::KeyValueType& KV)->bool { return KV.Key == KEY_TO_SEARCH; }
+	);
+	ItKey = pCT->FindIteratorByKeyPredicate
+	(
+		[KEY_TO_SEARCH](const IntRBTree::KeyType& K)->bool { return K == KEY_TO_SEARCH; }
+	);
+	ItNotFirst = pCT->FindIteratorByNotPredicate
+	(
+		[KEY_FIRST](const IntRBTree::KeyValueType& KV)->bool { return KV.Key == KEY_FIRST; }
+	);
+	ItNotKeyFirst = pCT->FindIteratorByNotKeyPredicate
+	(
+		[KEY_FIRST](const IntRBTree::KeyType& K)->bool { return K == KEY_FIRST; }
+	);
+	BOOST_REQUIRE(It);
+	BOOST_REQUIRE_EQUAL(It.GetKey(), KEY_TO_SEARCH);
+	BOOST_REQUIRE(ItKey);
+	BOOST_REQUIRE_EQUAL(ItKey.GetKey(), KEY_TO_SEARCH);
+	BOOST_REQUIRE(ItNotFirst);
+	BOOST_REQUIRE_EQUAL(ItNotFirst.GetKey(), KEY_AFTER_FIRST);
+	BOOST_REQUIRE(ItNotKeyFirst);
+	BOOST_REQUIRE_EQUAL(ItNotKeyFirst.GetKey(), KEY_AFTER_FIRST);
+	BOOST_REQUIRE
+	(
+		T.ContainsPredicate([KEY_TO_SEARCH](const IntRBTree::KeyValueType& KV)->bool { return KV.Key == KEY_TO_SEARCH; })
+	);
+	BOOST_REQUIRE
+	(
+		pCT->ContainsPredicate([KEY_TO_SEARCH](const IntRBTree::KeyValueType& KV)->bool { return KV.Key == KEY_TO_SEARCH; })
+	);
+	BOOST_REQUIRE
+	(
+		pCT->ContainsNotPredicate([KEY_FIRST](const IntRBTree::KeyValueType& KV)->bool { return KV.Key == KEY_FIRST; })
+	);
+}
+
+BOOST_AUTO_TEST_CASE
+(
+	FindByPredicateRangeTest,
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/ExtraFindSuite/FindIterator")
+)
+{
+	constexpr int INITIAL_COUNT = 10;
+	constexpr int KEY_FIRST = 1;
+	constexpr int KEY_TO_SEARCH = 5;
+	constexpr int KEY_OUT_OF_RANGE = 8;
+	constexpr int KEY_FIRST_IN_RANGE = 3;
+	constexpr int KEY_AFTER_FIRST_IN_RANGE = 4;
+	constexpr int KEY_RANGE_END = 7;
+
+	BOOST_TEST_CHECKPOINT("Empty");
+	IntRBTree T;
+	const IntRBTree* pCT = &T;
+	IntRBTree::ConstIteratorType It = pCT->FindIteratorByPredicate_InRange
+	(
+		[KEY_TO_SEARCH](const IntRBTree::KeyValueType& KV)->bool { return KV.Key == KEY_TO_SEARCH; },
+		T.ConstIterator(), T.ConstEndIterator()
+	);
+	IntRBTree::ConstIteratorType ItKey = pCT->FindIteratorByKeyPredicate_InRange
+	(
+		[KEY_TO_SEARCH](const IntRBTree::KeyType& K)->bool { return K == KEY_TO_SEARCH; },
+		T.ConstIterator(), T.ConstEndIterator()
+	);
+	IntRBTree::IteratorType ItMutable = T.FindIteratorByPredicate_InRange
+	(
+		[KEY_TO_SEARCH](const IntRBTree::KeyValueType& KV)->bool { return KV.Key == KEY_TO_SEARCH; },
+		T.Iterator(), T.EndIterator()
+	);
+	IntRBTree::IteratorType ItKeyMutable = T.FindIteratorByKeyPredicate_InRange
+	(
+		[KEY_TO_SEARCH](const IntRBTree::KeyType& K)->bool { return K == KEY_TO_SEARCH; },
+		T.Iterator(), T.EndIterator()
+	);
+	IntRBTree::ConstIteratorType ItNotFirst = pCT->FindIteratorByNotPredicate_InRange
+	(
+		[KEY_FIRST_IN_RANGE](const IntRBTree::KeyValueType& KV)->bool { return KV.Key == KEY_FIRST_IN_RANGE; },
+		T.ConstIterator(), T.ConstEndIterator()
+	);
+	IntRBTree::ConstIteratorType ItNotKeyFirst = pCT->FindIteratorByNotKeyPredicate_InRange
+	(
+		[KEY_FIRST_IN_RANGE](const IntRBTree::KeyType& K)->bool { return K == KEY_FIRST_IN_RANGE; },
+		T.ConstIterator(), T.ConstEndIterator()
+	);
+	BOOST_REQUIRE(It.IsEnd());
+	BOOST_REQUIRE(ItKey.IsEnd());
+	BOOST_REQUIRE(ItMutable.IsEnd());
+	BOOST_REQUIRE(ItKeyMutable.IsEnd());
+	BOOST_REQUIRE(ItNotFirst.IsEnd());
+	BOOST_REQUIRE(ItNotKeyFirst.IsEnd());
+	BOOST_REQUIRE
+	(
+		! T.ContainsPredicate_InRange
+		(
+			[KEY_TO_SEARCH](const IntRBTree::KeyValueType& KV)->bool { return KV.Key == KEY_TO_SEARCH; },
+			T.ConstIterator(), T.ConstEndIterator()
+		)
+	);
+	BOOST_REQUIRE
+	(
+		! T.ContainsKeyPredicate_InRange
+		(
+			[KEY_TO_SEARCH](const IntRBTree::KeyType& K)->bool { return K == KEY_TO_SEARCH; },
+			T.ConstIterator(), T.ConstEndIterator()
+		)
+	);
+	BOOST_REQUIRE
+	(
+		! pCT->ContainsPredicate_InRange
+		(
+			[KEY_TO_SEARCH](const IntRBTree::KeyValueType& KV)->bool { return KV.Key == KEY_TO_SEARCH; },
+			T.ConstIterator(), T.ConstEndIterator()
+		)
+	);
+	BOOST_REQUIRE
+	(
+		! pCT->ContainsKeyPredicate_InRange
+		(
+			[KEY_TO_SEARCH](const IntRBTree::KeyType& K)->bool { return K == KEY_TO_SEARCH; },
+			T.ConstIterator(), T.ConstEndIterator()
+		)
+	);
+	BOOST_REQUIRE
+	(
+		! pCT->ContainsNotPredicate_InRange
+		(
+			[KEY_TO_SEARCH](const IntRBTree::KeyValueType& KV)->bool { return KV.Key == KEY_TO_SEARCH; },
+			T.ConstIterator(), T.ConstEndIterator()
+		)
+	);
+	BOOST_REQUIRE
+	(
+		! pCT->ContainsNotKeyPredicate_InRange
+		(
+			[KEY_TO_SEARCH](const IntRBTree::KeyType& K)->bool { return K == KEY_TO_SEARCH; },
+			T.ConstIterator(), T.ConstEndIterator()
+		)
+	);
+
+	BOOST_TEST_CHECKPOINT("Prepare");
+	for (int i = 1; i <= INITIAL_COUNT; i++)
+	{
+		T.AddCheck(i, NoValue{});
+	}
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+
+	BOOST_TEST_CHECKPOINT("Check");
+	IntRBTree::IteratorType const RangeFirstIt = T.FindIteratorFor(KEY_FIRST_IN_RANGE);
+	IntRBTree::IteratorType const RangeLastIt = T.FindIteratorFor(KEY_RANGE_END);
+	IntRBTree::ConstIteratorType const RangeFirstConstIt = pCT->FindIteratorFor(KEY_FIRST_IN_RANGE);
+	IntRBTree::ConstIteratorType const RangeLastConstIt = pCT->FindIteratorFor(KEY_RANGE_END);
+	BOOST_REQUIRE(RangeFirstIt);
+	BOOST_REQUIRE(RangeLastIt);
+	BOOST_REQUIRE(RangeFirstConstIt);
+	BOOST_REQUIRE(RangeLastConstIt);
+
+	It = pCT->FindIteratorByPredicate_InRange
+	(
+		[KEY_TO_SEARCH](const IntRBTree::KeyValueType& KV)->bool { return KV.Key == KEY_TO_SEARCH; },
+		RangeFirstConstIt, RangeLastConstIt
+	);
+	ItKey = pCT->FindIteratorByKeyPredicate_InRange
+	(
+		[KEY_TO_SEARCH](const IntRBTree::KeyType& K)->bool { return K == KEY_TO_SEARCH; },
+		RangeFirstConstIt, RangeLastConstIt
+	);
+	ItNotFirst = pCT->FindIteratorByNotPredicate_InRange
+	(
+		[KEY_FIRST_IN_RANGE](const IntRBTree::KeyValueType& KV)->bool { return KV.Key == KEY_FIRST_IN_RANGE; },
+		RangeFirstConstIt, RangeLastConstIt
+	);
+	ItNotKeyFirst = pCT->FindIteratorByNotKeyPredicate_InRange
+	(
+		[KEY_FIRST_IN_RANGE](const IntRBTree::KeyType& K)->bool { return K == KEY_FIRST_IN_RANGE; },
+		RangeFirstConstIt, RangeLastConstIt
+	);
+
+	IntRBTree::ConstIteratorType ItOutOfRange = pCT->FindIteratorByPredicate_InRange
+	(
+		[KEY_OUT_OF_RANGE](const IntRBTree::KeyValueType& KV)->bool { return KV.Key == KEY_OUT_OF_RANGE; },
+		RangeFirstConstIt, RangeLastConstIt
+	);
+	IntRBTree::ConstIteratorType ItKeyOutOfRange = pCT->FindIteratorByKeyPredicate_InRange
+	(
+		[KEY_OUT_OF_RANGE](const IntRBTree::KeyType& K)->bool { return K == KEY_OUT_OF_RANGE; },
+		RangeFirstConstIt, RangeLastConstIt
+	);
+
+	IntRBTree::ConstIteratorType ItZeroInterval = pCT->FindIteratorByPredicate_InRange
+	(
+		[KEY_FIRST](const IntRBTree::KeyValueType& KV)->bool { return KV.Key == KEY_FIRST; },
+		pCT->Iterator(), pCT->Iterator()
+	);
+	IntRBTree::ConstIteratorType ItKeyZeroInterval = pCT->FindIteratorByKeyPredicate_InRange
+	(
+		[KEY_FIRST](const IntRBTree::KeyType& K)->bool { return K == KEY_FIRST; },
+		pCT->Iterator(), pCT->Iterator()
+	);
+
+	IntRBTree::ConstIteratorType ItZeroIntervalNot = pCT->FindIteratorByNotPredicate_InRange
+	(
+		[KEY_FIRST](const IntRBTree::KeyValueType& KV)->bool { return KV.Key == KEY_FIRST; },
+		pCT->Iterator(), pCT->Iterator()
+	);
+	IntRBTree::ConstIteratorType ItKeyZeroIntervalNot = pCT->FindIteratorByNotKeyPredicate_InRange
+	(
+		[KEY_FIRST](const IntRBTree::KeyType& K)->bool { return K == KEY_FIRST; },
+		pCT->Iterator(), pCT->Iterator()
+	);
+
+	BOOST_REQUIRE( ItOutOfRange.IsEnd() );
+	BOOST_REQUIRE( ItKeyOutOfRange.IsEnd() );
+	BOOST_REQUIRE( ItZeroInterval.IsEnd() );
+	BOOST_REQUIRE( ItKeyZeroInterval.IsEnd() );
+	BOOST_REQUIRE( ItZeroIntervalNot.IsEnd() );
+	BOOST_REQUIRE( ItKeyZeroIntervalNot.IsEnd() );
+
+	BOOST_REQUIRE(It);
+	BOOST_REQUIRE_EQUAL(It.GetKey(), KEY_TO_SEARCH);
+
+	BOOST_REQUIRE(ItKey);
+	BOOST_REQUIRE_EQUAL(ItKey.GetKey(), KEY_TO_SEARCH);
+
+	BOOST_REQUIRE(ItNotFirst);
+	BOOST_REQUIRE_EQUAL(ItNotFirst.GetKey(), KEY_AFTER_FIRST_IN_RANGE);
+
+	BOOST_REQUIRE(ItNotKeyFirst);
+	BOOST_REQUIRE_EQUAL(ItNotKeyFirst.GetKey(), KEY_AFTER_FIRST_IN_RANGE);
+
+	BOOST_REQUIRE
+	(
+		T.ContainsPredicate_InRange
+		(
+			[KEY_TO_SEARCH](const IntRBTree::KeyValueType& KV)->bool { return KV.Key == KEY_TO_SEARCH; },
+			RangeFirstConstIt, RangeLastConstIt
+		)
+	);
+	BOOST_REQUIRE
+	(
+		pCT->ContainsPredicate_InRange
+		(
+			[KEY_TO_SEARCH](const IntRBTree::KeyValueType& KV)->bool { return KV.Key == KEY_TO_SEARCH; },
+			RangeFirstConstIt, RangeLastConstIt
+		)
+	);
+	BOOST_REQUIRE
+	(
+		pCT->ContainsNotPredicate_InRange
+		(
+			[KEY_FIRST_IN_RANGE](const IntRBTree::KeyValueType& KV)->bool { return KV.Key == KEY_FIRST_IN_RANGE; },
+			RangeFirstConstIt, RangeLastConstIt
+		)
+	);
+}
+
 BOOST_AUTO_TEST_CASE(FindIterator)
 {
 	IntRBTree T;
@@ -343,12 +808,81 @@ BOOST_AUTO_TEST_CASE(FindIteratorInConst)
 
 BOOST_AUTO_TEST_SUITE_END() // ExtraFindSuite
 
+
 BOOST_AUTO_TEST_SUITE
 (
 	ExtraRemoveSuite,
 	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/AddSuite")
 	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite")
 )
+
+BOOST_AUTO_TEST_CASE(GroupRemoveTest)
+{
+	constexpr int INITIAL_COUNT = 8;
+	std::string const VALUE_TO_REMOVE { "REM" };
+	std::string const OTHER_VAL { "OTHER_VAL" };
+	std::string const NON_EXISTING_VAL { "NON_EXISTING_VAL" };
+
+	const auto P = [VALUE_TO_REMOVE](const IntStringRBTree::KeyValueType& InKV) -> bool
+	{
+		return InKV.Value == VALUE_TO_REMOVE;
+	};
+	const auto P_NonExistent = [NON_EXISTING_VAL](const IntStringRBTree::KeyValueType& InKV) -> bool
+	{
+		return InKV.Value == NON_EXISTING_VAL;
+	};
+
+	BOOST_TEST_CHECKPOINT("Remove from empty");
+	IntStringRBTree T;
+
+	BOOST_REQUIRE
+	(
+		! T.RemoveFirstPredicate_InRange(P, T.Iterator(), T.EndIterator() )
+	);
+	BOOST_REQUIRE( ! T.RemoveAllPredicate(P));
+	BOOST_REQUIRE( 0 == T.RemoveAllPredicate_InRange(P, T.Iterator(), T.EndIterator()));
+
+	BOOST_TEST_CHECKPOINT("Fill");
+	BOOST_REQUIRE(T.AddCheck(1, std::string("ONE")));
+	BOOST_REQUIRE(T.AddCheck(2, VALUE_TO_REMOVE));
+	BOOST_REQUIRE(T.AddCheck(3, VALUE_TO_REMOVE));
+	BOOST_REQUIRE(T.AddCheck(4, OTHER_VAL));
+	BOOST_REQUIRE(T.AddCheck(5, OTHER_VAL));
+	BOOST_REQUIRE(T.AddCheck(6, VALUE_TO_REMOVE));
+	BOOST_REQUIRE(T.AddCheck(7, OTHER_VAL));
+	BOOST_REQUIRE(T.AddCheck(8, VALUE_TO_REMOVE));
+
+	IntStringRBTree::IteratorType const It_OtherZone_First = GetAdvancedIt(T.Iterator(), 3);
+	IntStringRBTree::IteratorType const It_OtherZone_Last = GetNextIt(GetNextIt(It_OtherZone_First));
+	IntStringRBTree::IteratorType const It_Last = GetAdvancedIt(T.Iterator(), 7);
+
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+
+	BOOST_TEST_CHECKPOINT("Remove non-existent");
+	BOOST_REQUIRE( ! T.RemoveFirstPredicate(P_NonExistent) );
+	BOOST_REQUIRE( ! T.RemoveFirstPredicate_InRange(P_NonExistent, T.Iterator(), T.EndIterator() ) );
+	BOOST_REQUIRE( 0 == T.RemoveAllPredicate(P_NonExistent));
+	BOOST_REQUIRE( 0 == T.RemoveAllPredicate_InRange(P_NonExistent, T.Iterator(), T.EndIterator()) );
+
+	BOOST_TEST_CHECKPOINT("Remove out of range");
+	BOOST_REQUIRE( ! T.RemoveFirstPredicate_InRange(P, It_OtherZone_First, It_OtherZone_Last) );
+	BOOST_REQUIRE( 0 == T.RemoveAllPredicate_InRange(P, It_OtherZone_First, It_OtherZone_Last) );
+
+	BOOST_TEST_CHECKPOINT("Remove first");
+	BOOST_REQUIRE( T.RemoveFirstPredicate(P) );
+	BOOST_REQUIRE_EQUAL( T.Num(), (INITIAL_COUNT - 1) );
+
+	BOOST_TEST_CHECKPOINT("Remove last and check that remove first returns end");
+	IntStringRBTree::IteratorType ItAfterLast { T.Iterator() };
+	BOOST_REQUIRE( T.RemoveFirstPredicate_InRange(P, It_Last, T.EndIterator(), /*out*/ItAfterLast) );
+	BOOST_REQUIRE_EQUAL( T.Num(), (INITIAL_COUNT - 2) );
+	BOOST_REQUIRE( ItAfterLast.IsEnd() );
+
+	BOOST_TEST_CHECKPOINT("Remove all and check that no more elements with the given value contained");
+	BOOST_REQUIRE( T.RemoveAllPredicate(P) > 0 );
+	BOOST_REQUIRE( ! T.ContainsPredicate(P) );
+}
+
 BOOST_AUTO_TEST_CASE(RemoveAtTest)
 {
 	constexpr int INITIAL_COUNT = 3;
@@ -1021,6 +1555,145 @@ BOOST_AUTO_TEST_CASE(CompareIntWithPointerToInt)
 BOOST_AUTO_TEST_SUITE_END() // CustomCompare
 
 BOOST_AUTO_TEST_SUITE(Minimal)
+
+BOOST_AUTO_TEST_SUITE
+(
+	ComplexRemoveTestSuite,
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite")
+)
+
+BOOST_AUTO_TEST_CASE(Remove_CountTen_RemoveFour)
+{
+	/**
+	* WARNING!!! Very important: this is particular RARE case of removing!
+	*/
+	constexpr int INITIAL_COUNT = 10;
+	constexpr int KEY_TO_REMOVE = 4;
+
+	BOOST_TEST_CHECKPOINT("Making initial");
+	IntRBTree T;
+	for (int i = 1; i <= INITIAL_COUNT; i++)
+	{
+		BOOST_REQUIRE(T.AddCheck(i, NoValue{}));
+	}
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	T.Remove(KEY_TO_REMOVE);
+
+	BOOST_TEST_CHECKPOINT("Checking");
+	BOOST_REQUIRE_EQUAL(T.Num(), (INITIAL_COUNT - 1));
+	for (int i = 1; i <= INITIAL_COUNT; i++)
+	{
+		if (i != KEY_TO_REMOVE)
+		{
+			BOOST_REQUIRE(T.Contains(i));
+		}
+	}
+}
+
+BOOST_AUTO_TEST_CASE
+(
+	Remove_CountTen_RemoveFive,
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/ComplexRemoveTestSuite/Remove_CountTen_RemoveFour")
+)
+{
+
+	/**
+	* WARNING!!! Very important: this is particular RARE case of removing!
+	*/
+	constexpr int INITIAL_COUNT = 10;
+	constexpr int KEY_TO_REMOVE = 5;
+
+	BOOST_TEST_CHECKPOINT("Making initial");
+	IntRBTree T;
+	for (int i = 1; i <= INITIAL_COUNT; i++)
+	{
+		BOOST_REQUIRE(T.AddCheck(i, NoValue{}));
+	}
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	T.Remove(KEY_TO_REMOVE);
+
+	BOOST_TEST_CHECKPOINT("Checking");
+	BOOST_REQUIRE_EQUAL(T.Num(), (INITIAL_COUNT - 1));
+	for (int i = 1; i <= INITIAL_COUNT; i++)
+	{
+		if (i != KEY_TO_REMOVE)
+		{
+			BOOST_REQUIRE(T.Contains(i));
+		}
+	}
+}
+
+BOOST_AUTO_TEST_CASE
+(
+	Remove_CountTen_RemoveSixth,
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/ComplexRemoveTestSuite/Remove_CountTen_RemoveFive")
+)
+{
+
+	/**
+	* WARNING!!! Very important: this is particular RARE case of removing!
+	*/
+	constexpr int INITIAL_COUNT = 10;
+	constexpr int KEY_TO_REMOVE = 6;
+
+	BOOST_TEST_CHECKPOINT("Making initial");
+	IntRBTree T;
+	for (int i = 1; i <= INITIAL_COUNT; i++)
+	{
+		BOOST_REQUIRE(T.AddCheck(i, NoValue{}));
+	}
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	T.Remove(KEY_TO_REMOVE);
+
+	BOOST_TEST_CHECKPOINT("Checking");
+	BOOST_REQUIRE_EQUAL(T.Num(), (INITIAL_COUNT - 1));
+	for (int i = 1; i <= INITIAL_COUNT; i++)
+	{
+		if (i != KEY_TO_REMOVE)
+		{
+			BOOST_REQUIRE(T.Contains(i));
+		}
+	}
+}
+
+BOOST_AUTO_TEST_CASE
+(
+	Remove_Count30_Remove25,
+	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/ComplexRemoveTestSuite/Remove_CountTen_RemoveSixth")
+)
+{
+	/**
+	* WARNING!!! Very important: this is particular RARE case of removing!
+	*/
+	constexpr int INITIAL_COUNT = 30;
+	constexpr int KEY_TO_REMOVE = 25;
+
+	BOOST_TEST_CHECKPOINT("Making initial");
+	IntRBTree T;
+	for (int i = 1; i <= INITIAL_COUNT; i++)
+	{
+		BOOST_REQUIRE(T.AddCheck(i, NoValue{}));
+	}
+
+	BOOST_TEST_CHECKPOINT("Removing");
+	T.Remove(KEY_TO_REMOVE);
+
+	BOOST_TEST_CHECKPOINT("Checking");
+	BOOST_REQUIRE_EQUAL(T.Num(), (INITIAL_COUNT - 1));
+	for (int i = 1; i <= INITIAL_COUNT; i++)
+	{
+		if (i != KEY_TO_REMOVE)
+		{
+			BOOST_REQUIRE(T.Contains(i));
+		}
+	}
+}
+
+BOOST_AUTO_TEST_SUITE_END() // ComplexRemoveTestSuite
+
 
 /**
 * Tests a minimal set of operations, to make it possible to write other tests dependent on it.

@@ -13,6 +13,12 @@
 * 1. Remove (by key).
 * 1.1. Write more RB-Tree complex tests
 *
+* TODO Remove extra RARE cases debug:
+* 1. Case 1: Fill container with TEN(10) elements, remove FOURTH (4) our SIXTH(6).
+* 2. Case 2: Fill container with TEN(10) elements, remove FIFTH (5).
+* 3. Case 3: Fill container with THIRTY(30) elements, remove TWENTY-FIVEth (25).
+* 4. Case 4: Fill container with FIFTY(50) elements, remove TWENTY-FIVEth (25).
+*
 * TODO Constructors:
 * 1. From other tree
 *
@@ -457,6 +463,24 @@ public:
 	}
 
 	/**
+	* Makes the buffer capable to contain at least the given amount of elements.
+	*/
+	void ReserveGrow(int InNewCapacity)	
+	{
+		Buffer.ReserveGrow(InNewCapacity);
+	}
+
+	/**
+	* Frees extra space. 
+	* Optionally rearranges the elements in the buffer, so they are linear in memory.
+	*/
+	void ShrinkToFit()
+	{
+		// @TODO
+		Buffer.ShrinkToFit();
+	}
+
+	/**
 	* Returns reference to value for the given key.
 	* WARNING! Key/Value with the given Key must be registered.
 	*/
@@ -531,11 +555,169 @@ public:
 
 	/**
 	* Returns true, if contains the given key.
+	*
+	* @UNIT-TESTED
 	*/
 	bool Contains(const KeyType& InKey) const
 	{
 		return nullptr != Find(InKey);
 	}
+
+	/**
+	* Returns true, if contains value satisfying the given predicate.
+	*
+	* @UNIT-TESTED
+	*/
+	bool ContainsValue(const ValueType& InValue) const
+	{
+		return FindIteratorByValue(InValue);
+	}
+
+	/**
+	* Returns true, if contains value other than the given.
+	*
+	* @UNIT-TESTED
+	*/
+	bool ContainsOtherValue(const ValueType& InValue) const
+	{
+		return FindIteratorByNotValue(InValue);
+	}
+
+	/**
+	* Returns true, if contains value satisfying the given predicate.
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	bool ContainsPredicate(Pred P) const
+	{
+		return FindIteratorByPredicate(P);
+	}
+
+	/**
+	* Returns true, if contains value satisfying the given predicate that takes const reference to key (const Key&).
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	bool ContainsKeyPredicate(Pred P) const
+	{
+		return FindIteratorByKeyPredicate(P);
+	}
+
+
+	/**
+	* Returns true, if contains value for whicle given predicate that takes const reference to key (const Key&) returns false.
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	bool ContainsNotKeyPredicate(Pred P) const
+	{
+		return FindIteratorByNotKeyPredicate(P);
+	}
+
+	/**
+	* Returns true, if contains value satisfying the given predicate in the given range.
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	bool ContainsPredicate_InRange(Pred P, ConstIteratorType FirstIt, ConstIteratorType LastIt) const
+	{
+		return FindIteratorByPredicate_InRange(P, FirstIt, LastIt);
+	}
+
+	/**
+	* Returns true, if contains value satisfying the given predicate in the given range.
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	bool ContainsKeyPredicate_InRange(Pred P, ConstIteratorType FirstIt, ConstIteratorType LastIt) const
+	{
+		return FindIteratorByKeyPredicate_InRange(P, FirstIt, LastIt);
+	}
+
+	/**
+	* Returns true, if does NOT contain value satisfying the given predicate.
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	bool ContainsNotPredicate(Pred P) const
+	{
+		return FindIteratorByNotPredicate(P);
+	}
+
+	/**
+	* Returns true, if contains the given value in the given range.
+	*
+	* @UNIT-TESTED
+	*/
+	bool ContainsValue_InRange(const ValueType& InValue, ConstIteratorType FirstIt, ConstIteratorType LastIt) const
+	{
+		return FindIteratorByValue_InRange(InValue, FirstIt, LastIt);
+	}
+	
+	/**
+	* Returns true, if contains value other than the given in the given range.
+	*
+	* @UNIT-TESTED
+	*/
+	bool ContainsOtherValue_InRange(const ValueType& InValue, ConstIteratorType FirstIt, ConstIteratorType LastIt) const
+	{
+		return FindIteratorByNotValue_InRange(InValue, FirstIt, LastIt);
+	}
+
+	/**
+	* Returns true, if does NOT contain value satisfying the given predicate in the given range.
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	bool ContainsNotPredicate_InRange(Pred P, ConstIteratorType FirstIt, ConstIteratorType LastIt) const
+	{
+		return FindIteratorByNotPredicate_InRange(P, FirstIt, LastIt);
+	}
+
+	/**
+	* Returns true, if does NOT contain value satisfying the given predicate in the given range.
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	bool ContainsNotKeyPredicate_InRange(Pred P, ConstIteratorType FirstIt, ConstIteratorType LastIt) const
+	{
+		return FindIteratorByNotKeyPredicate_InRange(P, FirstIt, LastIt);
+	}
+
+	/**
+	* Checks that all key/value pairs satisfy the given predicate.
+	*/
+	template<class Pred>
+	bool All(const Pred& P) const
+	{
+		return false == ContainsNotPredicate(P);
+	}
+
+	/**
+	* Checks that all keys satisfy the given predicate.
+	*/
+	template<class Pred>
+	bool AllKeys(const Pred& P) const
+	{
+		return false == ContainsNotKeyPredicate(P);
+	}
+
+	/**
+	* Checks that all values satisfy the given predicate.
+	*/
+	//template<class Pred>
+	//bool AllValues(const Pred& P) const
+	//{
+	//	return false == ContainsOtherValue(P);
+	//}
 
 	/**
 	* Searches iterator by the given Key.
@@ -569,6 +751,348 @@ public:
 	}
 
 	/**
+	* Searches iterator by the given value.
+	*
+	* @returns: Iterator to the element (or end iterator, if NOT found)
+	* @see: FindIteratorFor
+	*
+	* @UNIT-TESTED
+	*/
+	ConstIteratorType FindIteratorByValue(const ValueType& InValue) const
+	{
+		return FindIteratorByValue_Impl<ConstIteratorType>(InValue, this);
+	}
+
+	/**
+	* Searches iterator by the given value.
+	*
+	* @returns: Iterator to the element (or end iterator, if NOT found)
+	* @see: FindIteratorFor
+	*
+	* @UNIT-TESTED
+	*/
+	ConstIteratorType FindIteratorByValue_InRange(const ValueType& InValue, ConstIteratorType FirstIt, ConstIteratorType LastIt) const
+	{
+		return FindIteratorByValue_InRange_Impl<ConstIteratorType>(FirstIt, LastIt, InValue, this);
+	}
+
+	/**
+	* Searches iterator by the given value.
+	*
+	* @returns: Iterator to the element (or end iterator, if NOT found)
+	* @see: FindIteratorFor
+	*
+	* @UNIT-TESTED
+	*/
+	IteratorType FindIteratorByValue(const ValueType& InValue)
+	{
+		return FindIteratorByValue_Impl<IteratorType>(InValue, this);
+	}
+
+	/**
+	* Searches iterator by the given value.
+	*
+	* @returns: Iterator to the element (or end iterator, if NOT found)
+	* @see: FindIteratorFor
+	*
+	* @UNIT-TESTED
+	*/
+	IteratorType FindIteratorByValue_InRange(const ValueType& InValue, IteratorType FirstIt, IteratorType LastIt)
+	{
+		return FindIteratorByValue_InRange_Impl<IteratorType>(FirstIt, LastIt, InValue, this);
+	}
+
+	/**
+	* Searches iterator of first value other than the given.
+	*
+	* @returns: Iterator to the element (or end iterator, if NOT found)
+	* @see: FindIteratorFor
+	*
+	* @UNIT-TESTED
+	*/
+	ConstIteratorType FindIteratorByNotValue(const ValueType& InValue) const
+	{
+		return FindIteratorByNotValue_Impl<ConstIteratorType>(InValue, this);
+	}
+
+	/**
+	* Searches iterator of first value other than the given.
+	*
+	* @returns: Iterator to the element (or end iterator, if NOT found)
+	* @see: FindIteratorFor
+	*
+	* @UNIT-TESTED
+	*/
+	ConstIteratorType FindIteratorByNotValue_InRange(const ValueType& InValue, ConstIteratorType FirstIt, ConstIteratorType LastIt) const
+	{
+		return FindIteratorByNotValue_InRange_Impl<ConstIteratorType>(FirstIt, LastIt, InValue, this);
+	}
+
+	/**
+	* Searches iterator of first value other than the given.
+	*
+	* @returns: Iterator to the element (or end iterator, if NOT found)
+	* @see: FindIteratorFor
+	*
+	* @UNIT-TESTED
+	*/
+	IteratorType FindIteratorByNotValue(const ValueType& InValue)
+	{
+		return FindIteratorByNotValue_Impl<IteratorType>(InValue, this);
+	}
+
+	/**
+	* Searches iterator of first value other than the given.
+	*
+	* @returns: Iterator to the element (or end iterator, if NOT found)
+	* @see: FindIteratorFor
+	*
+	* @UNIT-TESTED
+	*/
+	IteratorType FindIteratorByNotValue_InRange(const ValueType& InValue, IteratorType FirstIt, IteratorType LastIt)
+	{
+		return FindIteratorByNotValue_InRange_Impl<IteratorType>(FirstIt, LastIt, InValue, this);
+	}
+
+	/**
+	* Searches iterator by the given predicate.
+	*
+	* @returns: Iterator to the element (or end iterator, if NOT found)
+	* @see: FindIteratorFor
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	ConstIteratorType FindIteratorByPredicate(Pred P) const
+	{
+		return FindIteratorByPredicateImpl<ConstIteratorType>(P, this);
+	}
+
+	/**
+	* Searches iterator by the given  predicate that takes reference to key (const Key&).
+	*
+	* @returns: Iterator to the element (or end iterator, if NOT found)
+	* @see: FindIteratorFor
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	ConstIteratorType FindIteratorByKeyPredicate(Pred P) const
+	{
+		return FindIteratorByKeyPredicateImpl<ConstIteratorType>(P, this);
+	}
+
+	/**
+	* Searches iterator to key for which the given predicate that takes const reference to key (const Key&) returns false.
+	*
+	* @returns: Iterator to the element (or end iterator, if NOT found)
+	* @see: FindIteratorFor
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	ConstIteratorType FindIteratorByNotKeyPredicate(Pred P) const
+	{
+		return FindIteratorByNotKeyPredicateImpl<ConstIteratorType>(P, this);
+	}
+
+	/**
+	* Searches iterator by the given predicate.
+	*
+	* @returns: Iterator to the element (or end iterator, if NOT found)
+	* @see: FindIteratorFor
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	IteratorType FindIteratorByPredicate(Pred P)
+	{
+		return FindIteratorByPredicateImpl<IteratorType>(P, this);
+	}
+
+	/**
+	* Searches iterator by the given  predicate that takes reference to key (const Key&).
+	*
+	* @returns: Iterator to the element (or end iterator, if NOT found)
+	* @see: FindIteratorFor
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	IteratorType FindIteratorByKeyPredicate(Pred P)
+	{
+		return FindIteratorByKeyPredicateImpl<IteratorType>(P, this);
+	}
+
+	/**
+	* Searches iterator to key for which the given predicate that takes const reference to key (const Key&) returns false.
+	*
+	* @returns: Iterator to the element (or end iterator, if NOT found)
+	* @see: FindIteratorFor
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	IteratorType FindIteratorByNotKeyPredicate(Pred P)
+	{
+		return FindIteratorByNotKeyPredicateImpl<IteratorType>(P, this);
+	}
+
+	/**
+	* Searches iterator of element that does NOT satisfy the given predicate.
+	*
+	* @returns: Iterator to the element (or end iterator, if NOT found)
+	* @see: FindIteratorFor
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	IteratorType FindIteratorByNotPredicate(Pred P)
+	{
+		return FindIteratorByPredicateImpl<IteratorType>
+		(
+			[&P](const KeyValueType& KV)->bool
+			{
+				return ! P (KV);
+			},
+			this
+		);
+	}
+
+	/**
+	* Searches iterator of element that does NOT satisfy the given predicate.
+	*
+	* @returns: Iterator to the element (or end iterator, if NOT found)
+	* @see: FindIteratorFor
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	ConstIteratorType FindIteratorByNotPredicate(Pred P) const
+	{
+		return FindIteratorByPredicateImpl<ConstIteratorType>
+		(
+				[&P](const KeyValueType& KV)->bool
+				{
+					return ! P(KV);
+				},
+				this
+		);
+	}
+
+	/**
+	* Searches iterator by the given predicate in the given range.
+	*
+	* @returns: Iterator to the element. Returns end (!) iterator (NOT last of range !), if NOT found.
+	* @see: FindIteratorFor
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	IteratorType FindIteratorByPredicate_InRange(Pred P, IteratorType FirstIt, IteratorType LastIt)
+	{
+		return FindIteratorByPredicate_InRange_Impl<IteratorType>(FirstIt, LastIt, P, this);
+	}
+
+	/**
+	* Searches iterator by the given key predicate in the given range.
+	*
+	* @returns: Iterator to the element. Returns end (!) iterator (NOT last of range !), if NOT found.
+	* @see: FindIteratorFor
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	IteratorType FindIteratorByKeyPredicate_InRange(Pred P, IteratorType FirstIt, IteratorType LastIt)
+	{
+		return FindIteratorByKeyPredicate_InRange_Impl<IteratorType>(FirstIt, LastIt, P, this);
+	}
+
+	/**
+	* Searches iterator by the given predicate in the given range.
+	*
+	* @returns: Iterator to the element. Returns end (!) iterator (NOT last of range !), if NOT found.
+	* @see: FindIteratorFor
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	ConstIteratorType FindIteratorByPredicate_InRange(Pred P, ConstIteratorType FirstIt, ConstIteratorType LastIt) const
+	{
+		return FindIteratorByPredicate_InRange_Impl<ConstIteratorType>(FirstIt, LastIt, P, this);
+	}
+
+	/**
+	* Searches iterator by the given predicate in the given range.
+	*
+	* @returns: Iterator to the element. Returns end (!) iterator (NOT last of range !), if NOT found.
+	* @see: FindIteratorFor
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	ConstIteratorType FindIteratorByKeyPredicate_InRange(Pred P, ConstIteratorType FirstIt, ConstIteratorType LastIt) const
+	{
+		return FindIteratorByKeyPredicate_InRange_Impl<ConstIteratorType>(FirstIt, LastIt, P, this);
+	}
+
+	/**
+	* Searches iterator that does NOT sasify the given predicate in the given range.
+	*
+	* @returns: Iterator to the element. Returns end (!) iterator (NOT last of range !), if NOT found.
+	* @see: FindIteratorFor
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	IteratorType FindIteratorByNotPredicate_InRange(Pred P, IteratorType FirstIt, IteratorType LastIt)
+	{
+		return FindIteratorByNotPredicate_InRange_Impl<IteratorType>(FirstIt, LastIt, P, this);
+	}
+
+	/**
+	* Searches iterator that does NOT sasify the given predicate in the given range.
+	*
+	* @returns: Iterator to the element. Returns end (!) iterator (NOT last of range !), if NOT found.
+	* @see: FindIteratorFor
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	IteratorType FindIteratorByNotKeyPredicate_InRange(Pred P, IteratorType FirstIt, IteratorType LastIt)
+	{
+		return FindIteratorByNotKeyPredicate_InRange_Impl<IteratorType>(FirstIt, LastIt, P, this);
+	}
+
+	/**
+	* Searches iterator that does NOT sasify the given predicate in the given range.
+	*
+	* @returns: Iterator to the element. Returns end (!) iterator (NOT last of range !), if NOT found.
+	* @see: FindIteratorFor
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	ConstIteratorType FindIteratorByNotPredicate_InRange(Pred P, ConstIteratorType FirstIt, ConstIteratorType LastIt) const
+	{
+		return FindIteratorByNotPredicate_InRange_Impl<ConstIteratorType>(FirstIt, LastIt, P, this);
+	}
+
+	/**
+	* Searches iterator that does NOT sasify the given predicate in the given range.
+	*
+	* @returns: Iterator to the element. Returns end (!) iterator (NOT last of range !), if NOT found.
+	* @see: FindIteratorFor
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	ConstIteratorType FindIteratorByNotKeyPredicate_InRange(Pred P, ConstIteratorType FirstIt, ConstIteratorType LastIt) const
+	{
+		return FindIteratorByNotKeyPredicate_InRange_Impl<ConstIteratorType>(FirstIt, LastIt, P, this);
+	}
+
+	/**
 	* Searches iterator by the given Key according to the given criteria.
 	*
 	* @Returns: Iterator to the element (or end iterator, if NOT found)
@@ -577,21 +1101,6 @@ public:
 	IteratorType FindIteratorFor(const KeyType& InKey, ComparerType InComparer)
 	{
 		return FindIteratorAtImpl<IteratorType>(InKey, this, InComparer);
-	}
-
-	template<class IteratorTypeArg, class ThisTypeArg, class ComparerType> IteratorTypeArg FindIteratorAtImpl(const KeyType& InKey, ThisTypeArg* pInThis, ComparerType InComparer) const
-	{
-		bool bFound = ! Empty();
-		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
-		if (bFound)
-		{
-			bFound = FindNode(InKey, /*OutNodeRef*/ NodeRef, InComparer);
-		}
-		if (!bFound)
-		{
-			return IteratorTypeArg::EndIterator(pInThis);
-		}
-		return IteratorTypeArg(pInThis, NodeRef);
 	}
 
 	/**
@@ -666,9 +1175,20 @@ public:
 	/*
 	* Removes value with the given key from the tree.
 	*
-	* @returns: true, if was found and removed (otherwise false). 
+	* @returns: true, if was found and removed (otherwise false).
 	*/
 	bool Remove(const KeyType& InKey)
+	{
+		return Remove(InKey, ComparerArg());
+	}
+
+	/*
+	* Removes value with the given key from the tree using the given Comparer.
+	*
+	* @returns: true, if was found and removed (otherwise false). 
+	*/
+	template<class SearchKeyType, class Comparer>
+	bool Remove(const SearchKeyType& InKey, Comparer InComparer)
 	{
 		if (Empty())
 		{
@@ -676,13 +1196,162 @@ public:
 		}
 
 		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
-		bool const bFound = FindNode(InKey, NodeRef, ComparerArg());
+		bool const bFound = FindNode(InKey, NodeRef, InComparer);
 		if (bFound)
 		{
 			RemoveAndDestroy(NodeRef);
 		}
 
 		return bFound;
+	}
+
+	/**
+	* Removes the first key/value pair that satisfy the given predicate.
+	* The predicate must take the reference to const KeyValueType (const KeyValueType&).
+	*
+	* @returns: true if element with the given predicate was in the container (otherwise, false)
+	*/
+	template<class Pred>
+	bool RemoveFirstPredicate(Pred P)
+	{
+		return RemoveFirstPredicate_InRange(P, Iterator(), EndIterator());
+	}
+
+	/**
+	* Removes the first value.
+	* The predicate must take the reference to const KeyValueType (const KeyValueType&).
+	*
+	* @returns: true if element with the given predicate was in the container (otherwise, false)
+	*/
+	bool RemoveFirstValue(const ValueType& InValue)
+	{
+		return RemoveFirstValue_InRange
+		(
+			InValue, Iterator(), EndIterator()
+		);
+	}
+
+	/**
+	* Removes the first key/value pair that satisfy the given predicate in the given range.
+	* The predicate must take the reference to const KeyValueType (const KeyValueType&).
+	*
+	* @returns: true if element with the given predicate was in the container (otherwise, false);
+	*/
+	template<class Pred>
+	bool RemoveFirstPredicate_InRange(Pred P, IteratorType FirstIt, IteratorType LastIt)
+	{
+		IteratorType NextAfterRemovedIt { Iterator() };
+		return RemoveFirstPredicate_InRange(P, FirstIt, LastIt, /*Out*/NextAfterRemovedIt);
+	}
+
+	/**
+	* Removes the first key/value pair that satisfy the given predicate in the given range.
+	* The predicate must take the reference to const KeyValueType (const KeyValueType&).
+	*
+	* @returns: true if element with the given predicate was in the container (otherwise, false);
+	* @out: OutNextAfterRemovedIt: 
+	*		iterator to the next element, that is immediately followed the removed element 
+	*		(or End, if the last element was removed). 
+	*		Valid only if element was really found and removed.
+	*/
+	template<class Pred>
+	bool RemoveFirstPredicate_InRange(Pred P, IteratorType FirstIt, IteratorType LastIt, IteratorType& OutNextAfterRemovedIt)
+	{
+		IteratorType It = FindIteratorByPredicate_InRange(P, FirstIt, LastIt);
+		if ( It == EndIterator() )
+		{
+			return false;
+		}
+		OutNextAfterRemovedIt = GetNextIt(It);
+		RemoveAt(It);
+		return true;
+	}
+
+	/**
+	* Removes firts value equal to the given one in the given range.
+	*
+	* @returns: true if element with the given predicate was in the container (otherwise, false);
+	* @see: RemoveFirstPredicate
+	*/
+	bool RemoveFirstValue_InRange(const ValueType& InValue, IteratorType ItFirst, IteratorType ItLast)
+	{
+		return RemoveFirstPredicate_InRange
+		(
+			[&InValue](const KeyValueType& KV)->bool { return KV.Value == InValue; },
+			ItFirst, ItLast
+		);
+	}
+
+	/**
+	* Removes all key/value pairs that satisfy the given predicate.
+	* The predicate must take the reference to const KeyValueType (const KeyValueType&).
+	*
+	* @returns: number of removed elements.
+	* @see: RemoveFirstPredicate
+	*/
+	template<class Pred>
+	int32_t RemoveAllPredicate(Pred P)
+	{
+		return RemoveAllPredicate_InRange(P, Iterator(), EndIterator());
+	}
+
+	/**
+	* Removes all values equal to the given one in the given range.
+	*
+	* @returns: number of removed elements.
+	* @see: RemoveFirstPredicate
+	*/
+	int32_t RemoveAllValues(const ValueType& InValue)
+	{
+		return RemoveAllValues_InRange(InValue, Iterator(), EndIterator());
+	}
+
+	/**
+	* Removes all values equal to the given one in the given range.
+	*
+	* @returns: number of removed elements.
+	* @see: RemoveFirstPredicate
+	*/
+	int32_t RemoveAllValues_InRange(const ValueType& InValue, IteratorType ItFirst, IteratorType ItLast)
+	{
+		return RemoveAllPredicate_InRange
+		(
+			[&InValue](const KeyValueType& KV)->bool { return KV.Value == InValue; },
+			ItFirst, ItLast
+		);
+	}
+
+	/**
+	* Removes all key/value pairs that satisfy the given predicate.
+	* The predicate must take the reference to const KeyValueType (const KeyValueType&).
+	*
+	* @returns: number of removed elements.
+	* @see: RemoveFirstPredicate
+	*/
+	template<class Pred>
+	int32_t RemoveAllPredicate_InRange(Pred P, IteratorType ItFirst, IteratorType ItLast)
+	{
+		// @TODO: Optimize
+		int32_t Count = 0;
+		IteratorType It = ItFirst;
+		while (true)
+		{
+			if ( It == ItLast )
+			{
+				return Count;
+			}
+
+			IteratorType NextIt { ItFirst };
+
+			if ( ! RemoveFirstPredicate_InRange(P, It, ItLast, /*OutNext*/NextIt) )
+			{
+				return Count;
+			}
+
+			Count++;
+			It = NextIt;
+		}
+		return Count;
 	}
 
 	/*
@@ -1348,8 +2017,13 @@ public:
 	/**
 	* Iterates KeyValue pairs in the order of their keys.
 	*/
+	// @TODO: Change class to bidirectional, when Backward iteration implemented
 	template<class TreeTypeArg>
-	class TGeneralIterator : public TIteratorBase<std::is_const<TreeTypeArg>>
+	class TGeneralIterator : public TIteratorBase
+	<
+		TGeneralIterator<TreeTypeArg>,
+		std::is_const<TreeTypeArg>, EIteratorClass::Forward
+	>
 	{
 	public:
 		template<class OtherTreeType>
@@ -2598,6 +3272,144 @@ private:
 		{
 			return IteratorTypeArg(InThisPtr, GetDeepestNodeRef(TRBTreeImpl::ChildNodeRef::RootNode(), TRBTreeImpl::LEFT_CHILD_IDX));
 		}
+	}
+
+	template<class IteratorTypeArg, class Pred, class ThisTypeArg>
+	IteratorTypeArg FindIteratorByPredicateImpl(Pred P, ThisTypeArg* pInThis) const
+	{
+		return FindIteratorByPredicate_InRange_Impl(pInThis->Iterator(), pInThis->EndIterator(), P, pInThis);
+	}
+
+	template<class IteratorTypeArg, class Pred, class ThisTypeArg>
+	IteratorTypeArg FindIteratorByKeyPredicateImpl(Pred P, ThisTypeArg* pInThis) const
+	{
+		return FindIteratorByPredicate_InRange_Impl
+		(
+			pInThis->Iterator(), pInThis->EndIterator(), 
+			[&P](const KeyValueType& KV)->bool { return P(KV.Key); },
+			pInThis
+		);
+	}
+
+	template<class IteratorTypeArg, class Pred, class ThisTypeArg>
+	IteratorTypeArg FindIteratorByNotKeyPredicateImpl(Pred P, ThisTypeArg* pInThis) const
+	{
+		return FindIteratorByNotPredicate_InRange_Impl
+		(
+			pInThis->Iterator(), pInThis->EndIterator(),
+			[&P](const KeyValueType& KV)->bool { return P(KV.Key); },
+			pInThis
+		);
+	}
+
+	template<class IteratorTypeArg, class Pred, class ThisTypeArg>
+	IteratorTypeArg FindIteratorByNotKeyPredicate_InRange_Impl(IteratorTypeArg FirstIt, const IteratorTypeArg LastIt, Pred P, ThisTypeArg* pInThis) const
+	{
+		return FindIteratorByPredicate_InRange_Impl
+		(
+			FirstIt, LastIt,
+			[&P](const KeyValueType& KV) -> bool
+			{
+				return ! P(KV.Key);
+			},
+			pInThis
+		);
+	}
+
+	template<class IteratorTypeArg, class Pred, class ThisTypeArg>
+	IteratorTypeArg FindIteratorByKeyPredicate_InRange_Impl(IteratorTypeArg FirstIt, const IteratorTypeArg LastIt, Pred P, ThisTypeArg* pInThis) const
+	{
+		return FindIteratorByPredicate_InRange_Impl
+		(
+			FirstIt, LastIt,
+			[&P](const KeyValueType& KV) -> bool
+			{
+				return P(KV.Key);
+			},
+			pInThis
+		);
+	}
+
+	template<class IteratorTypeArg, class Pred, class ThisTypeArg>
+	IteratorTypeArg FindIteratorByNotPredicate_InRange_Impl(IteratorTypeArg FirstIt, const IteratorTypeArg LastIt, Pred P, ThisTypeArg* pInThis) const
+	{
+		return FindIteratorByPredicate_InRange_Impl
+		(
+			FirstIt, LastIt, 
+			[&P](const KeyValueType& KV) -> bool
+			{
+				return ! P(KV);
+			},
+			pInThis
+		);
+	}
+
+	template<class IteratorTypeArg, class ThisTypeArg>
+	IteratorTypeArg FindIteratorByValue_Impl(const ValueType& InValue, ThisTypeArg* pInThis) const
+	{
+		return FindIteratorByValue_InRange_Impl(pInThis->Iterator(), pInThis->EndIterator(), InValue, pInThis);
+	}
+
+	template<class IteratorTypeArg, class ThisTypeArg>
+	IteratorTypeArg FindIteratorByValue_InRange_Impl(IteratorTypeArg FirstIt, const IteratorTypeArg LastIt, const ValueType& InValue, ThisTypeArg* pInThis) const
+	{
+		return FindIteratorByPredicate_InRange_Impl
+		(
+			FirstIt, LastIt,
+			[&InValue](const KeyValueType& KV)->bool
+			{
+				return KV.Value == InValue;
+			},
+			pInThis
+		);
+	}
+
+	template<class IteratorTypeArg, class ThisTypeArg>
+	IteratorTypeArg FindIteratorByNotValue_Impl(const ValueType& InValue, ThisTypeArg* pInThis) const
+	{
+		return FindIteratorByNotValue_InRange_Impl(pInThis->Iterator(), pInThis->EndIterator(), InValue, pInThis);
+	}
+
+	template<class IteratorTypeArg, class ThisTypeArg>
+	IteratorTypeArg FindIteratorByNotValue_InRange_Impl(IteratorTypeArg FirstIt, const IteratorTypeArg LastIt, const ValueType& InValue, ThisTypeArg* pInThis) const
+	{
+		return FindIteratorByPredicate_InRange_Impl
+		(
+			FirstIt, LastIt,
+			[&InValue](const KeyValueType& KV)->bool
+			{
+				return KV.Value != InValue;
+			},
+			pInThis
+		);
+	}
+
+	template<class IteratorTypeArg, class Pred, class ThisTypeArg>
+	IteratorTypeArg FindIteratorByPredicate_InRange_Impl(IteratorTypeArg FirstIt, const IteratorTypeArg LastIt, Pred P, ThisTypeArg* pInThis) const
+	{
+		for (IteratorTypeArg It = FirstIt; It != LastIt; ++It)
+		{
+			if (P(*It))
+			{
+				return It;
+			}
+		}
+		return pInThis->EndIterator();
+	}
+
+	template<class IteratorTypeArg, class ThisTypeArg, class ComparerType> IteratorTypeArg FindIteratorAtImpl(const KeyType& InKey, ThisTypeArg* pInThis, ComparerType InComparer) const
+	{
+		bool bFound = !Empty();
+		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
+		if (bFound)
+		{
+			bFound = FindNode(InKey, /*OutNodeRef*/ NodeRef, InComparer);
+		}
+		if (!bFound)
+		{
+			return IteratorTypeArg::EndIterator(pInThis);
+		}
+		return IteratorTypeArg(pInThis, NodeRef);
 	}
 
 	/**
