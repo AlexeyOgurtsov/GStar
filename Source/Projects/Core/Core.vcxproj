@@ -167,16 +167,21 @@
     <ClInclude Include="..\..\Core\Math\Test\BLASVectorTest.h" />
     <ClInclude Include="..\..\Core\Math\Vector.h" />
     <ClInclude Include="..\..\Core\Mem\BlockHeap.h" />
+    <ClInclude Include="..\..\Core\Mem\TComPtr.h" />
     <ClInclude Include="..\..\Core\Mem\Helper\LinearAllocHelper.h" />
     <ClInclude Include="..\..\Core\Mem\Helper\Test\LinearAllocHelperTest.h" />
     <ClInclude Include="..\..\Core\Mem\MemUtils.h" />
     <ClInclude Include="..\..\Core\Mem\Priv\BlockHeapImpl.h" />
+    <ClInclude Include="..\..\Core\Mem\TSharedPtr.h" />
     <ClInclude Include="..\..\Core\Mem\Test\BlockHeapTest.h" />
+    <ClInclude Include="..\..\Core\Mem\TUniquePtr.h" />
     <ClInclude Include="..\..\Core\Serialization\ArchiveTraits.h" />
     <ClInclude Include="..\..\Core\Stream\StreamTraits.h" />
     <ClInclude Include="..\..\Core\Str\IdentStr.h" />
+    <ClInclude Include="..\..\Core\Templ\Pointer.h" />
     <ClInclude Include="..\..\Core\Templ\TComparer.h" />
     <ClInclude Include="..\..\Core\Templ\Test\ComparerTest.h" />
+    <ClInclude Include="..\..\Core\Templ\Test\PointerTest.h" />
     <ClInclude Include="..\..\Core\Templ\Test\TemplTest.h" />
   </ItemGroup>
   <ItemGroup>

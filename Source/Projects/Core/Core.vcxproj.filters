@@ -168,6 +168,21 @@
     <ClInclude Include="..\..\Core\Cont\UT\TKeyValueIterator.h">
       <Filter>Cont\UT</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Core\Templ\Pointer.h">
+      <Filter>Templ</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Templ\Test\PointerTest.h">
+      <Filter>Templ\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Mem\TSharedPtr.h">
+      <Filter>Mem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Mem\TUniquePtr.h">
+      <Filter>Mem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Mem\TComPtr.h">
+      <Filter>Mem</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Core\Mem\Helper\Priv\LinearAllocHelper.cpp">
