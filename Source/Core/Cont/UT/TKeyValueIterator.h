@@ -8,8 +8,10 @@
 * Forward key iterator.
 *
 * Key is always provided for const access only.
+*
+* @param: bExposeIterator - if true, the underlying iterator is to be exposed for public access.
 */
-template<class IteratorTypeArg>
+template<class IteratorTypeArg, bool bExposeIterator = false>
 class TForwardKeyIterator : public TIteratorBase
 <
 	TForwardKeyIterator<IteratorTypeArg>, 
@@ -17,7 +19,7 @@ class TForwardKeyIterator : public TIteratorBase
 >
 {
 public:
-	using ThisType = TForwardKeyIterator<IteratorTypeArg>;
+	using ThisType = TForwardKeyIterator<IteratorTypeArg, bExposeIterator>;
 
 	using IteratorType = IteratorTypeArg;
 	using KeyValueType = typename IteratorTypeArg::ElementType;
@@ -147,6 +149,9 @@ public:
 		static_assert(AreIteratorsComparable<IteratorTypeArg, OtherIteratorType>::Value, "TForwardKeyIterator: operator!=: iterators must be comparable");
 		return !(operator==(InOther));
 	}
+
+	template<typename = typename std::enable_if<bExposeIterator>::type>
+	IteratorTypeArg GetBaseIterator() const { return It; }
 
 private:
 	IteratorTypeArg It;

@@ -77,13 +77,13 @@ BOOST_AUTO_TEST_CASE(ReserveGrowTest)
 	constexpr int INITIAL_COUNT = 7;
 
 	MoveOnlyTree T;
-	T.AddCheck(MoveOnlyTree::KeyValueType{ 5, std::make_unique<std::string>("five") });
-	T.AddCheck(MoveOnlyTree::KeyValueType{ 1, std::make_unique<std::string>("one") });
-	T.AddCheck(MoveOnlyTree::KeyValueType{ 7, std::make_unique<std::string>("seven") });
-	T.AddCheck(MoveOnlyTree::KeyValueType{ 3, std::make_unique<std::string>("three") });
-	T.AddCheck(MoveOnlyTree::KeyValueType{ 2, std::make_unique<std::string>("two") });
-	T.AddCheck(MoveOnlyTree::KeyValueType{ 4, std::make_unique<std::string>("four") });
-	T.AddCheck(MoveOnlyTree::KeyValueType{ 6, std::make_unique<std::string>("six") });
+	T.Add(MoveOnlyTree::KeyValueType{ 5, std::make_unique<std::string>("five") });
+	T.Add(MoveOnlyTree::KeyValueType{ 1, std::make_unique<std::string>("one") });
+	T.Add(MoveOnlyTree::KeyValueType{ 7, std::make_unique<std::string>("seven") });
+	T.Add(MoveOnlyTree::KeyValueType{ 3, std::make_unique<std::string>("three") });
+	T.Add(MoveOnlyTree::KeyValueType{ 2, std::make_unique<std::string>("two") });
+	T.Add(MoveOnlyTree::KeyValueType{ 4, std::make_unique<std::string>("four") });
+	T.Add(MoveOnlyTree::KeyValueType{ 6, std::make_unique<std::string>("six") });
 	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
 
 	T.ReserveGrow(INITIAL_COUNT * 10);
@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE
 	{
 		char buf[64];
 		snprintf(buf, 64, "%d", i);
-		T.AddCheck(MoveOnlyTree::KeyValueType{ i, std::make_unique<std::string>(buf) });
+		T.Add(MoveOnlyTree::KeyValueType{ i, std::make_unique<std::string>(buf) });
 	}
 
 	T.ShrinkToFit();
@@ -149,9 +149,9 @@ BOOST_AUTO_TEST_CASE(AddMovedKeyValueTest)
 	BOOST_TEST_CHECKPOINT("Initialization");
 	const int KEY_CONST = 3;
 	MoveOnlyTree T;
-	BOOST_REQUIRE(T.AddCheck(MoveOnlyTree::KeyValueType{1, std::make_unique<std::string>("VALUE")}));
-	BOOST_REQUIRE(T.AddCheck(2, std::make_unique<std::string>("VALUE")));
-	BOOST_REQUIRE(T.AddCheck(KEY_CONST, std::make_unique<std::string>("VALUE")));
+	BOOST_REQUIRE(T.Add(MoveOnlyTree::KeyValueType{1, std::make_unique<std::string>("VALUE")}));
+	BOOST_REQUIRE(T.Add(2, std::make_unique<std::string>("VALUE")));
+	BOOST_REQUIRE(T.Add(KEY_CONST, std::make_unique<std::string>("VALUE")));
 	BOOST_REQUIRE_EQUAL(3, T.Num());
 }
 
@@ -163,9 +163,9 @@ BOOST_AUTO_TEST_CASE(AddKeyValueTest_NoMovable)
 
 	IntRBTree T;
 	IntRBTree::KeyValueType const KV { 1, NoValue{} };
-	BOOST_REQUIRE(T.AddCheck(KV));
-	BOOST_REQUIRE(T.AddCheck(2, VALUE_CONST));
-	BOOST_REQUIRE(T.AddCheck(KEY_CONST, VALUE_CONST));
+	BOOST_REQUIRE(T.Add(KV));
+	BOOST_REQUIRE(T.Add(2, VALUE_CONST));
+	BOOST_REQUIRE(T.Add(KEY_CONST, VALUE_CONST));
 	BOOST_REQUIRE_EQUAL(3, T.Num());
 }
 
@@ -195,9 +195,9 @@ BOOST_AUTO_TEST_CASE(TemplateCopyConstruct)
 	const IntStringRBTree::KeyValueType KV_3{ 3, std::string("three") };
 
 	IntStringRBTree Source;
-	Source.AddCheck(KV_1);
-	Source.AddCheck(KV_2);
-	Source.AddCheck(KV_3);
+	Source.Add(KV_1);
+	Source.Add(KV_2);
+	Source.Add(KV_3);
 
 	TRBTree<KVType<int, std::string>, TemplateCopyTestIntComparer> T{ Source };
 	BOOST_REQUIRE_EQUAL(T.Num(), 3);
@@ -213,15 +213,15 @@ BOOST_AUTO_TEST_CASE(TemplateCopyAssign)
 	const IntStringRBTree::KeyValueType KV_3{ 3, std::string("three") };
 
 	IntStringRBTree Source;
-	BOOST_REQUIRE(Source.AddCheck(KV_1));
-	BOOST_REQUIRE(Source.AddCheck(KV_2));
-	BOOST_REQUIRE(Source.AddCheck(KV_3));
+	BOOST_REQUIRE(Source.Add(KV_1));
+	BOOST_REQUIRE(Source.Add(KV_2));
+	BOOST_REQUIRE(Source.Add(KV_3));
 
 	TRBTree<KVType<int, std::string>, TemplateCopyTestIntComparer> T;
 	const IntStringRBTree::KeyValueType OTHER_KV_1{ 11, std::string("eleven") };
 	const IntStringRBTree::KeyValueType OTHER_KV_2{ 12, std::string("twelve") };
-	BOOST_REQUIRE(T.AddCheck(OTHER_KV_1));
-	BOOST_REQUIRE(T.AddCheck(OTHER_KV_2));
+	BOOST_REQUIRE(T.Add(OTHER_KV_1));
+	BOOST_REQUIRE(T.Add(OTHER_KV_2));
 
 
 	T = Source;
@@ -238,9 +238,9 @@ BOOST_AUTO_TEST_CASE(TemplateMoveConstruct)
 	const IntStringRBTree::KeyValueType KV_3{ 3, std::string("three") };
 
 	IntStringRBTree Source;
-	Source.AddCheck(KV_1);
-	Source.AddCheck(KV_2);
-	Source.AddCheck(KV_3);
+	Source.Add(KV_1);
+	Source.Add(KV_2);
+	Source.Add(KV_3);
 
 	TRBTree<KVType<int, std::string>, TemplateCopyTestIntComparer> T{ std::move(Source) };
 	BOOST_REQUIRE_EQUAL(T.Num(), 3);
@@ -258,15 +258,15 @@ BOOST_AUTO_TEST_CASE(TemplateMoveAssignment)
 	const IntStringRBTree::KeyValueType KV_3{ 3, std::string("three") };
 
 	IntStringRBTree Source;
-	BOOST_REQUIRE(Source.AddCheck(KV_1));
-	BOOST_REQUIRE(Source.AddCheck(KV_2));
-	BOOST_REQUIRE(Source.AddCheck(KV_3));
+	BOOST_REQUIRE(Source.Add(KV_1));
+	BOOST_REQUIRE(Source.Add(KV_2));
+	BOOST_REQUIRE(Source.Add(KV_3));
 
 	TRBTree<KVType<int, std::string>, TemplateCopyTestIntComparer> T;
 	const IntStringRBTree::KeyValueType OTHER_KV_1{ 11, std::string("eleven") };
 	const IntStringRBTree::KeyValueType OTHER_KV_2{ 12, std::string("twelve") };
-	BOOST_REQUIRE(T.AddCheck(OTHER_KV_1));
-	BOOST_REQUIRE(T.AddCheck(OTHER_KV_2));
+	BOOST_REQUIRE(T.Add(OTHER_KV_1));
+	BOOST_REQUIRE(T.Add(OTHER_KV_2));
 
 	T = std::move(Source);
 	BOOST_REQUIRE_EQUAL(T.Num(), 3);
@@ -286,9 +286,9 @@ BOOST_AUTO_TEST_CASE(MoveConstruct)
 	const IntStringRBTree::KeyValueType KV_3{ 3, std::string("three") };
 
 	IntStringRBTree Source;
-	Source.AddCheck(KV_1);
-	Source.AddCheck(KV_2);
-	Source.AddCheck(KV_3);
+	Source.Add(KV_1);
+	Source.Add(KV_2);
+	Source.Add(KV_3);
 
 	IntStringRBTree T{ std::move(Source) };
 	BOOST_REQUIRE_EQUAL(T.Num(), 3);
@@ -306,15 +306,15 @@ BOOST_AUTO_TEST_CASE(MoveAssignment)
 	const IntStringRBTree::KeyValueType KV_3{ 3, std::string("three") };
 
 	IntStringRBTree Source;
-	BOOST_REQUIRE(Source.AddCheck(KV_1));
-	BOOST_REQUIRE(Source.AddCheck(KV_2));
-	BOOST_REQUIRE(Source.AddCheck(KV_3));
+	BOOST_REQUIRE(Source.Add(KV_1));
+	BOOST_REQUIRE(Source.Add(KV_2));
+	BOOST_REQUIRE(Source.Add(KV_3));
 
 	IntStringRBTree T;
 	const IntStringRBTree::KeyValueType OTHER_KV_1{ 11, std::string("eleven") };
 	const IntStringRBTree::KeyValueType OTHER_KV_2{ 12, std::string("twelve") };
-	BOOST_REQUIRE(T.AddCheck(OTHER_KV_1));
-	BOOST_REQUIRE(T.AddCheck(OTHER_KV_2));
+	BOOST_REQUIRE(T.Add(OTHER_KV_1));
+	BOOST_REQUIRE(T.Add(OTHER_KV_2));
 
 	T = std::move(Source);
 	BOOST_REQUIRE_EQUAL(T.Num(), 3);
@@ -334,9 +334,9 @@ BOOST_AUTO_TEST_CASE(SimpleCopyConstruct)
 	const IntStringRBTree::KeyValueType KV_3 { 3, std::string("three") };
 
 	IntStringRBTree Source;
-	Source.AddCheck(KV_1);
-	Source.AddCheck(KV_2);
-	Source.AddCheck(KV_3);
+	Source.Add(KV_1);
+	Source.Add(KV_2);
+	Source.Add(KV_3);
 	
 	IntStringRBTree T { Source };
 	BOOST_REQUIRE_EQUAL(T.Num(), 3);
@@ -352,15 +352,15 @@ BOOST_AUTO_TEST_CASE(SimpleCopyAssign)
 	const IntStringRBTree::KeyValueType KV_3{ 3, std::string("three") };
 
 	IntStringRBTree Source;
-	BOOST_REQUIRE(Source.AddCheck(KV_1));
-	BOOST_REQUIRE(Source.AddCheck(KV_2));
-	BOOST_REQUIRE(Source.AddCheck(KV_3));
+	BOOST_REQUIRE(Source.Add(KV_1));
+	BOOST_REQUIRE(Source.Add(KV_2));
+	BOOST_REQUIRE(Source.Add(KV_3));
 
 	IntStringRBTree T;
 	const IntStringRBTree::KeyValueType OTHER_KV_1{ 11, std::string("eleven") };
 	const IntStringRBTree::KeyValueType OTHER_KV_2{ 12, std::string("twelve") };
-	BOOST_REQUIRE(T.AddCheck(OTHER_KV_1));
-	BOOST_REQUIRE(T.AddCheck(OTHER_KV_2));
+	BOOST_REQUIRE(T.Add(OTHER_KV_1));
+	BOOST_REQUIRE(T.Add(OTHER_KV_2));
 
 
 	T = Source;
@@ -512,7 +512,7 @@ BOOST_AUTO_TEST_CASE
 	BOOST_TEST_CHECKPOINT("Prepare");
 	for (int i = 1; i <= INITIAL_COUNT; i++)
 	{
-		T.AddCheck(i, NoValue{});
+		T.Add(i, NoValue{});
 	}
 	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
 
@@ -660,7 +660,7 @@ BOOST_AUTO_TEST_CASE
 	BOOST_TEST_CHECKPOINT("Prepare");
 	for (int i = 1; i <= INITIAL_COUNT; i++)
 	{
-		T.AddCheck(i, NoValue{});
+		T.Add(i, NoValue{});
 	}
 	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
 
@@ -776,9 +776,9 @@ BOOST_AUTO_TEST_CASE
 BOOST_AUTO_TEST_CASE(FindIterator)
 {
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(2, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(1, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(3, NoValue{}));
+	BOOST_REQUIRE(T.Add(2, NoValue{}));
+	BOOST_REQUIRE(T.Add(1, NoValue{}));
+	BOOST_REQUIRE(T.Add(3, NoValue{}));
 
 	BOOST_REQUIRE( ! T.FindIteratorFor(4) );
 	BOOST_REQUIRE( T.FindIteratorFor(1) );
@@ -792,9 +792,9 @@ BOOST_AUTO_TEST_CASE(FindIterator)
 BOOST_AUTO_TEST_CASE(FindIteratorInConst)
 {
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(2, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(1, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(3, NoValue{}));
+	BOOST_REQUIRE(T.Add(2, NoValue{}));
+	BOOST_REQUIRE(T.Add(1, NoValue{}));
+	BOOST_REQUIRE(T.Add(3, NoValue{}));
 
 	const IntRBTree* const pConstT = &T;
 	BOOST_REQUIRE( ! pConstT->FindIteratorFor(4) );
@@ -815,6 +815,119 @@ BOOST_AUTO_TEST_SUITE
 	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/AddSuite")
 	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite")
 )
+
+BOOST_AUTO_TEST_CASE(GroupKeyRemoveFirstOrAllRangeTest)
+{
+	using TreeType = TRBTree<KVType<int, std::string>>;
+
+	constexpr int INITIAL_COUNT = 8;
+
+	constexpr int MIN_REMOVE_KEY = 3;
+	constexpr int MAXIM_REMOVE_KEY = 6;
+	constexpr int NON_EXISTING_KEY = 10000;
+	
+	const auto P = [MIN_REMOVE_KEY, MAXIM_REMOVE_KEY](const TreeType::KeyType& K) -> bool
+	{
+		return K >= MIN_REMOVE_KEY && K <= MAXIM_REMOVE_KEY;
+	};
+	const auto P_NonExistent = [NON_EXISTING_KEY](const TreeType::KeyType& K) -> bool
+	{
+		return K == NON_EXISTING_KEY;
+	};
+
+	BOOST_TEST_CHECKPOINT("Empty");
+	TreeType T;
+	BOOST_REQUIRE( ! T.RemoveFirstKeyPredicate_InRange(P, T.Iterator(), T.EndIterator()) );
+	BOOST_REQUIRE( ! T.RemoveFirstKeyPredicate_InRange(P_NonExistent, T.Iterator(), T.EndIterator()) );
+	BOOST_REQUIRE( ! T.RemoveAllKeyPredicate_InRange(P, T.Iterator(), T.EndIterator()));
+	BOOST_REQUIRE( ! T.RemoveAllKeyPredicate_InRange(P_NonExistent, T.Iterator(), T.EndIterator()));
+
+	BOOST_TEST_CHECKPOINT("Filling");
+	T.Add(1, std::string("test"));
+	T.Add(2, std::string("test"));
+	T.Add(3, std::string("test"));
+	T.Add(4, std::string("test"));
+	T.Add(5, std::string("test"));
+	T.Add(6, std::string("test"));
+	T.Add(7, std::string("test"));
+	T.Add(8, std::string("test"));
+	TreeType::IteratorType const ItFirst = T.FindIteratorFor(1);
+	TreeType::IteratorType const ItSecond = T.FindIteratorFor(2);
+	TreeType::IteratorType const ItThird = T.FindIteratorFor(3);
+	TreeType::IteratorType const ItFourth = T.FindIteratorFor(4);
+	TreeType::IteratorType const ItSixth = T.FindIteratorFor(6);
+
+	TreeType::IteratorType const ItNarrowRemoveRangeStart = ItFourth;
+	TreeType::IteratorType const ItNarrowRemoveRangeEnd = ItSixth;
+
+	BOOST_REQUIRE_EQUAL(ItFirst.GetKey(), 1);
+	BOOST_REQUIRE_EQUAL(ItSecond.GetKey(), 2);
+	BOOST_REQUIRE_EQUAL(ItThird.GetKey(), 3);
+	BOOST_REQUIRE_EQUAL(ItFourth.GetKey(), 4);
+	BOOST_REQUIRE_EQUAL(ItSixth.GetKey(), 6);
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+
+	BOOST_TEST_CHECKPOINT("Removing first and all out of range");
+	BOOST_REQUIRE( ! T.RemoveAllKeyPredicate_InRange(P, ItFirst, ItThird) );
+	BOOST_REQUIRE( ! T.RemoveFirstKeyPredicate_InRange(P, ItFirst, ItThird) );
+
+	BOOST_TEST_CHECKPOINT("Removing first in range");
+	BOOST_REQUIRE(T.RemoveFirstKeyPredicate_InRange(P, ItNarrowRemoveRangeStart, ItNarrowRemoveRangeEnd));
+	BOOST_REQUIRE(T.ContainsKeyPredicate(P));
+	
+
+	BOOST_TEST_CHECKPOINT("Removing first in range");
+	BOOST_REQUIRE(T.RemoveFirstKeyPredicate_InRange(P, T.Iterator(), T.EndIterator()));
+	BOOST_REQUIRE( T.ContainsKeyPredicate(P) );
+
+	BOOST_TEST_CHECKPOINT("Removing all in range");
+	BOOST_REQUIRE( T.RemoveAllKeyPredicate_InRange(P, T.Iterator(), T.EndIterator()) );
+	BOOST_REQUIRE( ! T.ContainsKeyPredicate(P) );
+}
+
+BOOST_AUTO_TEST_CASE(GroupKeyRemoveFirstOrAllTest)
+{
+	using TreeType = TRBTree<KVType<std::string, int>>;
+
+	constexpr int INITIAL_COUNT = 8;
+	constexpr int KEY_TO_REMOVE_LENGTH = 3;
+	constexpr int NON_EXISTING_LENGTH = 10000;
+
+	const auto P = [KEY_TO_REMOVE_LENGTH](const TreeType::KeyType& K) -> bool
+	{
+		return K.size() == KEY_TO_REMOVE_LENGTH;
+	};
+	const auto P_NonExistent = [NON_EXISTING_LENGTH](const TreeType::KeyType& K) -> bool
+	{
+		return K.size() == NON_EXISTING_LENGTH;
+	};
+
+	BOOST_TEST_CHECKPOINT("Remove from empty");
+	TreeType T;
+	BOOST_REQUIRE( ! T.RemoveFirstKeyPredicate(P) );
+	BOOST_REQUIRE( ! T.RemoveFirstKeyPredicate(P_NonExistent) );
+
+	BOOST_TEST_CHECKPOINT("Fill");
+	T.Add(std::string("asdasdgsdfsd"), 1);
+	T.Add(std::string("abc"), 2);
+	T.Add(std::string("def"), 3);
+	T.Add(std::string("deg"), 4);
+	T.Add(std::string("asdgasdasdfasasfd"), 5);
+	T.Add(std::string("ten"), 6);
+	T.Add(std::string("xdfdfhdf"), 7);
+	T.Add(std::string("zen"), 8);
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+
+	BOOST_TEST_CHECKPOINT("Remove first");
+	BOOST_REQUIRE( ! T.RemoveFirstKeyPredicate(P_NonExistent) );
+	BOOST_REQUIRE(T.RemoveFirstKeyPredicate(P) );
+	BOOST_REQUIRE_EQUAL(T.Num(), (INITIAL_COUNT - 1));
+
+	BOOST_TEST_CHECKPOINT("Remove all");
+	BOOST_REQUIRE( ! T.RemoveAllKeyPredicate(P_NonExistent) );
+	BOOST_REQUIRE( T.RemoveAllKeyPredicate(P) );
+	BOOST_REQUIRE( ! T.ContainsKeyPredicate(P) );
+}
 
 BOOST_AUTO_TEST_CASE(GroupRemoveTest)
 {
@@ -843,14 +956,14 @@ BOOST_AUTO_TEST_CASE(GroupRemoveTest)
 	BOOST_REQUIRE( 0 == T.RemoveAllPredicate_InRange(P, T.Iterator(), T.EndIterator()));
 
 	BOOST_TEST_CHECKPOINT("Fill");
-	BOOST_REQUIRE(T.AddCheck(1, std::string("ONE")));
-	BOOST_REQUIRE(T.AddCheck(2, VALUE_TO_REMOVE));
-	BOOST_REQUIRE(T.AddCheck(3, VALUE_TO_REMOVE));
-	BOOST_REQUIRE(T.AddCheck(4, OTHER_VAL));
-	BOOST_REQUIRE(T.AddCheck(5, OTHER_VAL));
-	BOOST_REQUIRE(T.AddCheck(6, VALUE_TO_REMOVE));
-	BOOST_REQUIRE(T.AddCheck(7, OTHER_VAL));
-	BOOST_REQUIRE(T.AddCheck(8, VALUE_TO_REMOVE));
+	BOOST_REQUIRE(T.Add(1, std::string("ONE")));
+	BOOST_REQUIRE(T.Add(2, VALUE_TO_REMOVE));
+	BOOST_REQUIRE(T.Add(3, VALUE_TO_REMOVE));
+	BOOST_REQUIRE(T.Add(4, OTHER_VAL));
+	BOOST_REQUIRE(T.Add(5, OTHER_VAL));
+	BOOST_REQUIRE(T.Add(6, VALUE_TO_REMOVE));
+	BOOST_REQUIRE(T.Add(7, OTHER_VAL));
+	BOOST_REQUIRE(T.Add(8, VALUE_TO_REMOVE));
 
 	IntStringRBTree::IteratorType const It_OtherZone_First = GetAdvancedIt(T.Iterator(), 3);
 	IntStringRBTree::IteratorType const It_OtherZone_Last = GetNextIt(GetNextIt(It_OtherZone_First));
@@ -888,9 +1001,9 @@ BOOST_AUTO_TEST_CASE(RemoveAtTest)
 	constexpr int INITIAL_COUNT = 3;
 
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(2, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(1, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(3, NoValue{}));
+	BOOST_REQUIRE(T.Add(2, NoValue{}));
+	BOOST_REQUIRE(T.Add(1, NoValue{}));
+	BOOST_REQUIRE(T.Add(3, NoValue{}));
 
 	T.RemoveAt(T.Iterator());
 
@@ -929,26 +1042,26 @@ BOOST_AUTO_TEST_CASE(EqualityTest)
 	BOOST_REQUIRE(! ( A != B) );
 
 	BOOST_TEST_CHECKPOINT("Inequality by first element (A > B)");
-	A.AddCheck(std::string("one"), 1);
+	A.Add(std::string("one"), 1);
 	BOOST_REQUIRE(A != B);
 	BOOST_REQUIRE(B != A);
 
 	BOOST_TEST_CHECKPOINT("Equality of one-element containers");
-	B.AddCheck(std::string("one"), 1);
+	B.Add(std::string("one"), 1);
 	BOOST_REQUIRE(A == B);
 	BOOST_REQUIRE(B == A);
 
 	BOOST_TEST_CHECKPOINT("Inequality by first element (B > A)");
-	B.AddCheck(std::string("two"), 2);
+	B.Add(std::string("two"), 2);
 	BOOST_REQUIRE(A != B);
 
 	BOOST_TEST_CHECKPOINT("Equality of two-element containers");
-	A.AddCheck(std::string("two"), 2);
+	A.Add(std::string("two"), 2);
 	BOOST_REQUIRE(A == B);
 
 	BOOST_TEST_CHECKPOINT("Non equality if key is the same by value differs");
-	A.AddCheck(std::string("three"), 3);
-	B.AddCheck(std::string("three"), 2);
+	A.Add(std::string("three"), 3);
+	B.Add(std::string("three"), 2);
 	BOOST_REQUIRE(A != B);
 }
 
@@ -964,7 +1077,7 @@ BOOST_AUTO_TEST_CASE(AddRange)
 	Source.Add(IntStringRBTree::KeyValueType(5, std::string("five"))); // this element will be OUT of range
 
 	IntStringRBTree T;
-	T.AddCheck(0, "zero");
+	T.Add(0, "zero");
 
 	T.AddRange(Source.Iterator(), Source.IteratorAt(Source.LastIndex()));
 
@@ -979,15 +1092,15 @@ BOOST_AUTO_TEST_CASE(AddAllRange)
 	const int COUNT = 6;
 
 	IntStringRBTree Source;
-	Source.AddCheck(5, std::string("five"));
-	Source.AddCheck(2, std::string("one"));
-	Source.AddCheck(1, std::string("one"));
-	Source.AddCheck(3, std::string("one"));
-	Source.AddCheck(4, std::string("one"));
+	Source.Add(5, std::string("five"));
+	Source.Add(2, std::string("one"));
+	Source.Add(1, std::string("one"));
+	Source.Add(3, std::string("one"));
+	Source.Add(4, std::string("one"));
 
 	IntStringRBTree T;
-	T.AddCheck(0, "zero");
-	T.AddCheck(2, "two_second");
+	T.Add(0, "zero");
+	T.Add(2, "two_second");
 
 	T.AddRange(Source.Iterator());
 
@@ -1002,14 +1115,14 @@ BOOST_AUTO_TEST_CASE(AddFromRBTreeTest)
 	constexpr int COUNT = 5;
 
 	IntStringRBTree Source;
-	Source.AddCheck(3, "three");
-	Source.AddCheck(1, "one");
-	Source.AddCheck(2, "two");
-	Source.AddCheck(4, "four");
+	Source.Add(3, "three");
+	Source.Add(1, "one");
+	Source.Add(2, "two");
+	Source.Add(4, "four");
 
 	IntStringRBTree T;
-	T.AddCheck(0, "zero");
-	T.AddCheck(2, "two_second");
+	T.Add(0, "zero");
+	T.Add(2, "two_second");
 
 	T.Add(Source);
 
@@ -1024,13 +1137,13 @@ BOOST_AUTO_TEST_CASE(AddMoveFromRBTreeTest)
 	constexpr int COUNT = 5;
 
 	IntStringRBTree Source;
-	Source.AddCheck(3, "three");
-	Source.AddCheck(1, "one");
-	Source.AddCheck(2, "two");
-	Source.AddCheck(4, "four");
+	Source.Add(3, "three");
+	Source.Add(1, "one");
+	Source.Add(2, "two");
+	Source.Add(4, "four");
 
 	IntStringRBTree T;
-	T.AddCheck(0, "zero");
+	T.Add(0, "zero");
 
 	T.Add(std::move(Source));
 
@@ -1059,8 +1172,8 @@ BOOST_AUTO_TEST_CASE(AddSortedFromVectorTest)
 
 	BOOST_TEST_CHECKPOINT("Initialization");
 	IntRBTree T;
-	T.AddCheck(5, NoValue{});
-	T.AddCheck(1, NoValue{});
+	T.Add(5, NoValue{});
+	T.Add(1, NoValue{});
 
 	BOOST_TEST_CHECKPOINT("Adding");
 	T.AddSorted(Source);
@@ -1086,8 +1199,8 @@ BOOST_AUTO_TEST_CASE(AddFromVectorTest)
 
 	BOOST_TEST_CHECKPOINT("Initialization");
 	IntRBTree T;
-	T.AddCheck(5, NoValue{});
-	T.AddCheck(1, NoValue{});
+	T.Add(5, NoValue{});
+	T.Add(1, NoValue{});
 
 	BOOST_TEST_CHECKPOINT("Adding");
 	T.Add(Source);
@@ -1113,9 +1226,9 @@ BOOST_AUTO_TEST_CASE(AddMovedFromVectorTest)
 
 	BOOST_TEST_CHECKPOINT("Initialization");
 	IntStringRBTree T;
-	T.AddCheck(7, std::string{ "seven" });
-	T.AddCheck(5, std::string{ "five" });
-	T.AddCheck(6, std::string{ "six" });
+	T.Add(7, std::string{ "seven" });
+	T.Add(5, std::string{ "five" });
+	T.Add(6, std::string{ "six" });
 
 	BOOST_TEST_CHECKPOINT("Adding");
 	T.AddMoved(Source);
@@ -1144,7 +1257,7 @@ BOOST_AUTO_TEST_CASE(AddInitializeListTest)
 
 	BOOST_TEST_CHECKPOINT("Initialization");
 	IntRBTree T;
-	T.AddCheck(0, NoValue{});
+	T.Add(0, NoValue{});
 
 	BOOST_TEST_CHECKPOINT("Adding");
 	T.Add(lst);
@@ -1170,13 +1283,13 @@ BOOST_AUTO_TEST_CASE(ExtraAddTest)
 
 	BOOST_TEST_CHECKPOINT("Initializing RBTree");
 	IntRBTree T;
-	T.AddCheck(3, NoValue{});
-	T.AddCheck(0, NoValue{});
-	T.AddCheck(8, NoValue{});
-	T.AddCheck(6, NoValue{});
-	T.AddCheck(9, NoValue{});
-	T.AddCheck(5, NoValue{});
-	T.AddCheck(4, NoValue{});
+	T.Add(3, NoValue{});
+	T.Add(0, NoValue{});
+	T.Add(8, NoValue{});
+	T.Add(6, NoValue{});
+	T.Add(9, NoValue{});
+	T.Add(5, NoValue{});
+	T.Add(4, NoValue{});
 
 	BOOST_TEST_CHECKPOINT("Adding elements from SourceArray");
 	T.Add(SourceArray.data(), SourceArray.size());
@@ -1201,13 +1314,13 @@ BOOST_AUTO_TEST_CASE(ExtraAddSortedTest)
 
 	BOOST_TEST_CHECKPOINT("Initializing RBTree");
 	IntRBTree T;
-	T.AddCheck(3, NoValue{});
-	T.AddCheck(0, NoValue{});
-	T.AddCheck(8, NoValue{});
-	T.AddCheck(6, NoValue{});
-	T.AddCheck(9, NoValue{});
-	T.AddCheck(5, NoValue{});
-	T.AddCheck(4, NoValue{});
+	T.Add(3, NoValue{});
+	T.Add(0, NoValue{});
+	T.Add(8, NoValue{});
+	T.Add(6, NoValue{});
+	T.Add(9, NoValue{});
+	T.Add(5, NoValue{});
+	T.Add(4, NoValue{});
 
 	BOOST_TEST_CHECKPOINT("Adding elements from SourceArray");
 	T.AddSorted(SourceArray.data(), SourceArray.size());
@@ -1222,9 +1335,9 @@ BOOST_AUTO_TEST_CASE(GetMovedByIteratorTest)
 	constexpr int INITIAL_COUNT = 3;
 
 	IntToUniquePtStr T;
-	BOOST_REQUIRE(T.AddCheck(1, std::make_unique<std::string>("one")));
-	BOOST_REQUIRE(T.AddCheck(2, std::make_unique<std::string>("two")));
-	BOOST_REQUIRE(T.AddCheck(3, std::make_unique<std::string>("three")));
+	BOOST_REQUIRE(T.Add(1, std::make_unique<std::string>("one")));
+	BOOST_REQUIRE(T.Add(2, std::make_unique<std::string>("two")));
+	BOOST_REQUIRE(T.Add(3, std::make_unique<std::string>("three")));
 	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
 
 	IntToUniquePtStr::KeyValueType MovedKV = T.GetMovedByIterator(T.FindIteratorFor(2));
@@ -1237,9 +1350,9 @@ BOOST_AUTO_TEST_CASE(MoveByKeyTest)
 	constexpr int INITIAL_COUNT = 3;
 
 	IntToUniquePtStr T;
-	BOOST_REQUIRE(T.AddCheck(1, std::make_unique<std::string>("one")));
-	BOOST_REQUIRE(T.AddCheck(2, std::make_unique<std::string>("two")));
-	BOOST_REQUIRE(T.AddCheck(3, std::make_unique<std::string>("three")));
+	BOOST_REQUIRE(T.Add(1, std::make_unique<std::string>("one")));
+	BOOST_REQUIRE(T.Add(2, std::make_unique<std::string>("two")));
+	BOOST_REQUIRE(T.Add(3, std::make_unique<std::string>("three")));
 	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
 
 	IntToUniquePtStr::KeyValueType MovedKV;
@@ -1284,11 +1397,11 @@ BOOST_AUTO_TEST_CASE(MovingFromPartOfCArrayTest)
 
 	BOOST_TEST_CHECKPOINT("Initializing RBTree");
 	IntStringRBTree T;
-	T.AddCheck(0, std::string("third_zero"));
-	T.AddCheck(8, std::string("third_eight"));
-	T.AddCheck(6, std::string("third_six"));
-	T.AddCheck(5, std::string("third_five"));
-	T.AddCheck(4, std::string("third_fourth"));
+	T.Add(0, std::string("third_zero"));
+	T.Add(8, std::string("third_eight"));
+	T.Add(6, std::string("third_six"));
+	T.Add(5, std::string("third_five"));
+	T.Add(4, std::string("third_fourth"));
 
 	BOOST_TEST_CHECKPOINT("Moving elements from SourceArray");
 	T.AddMoved(SourceArray.data(), SourceArray.size());
@@ -1317,11 +1430,11 @@ BOOST_AUTO_TEST_CASE(MovingSortedFromPartOfCArrayTest)
 
 	BOOST_TEST_CHECKPOINT("Initializing RBTree");
 	IntStringRBTree T;
-	T.AddCheck(0, std::string("third_zero"));
-	T.AddCheck(8, std::string("third_eight"));
-	T.AddCheck(6, std::string("third_six"));
-	T.AddCheck(5, std::string("third_five"));
-	T.AddCheck(4, std::string("third_fourth"));
+	T.Add(0, std::string("third_zero"));
+	T.Add(8, std::string("third_eight"));
+	T.Add(6, std::string("third_six"));
+	T.Add(5, std::string("third_five"));
+	T.Add(4, std::string("third_fourth"));
 
 	BOOST_TEST_CHECKPOINT("Moving elements from SourceArray");
 	T.AddMovedSorted(SourceArray.data(), SourceArray.size());
@@ -1338,8 +1451,8 @@ BOOST_AUTO_TEST_CASE(MovingSortedFromPartOfCArrayTest)
 BOOST_AUTO_TEST_CASE(AccessTestCase)
 {
 	IntStringRBTree T;
-	BOOST_REQUIRE(T.AddCheck(1, std::string("one")));
-	BOOST_REQUIRE(T.AddCheck(2, std::string("two")));
+	BOOST_REQUIRE(T.Add(1, std::string("one")));
+	BOOST_REQUIRE(T.Add(2, std::string("two")));
 
 	BOOST_REQUIRE_EQUAL(T[1], std::string("one"));
 	BOOST_REQUIRE_EQUAL(T[2], std::string("two"));
@@ -1360,7 +1473,7 @@ BOOST_AUTO_TEST_CASE(SerializationTest)
 	IntRBTree T;
 	for (int i = 0; i < COUNT; i++)
 	{
-		BOOST_REQUIRE(T.AddCheck(i, NoValue{}));
+		BOOST_REQUIRE(T.Add(i, NoValue{}));
 	}
 
 	std::string serialization_buffer;
@@ -1394,7 +1507,7 @@ BOOST_AUTO_TEST_CASE(ClearingTest)
 	std::fill(DestroyFlags, DestroyFlags + COUNT, false);
 	for (int i = 0; i < COUNT; i++)
 	{
-		BOOST_REQUIRE(T.AddCheck(i, TestNonPOD(&DestroyFlags[i])));
+		BOOST_REQUIRE(T.Add(i, TestNonPOD(&DestroyFlags[i])));
 	}
 
 	BOOST_TEST_CHECKPOINT("Clearing");
@@ -1482,7 +1595,7 @@ BOOST_AUTO_TEST_CASE(DeletedProperlyTest)
 {
 	TRBTree<KVType<int, TestNonPOD>> T;
 	bool bDeleted = false;
-	BOOST_REQUIRE(T.AddCheck(1, TestNonPOD(&bDeleted)));
+	BOOST_REQUIRE(T.Add(1, TestNonPOD(&bDeleted)));
 	BOOST_REQUIRE(T.Remove(1));
 	BOOST_REQUIRE( bDeleted );
 }
@@ -1526,7 +1639,7 @@ BOOST_AUTO_TEST_CASE
 	CustomIntPtrRBTree T;
 
 	BOOST_TEST_CHECKPOINT("Add");
-	BOOST_REQUIRE(T.AddCheck(PTR_TO_KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(PTR_TO_KEY_ONE, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Find");
 	const CustomIntPtrRBTree::KeyValueType* const pFound = T.Find(PTR_TO_KEY_ONE);
@@ -1544,7 +1657,7 @@ BOOST_AUTO_TEST_CASE(CompareIntWithPointerToInt)
 	IntRBTree T;
 
 	BOOST_TEST_CHECKPOINT("Add");
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Find");
 	const IntRBTree::KeyValueType* const pFound = T.Find(PTR_TO_KEY_ONE, IntWithIntPointerComparer());
@@ -1574,7 +1687,7 @@ BOOST_AUTO_TEST_CASE(Remove_CountTen_RemoveFour)
 	IntRBTree T;
 	for (int i = 1; i <= INITIAL_COUNT; i++)
 	{
-		BOOST_REQUIRE(T.AddCheck(i, NoValue{}));
+		BOOST_REQUIRE(T.Add(i, NoValue{}));
 	}
 
 	BOOST_TEST_CHECKPOINT("Removing");
@@ -1608,7 +1721,7 @@ BOOST_AUTO_TEST_CASE
 	IntRBTree T;
 	for (int i = 1; i <= INITIAL_COUNT; i++)
 	{
-		BOOST_REQUIRE(T.AddCheck(i, NoValue{}));
+		BOOST_REQUIRE(T.Add(i, NoValue{}));
 	}
 
 	BOOST_TEST_CHECKPOINT("Removing");
@@ -1642,7 +1755,7 @@ BOOST_AUTO_TEST_CASE
 	IntRBTree T;
 	for (int i = 1; i <= INITIAL_COUNT; i++)
 	{
-		BOOST_REQUIRE(T.AddCheck(i, NoValue{}));
+		BOOST_REQUIRE(T.Add(i, NoValue{}));
 	}
 
 	BOOST_TEST_CHECKPOINT("Removing");
@@ -1675,7 +1788,7 @@ BOOST_AUTO_TEST_CASE
 	IntRBTree T;
 	for (int i = 1; i <= INITIAL_COUNT; i++)
 	{
-		BOOST_REQUIRE(T.AddCheck(i, NoValue{}));
+		BOOST_REQUIRE(T.Add(i, NoValue{}));
 	}
 
 	BOOST_TEST_CHECKPOINT("Removing");
@@ -1722,7 +1835,7 @@ BOOST_AUTO_TEST_CASE(FirstMinimal)
 	BOOST_REQUIRE( ! T.FindValue(KEY_ONE) );
 
 	BOOST_TEST_CHECKPOINT("Add");
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
 	BOOST_REQUIRE_EQUAL(1, T.Num());
 	BOOST_REQUIRE( ! T.Empty() );
 	BOOST_REQUIRE( T.Contains(KEY_ONE) );
@@ -1732,11 +1845,11 @@ BOOST_AUTO_TEST_CASE(FirstMinimal)
 	BOOST_REQUIRE_EQUAL( KEY_ONE, T.Find(KEY_ONE)->Key );
 
 	BOOST_TEST_CHECKPOINT("Add Already Included");
-	BOOST_REQUIRE( ! T.AddCheck(KEY_ONE, NoValue{}) );
+	BOOST_REQUIRE( ! T.Add(KEY_ONE, NoValue{}) );
 	BOOST_REQUIRE_EQUAL( 1, T.Num() );
 
 	BOOST_TEST_CHECKPOINT("Add another (on the right of the root)");
-	BOOST_REQUIRE( T.AddCheck(KEY_TWO, NoValue{}) );
+	BOOST_REQUIRE( T.Add(KEY_TWO, NoValue{}) );
 	BOOST_REQUIRE( T.Contains(KEY_TWO) );
 	BOOST_REQUIRE( T.Contains(KEY_ONE) );
 	BOOST_REQUIRE_EQUAL( KEY_TWO, T.Find(KEY_TWO)->Key );
@@ -1744,7 +1857,7 @@ BOOST_AUTO_TEST_CASE(FirstMinimal)
 	BOOST_REQUIRE_EQUAL( 2, T.Num() );
 
 	BOOST_TEST_CHECKPOINT("Add another (on the left of the root)");
-	BOOST_REQUIRE(T.AddCheck(KEY_ZERO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ZERO, NoValue{}));
 	BOOST_REQUIRE(T.Contains(KEY_ZERO));
 	BOOST_REQUIRE(T.Contains(KEY_TWO));
 	BOOST_REQUIRE(T.Contains(KEY_ONE));
@@ -1775,13 +1888,13 @@ BOOST_AUTO_TEST_CASE
 	IntRBTree T;
 	
 	BOOST_TEST_CHECKPOINT("Add");
-	BOOST_REQUIRE(T.AddCheck(KEY_FIVE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_THREE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_SEVEN, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_SIX, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_FOUR, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_FIVE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_SEVEN, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_SIX, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_FOUR, NoValue{}));
 	BOOST_REQUIRE_EQUAL(T.Num(), KEY_SEVEN);
 
 	BOOST_TEST_CHECKPOINT("MinMax");
@@ -1800,12 +1913,13 @@ BOOST_AUTO_TEST_CASE(KeyIteration)
 {
 	IntStringRBTree T;
 	const IntStringRBTree* pCT = &T;
-	T.AddCheck(1, std::string("one"));
-	T.AddCheck(2, std::string("two"));
-	T.AddCheck(3, std::string("three"));
+	T.Add(1, std::string("one"));
+	T.Add(2, std::string("two"));
+	T.Add(3, std::string("three"));
 	
 	IntStringRBTree::IteratorType It = T.Iterator();
 	IntStringRBTree::KeyIteratorType KeyIt = T.KeyIterator();
+	BOOST_REQUIRE(KeyIt.GetBaseIterator() == T.Iterator());
 	while (It != T.EndIterator())
 	{
 		BOOST_REQUIRE_EQUAL(It.GetKey(), *KeyIt);
@@ -1899,7 +2013,7 @@ BOOST_AUTO_TEST_CASE(IterationRootOnly)
 
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Iteration");
 	IntRBTree::IteratorType It = T.Iterator();
@@ -1994,9 +2108,9 @@ BOOST_AUTO_TEST_CASE(ConstIteratorTest, *boost::unit_test::depends_on("Core/Cont
 {
 	StringToIntRBTree T;
 
-	BOOST_REQUIRE(T.AddCheck(STR_KEY_ONE, 1));
-	BOOST_REQUIRE(T.AddCheck(STR_KEY_TWO, 2));
-	BOOST_REQUIRE(T.AddCheck(STR_KEY_THREE, 3));
+	BOOST_REQUIRE(T.Add(STR_KEY_ONE, 1));
+	BOOST_REQUIRE(T.Add(STR_KEY_TWO, 2));
+	BOOST_REQUIRE(T.Add(STR_KEY_THREE, 3));
 
 	ConstIteratorTest_ConstContext(T);
 	ConstIteratorTest_Equality(T, T);
@@ -2012,8 +2126,8 @@ BOOST_AUTO_TEST_CASE(IterationEqual)
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
 	// WARNING!!! Addition order matters!!
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Iteration");
 	IntRBTree::IteratorType It = T.Iterator();
@@ -2046,9 +2160,9 @@ BOOST_AUTO_TEST_CASE(IterNonConst, *boost::unit_test::depends_on("Core/Container
 
 	const int VALUE_NEG_ONE = -1;
 
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, 1));
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, 2));
-	BOOST_REQUIRE(T.AddCheck(KEY_THREE, 3));
+	BOOST_REQUIRE(T.Add(KEY_ONE, 1));
+	BOOST_REQUIRE(T.Add(KEY_TWO, 2));
+	BOOST_REQUIRE(T.Add(KEY_THREE, 3));
 
 	const std::string KEY_TO_SEARCH = KEY_TWO;
 	const int VALUE_TO_SEARCH = 2;
@@ -2073,8 +2187,8 @@ BOOST_AUTO_TEST_CASE(IterationLeftToParent)
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
 	// WARNING!!! Addition order matters!!
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Iteration");
 	IntRBTree::IteratorType It = T.Iterator();
@@ -2109,9 +2223,9 @@ BOOST_AUTO_TEST_CASE
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
 	// WARNING!!! Addition order matters!!
-	BOOST_REQUIRE(T.AddCheck(KEY_THREE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Iteration");
 	IntRBTree::IteratorType It = T.Iterator();
@@ -2150,10 +2264,10 @@ BOOST_AUTO_TEST_CASE
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
 	// WARNING!!! Addition order matters!!
-	BOOST_REQUIRE(T.AddCheck(KEY_FOUR, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_THREE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_FOUR, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Iteration");
 	IntRBTree::IteratorType It = T.Iterator();
@@ -2183,10 +2297,10 @@ BOOST_AUTO_TEST_CASE
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
 	// WARNING!!! Addition order matters!!
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_THREE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_FOUR, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_FOUR, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Iteration");
 	IntRBTree::IteratorType It = T.Iterator();
@@ -2215,9 +2329,9 @@ BOOST_AUTO_TEST_CASE
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
 	// WARNING!!! Addition order matters!!
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Iteration");
 	IntRBTree::IteratorType It = T.Iterator();
@@ -2239,8 +2353,8 @@ BOOST_AUTO_TEST_CASE(IterationRightToParent)
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
 	// WARNING!!! Addition order matters!!
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Iteration");
 	IntRBTree::IteratorType It = T.Iterator();
@@ -2262,9 +2376,9 @@ BOOST_AUTO_TEST_CASE(IterationBothLeftAndRight)
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
 	// WARNING!!! Addition order matters!!
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Iteration");
 	IntRBTree::IteratorType It = T.Iterator();
@@ -2292,13 +2406,13 @@ BOOST_AUTO_TEST_CASE(IterationLevelTwo)
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
 	// WARNING!!! Addition order matters!!
-	BOOST_REQUIRE(T.AddCheck(KEY_FOUR, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_SIX, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_THREE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_FIVE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_SEVEN, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_FOUR, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_SIX, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_FIVE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_SEVEN, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Iteration");
 	IntRBTree::IteratorType It = T.Iterator();
@@ -2342,15 +2456,15 @@ BOOST_AUTO_TEST_CASE
 
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(KEY_SIX, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_EIGHT, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_SEVEN, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_NINE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_FIVE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_THREE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_FOUR, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_SIX, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_EIGHT, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_SEVEN, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_NINE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_FIVE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_FOUR, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Iteration");
 	IntRBTree::IteratorType It = T.Iterator();
@@ -2398,11 +2512,11 @@ BOOST_AUTO_TEST_CASE(Iteration)
 
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_THREE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_FIVE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_SEVEN, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_EIGHT, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_FIVE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_SEVEN, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_EIGHT, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Iteration");
 	IntRBTree::IteratorType It = T.Iterator();
@@ -2437,11 +2551,11 @@ BOOST_AUTO_TEST_CASE(CopyToTest, *boost::unit_test::depends_on("Core/Container/T
 
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_THREE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_FIVE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_SEVEN, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_EIGHT, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_FIVE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_SEVEN, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_EIGHT, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Copying to buffer");
 	IntRBTree::KeyValueType DestBuf[NUM];
@@ -2462,11 +2576,11 @@ BOOST_AUTO_TEST_CASE(CopyUnorderedToTest, *boost::unit_test::depends_on("Core/Co
 
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(KEY_FIVE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_THREE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_SEVEN, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_EIGHT, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_FIVE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_SEVEN, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_EIGHT, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Copying to buffer");
 	IntRBTree::KeyValueType DestBuf[NUM];
@@ -2509,11 +2623,11 @@ BOOST_AUTO_TEST_CASE(TraverseTest, *boost::unit_test::depends_on("Core/Container
 
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(KEY_FIVE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_THREE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_SEVEN, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_EIGHT, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_FIVE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_SEVEN, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_EIGHT, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Traverse");
 	std::vector<IntRBTree::KeyValueType> DestBuf;
@@ -2554,7 +2668,7 @@ BOOST_AUTO_TEST_CASE(RemoveFromRoot_TreeWithOneElem)
 
 	BOOST_TEST_CHECKPOINT("Preparing");
 	IntRBTree T;
-	T.AddCheck(KEY_EXISTING, NoValue{});
+	T.Add(KEY_EXISTING, NoValue{});
 	BOOST_REQUIRE_EQUAL(T.Num(), 1);
 
 	BOOST_TEST_CHECKPOINT("Removing non-existing key");
@@ -2578,8 +2692,8 @@ BOOST_AUTO_TEST_CASE
 
 	BOOST_TEST_CHECKPOINT("Preparing");
 	IntRBTree T;
-	T.AddCheck(KEY_ROOT, NoValue{});
-	T.AddCheck(KEY_LEFT_CHILD, NoValue{});
+	T.Add(KEY_ROOT, NoValue{});
+	T.Add(KEY_LEFT_CHILD, NoValue{});
 	BOOST_REQUIRE_EQUAL(T.Num(), 2);
 
 	BOOST_TEST_CHECKPOINT("Removing non-existing key");
@@ -2605,8 +2719,8 @@ BOOST_AUTO_TEST_CASE
 
 	BOOST_TEST_CHECKPOINT("Preparing");
 	IntRBTree T;
-	T.AddCheck(KEY_ROOT, NoValue{});
-	T.AddCheck(KEY_RIGHT_CHILD, NoValue{});
+	T.Add(KEY_ROOT, NoValue{});
+	T.Add(KEY_RIGHT_CHILD, NoValue{});
 	BOOST_REQUIRE_EQUAL(T.Num(), 2);
 
 	BOOST_TEST_CHECKPOINT("Removing non-existing key");
@@ -2631,7 +2745,7 @@ BOOST_AUTO_TEST_CASE
 	IntRBTree T;
 	for (int i = 1; i <= 4; i++)
 	{
-		T.AddCheck(i, NoValue{});
+		T.Add(i, NoValue{});
 	}
 	BOOST_REQUIRE_EQUAL(T.Num(), 4);
 
@@ -2657,7 +2771,7 @@ BOOST_AUTO_TEST_CASE
 	IntRBTree T;
 	for (int i = 1; i <= 5; i++)
 	{
-		T.AddCheck(i, NoValue{});
+		T.Add(i, NoValue{});
 	}
 	BOOST_REQUIRE_EQUAL(T.Num(), 5);
 
@@ -2682,10 +2796,10 @@ BOOST_AUTO_TEST_CASE
 {
 	BOOST_TEST_CHECKPOINT("Preparing");
 	IntRBTree T;
-	T.AddCheck(2, NoValue{});
-	T.AddCheck(1, NoValue{});
-	T.AddCheck(4, NoValue{});
-	T.AddCheck(3, NoValue{});
+	T.Add(2, NoValue{});
+	T.Add(1, NoValue{});
+	T.Add(4, NoValue{});
+	T.Add(3, NoValue{});
 	BOOST_REQUIRE_EQUAL(T.Num(), 4);
 
 	BOOST_TEST_CHECKPOINT("Removing");
@@ -2710,7 +2824,7 @@ BOOST_AUTO_TEST_CASE
 	IntRBTree T;
 	for (int i = 1; i <= 4; i++)
 	{
-		T.AddCheck(i, NoValue{});
+		T.Add(i, NoValue{});
 	}
 	BOOST_REQUIRE_EQUAL(T.Num(), 4);
 
@@ -2739,9 +2853,9 @@ BOOST_AUTO_TEST_CASE
 
 	BOOST_TEST_CHECKPOINT("Preparing");
 	IntRBTree T;
-	T.AddCheck(KEY_ROOT, NoValue{});
-	T.AddCheck(KEY_LEFT_CHILD, NoValue{});
-	T.AddCheck(KEY_RIGHT_CHILD, NoValue{});
+	T.Add(KEY_ROOT, NoValue{});
+	T.Add(KEY_LEFT_CHILD, NoValue{});
+	T.Add(KEY_RIGHT_CHILD, NoValue{});
 	BOOST_REQUIRE_EQUAL(T.Num(), 3);
 
 	BOOST_TEST_CHECKPOINT("Removing non-existing key");
@@ -2762,8 +2876,8 @@ BOOST_AUTO_TEST_CASE(RemoveLeftChildOfRoot_OnlyTwoElements)
 
 	BOOST_TEST_CHECKPOINT("Preparing");
 	IntRBTree T;
-	T.AddCheck(KEY_ROOT, NoValue{});
-	T.AddCheck(KEY_LEFT_CHILD, NoValue{});
+	T.Add(KEY_ROOT, NoValue{});
+	T.Add(KEY_LEFT_CHILD, NoValue{});
 	BOOST_REQUIRE_EQUAL(T.Num(), 2);
 
 	BOOST_TEST_CHECKPOINT("Removing");
@@ -2784,11 +2898,11 @@ BOOST_AUTO_TEST_CASE(RemoveLeftChildOfRoot_LeftChildHasTwoChildren)
 
 	BOOST_TEST_CHECKPOINT("Preparing");
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(KEY_ROOT, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_LEFT_CHILD, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_RIGHT_CHILD, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_LEFT_LEFT_CHILD_CHILD, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_LEFT_RIGHT_CHILD_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ROOT, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_LEFT_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_RIGHT_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_LEFT_LEFT_CHILD_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_LEFT_RIGHT_CHILD_CHILD, NoValue{}));
 	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
 
 	BOOST_TEST_CHECKPOINT("Removing");
@@ -2813,11 +2927,11 @@ BOOST_AUTO_TEST_CASE(RemoveLeftChildOfRoot_DeletableHasLeftChild_BrotherHasOneRe
 
 	BOOST_TEST_CHECKPOINT("Preparing");
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(KEY_ROOT, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_LEFT_CHILD, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_RIGHT_CHILD, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_LEFT_LEFT_CHILD_CHILD, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_BROTHER_RIGHT_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ROOT, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_LEFT_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_RIGHT_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_LEFT_LEFT_CHILD_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_BROTHER_RIGHT_CHILD, NoValue{}));
 	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
 
 	BOOST_TEST_CHECKPOINT("Removing");
@@ -2844,11 +2958,11 @@ BOOST_AUTO_TEST_CASE(RemoveRightChildOfLeftChildOfRoot_LeftChildOfRootHasTwoChil
 
 	BOOST_TEST_CHECKPOINT("Preparing");
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(KEY_ROOT, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_LEFT_CHILD, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_RIGHT_CHILD, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_LEFT_LEFT_CHILD_CHILD, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_LEFT_RIGHT_CHILD_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ROOT, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_LEFT_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_RIGHT_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_LEFT_LEFT_CHILD_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_LEFT_RIGHT_CHILD_CHILD, NoValue{}));
 	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
 
 	BOOST_TEST_CHECKPOINT("Removing");
@@ -2874,11 +2988,11 @@ BOOST_AUTO_TEST_CASE(RemoveRightChildOfRoot_ChildHasTwoChildren)
 
 	BOOST_TEST_CHECKPOINT("Preparing");
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(KEY_ROOT, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_LEFT_CHILD, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_RIGHT_CHILD, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_RIGHT_LEFT_CHILD_CHILD, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_RIGHT_RIGHT_CHILD_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ROOT, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_LEFT_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_RIGHT_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_RIGHT_LEFT_CHILD_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_RIGHT_RIGHT_CHILD_CHILD, NoValue{}));
 	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
 
 	BOOST_TEST_CHECKPOINT("Removing");
@@ -2907,11 +3021,11 @@ BOOST_AUTO_TEST_CASE
 
 	BOOST_TEST_CHECKPOINT("Preparing");
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(KEY_ROOT, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_LEFT_CHILD, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_RIGHT_CHILD, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_LEFT_LEFT_CHILD_CHILD, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_LEFT_RIGHT_CHILD_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ROOT, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_LEFT_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_RIGHT_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_LEFT_LEFT_CHILD_CHILD, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_LEFT_RIGHT_CHILD_CHILD, NoValue{}));
 	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
 
 	BOOST_TEST_CHECKPOINT("Removing");
@@ -2934,8 +3048,8 @@ BOOST_AUTO_TEST_CASE(RemoveRightChildOfRoot_OnlyTwoElements)
 
 	BOOST_TEST_CHECKPOINT("Preparing");
 	IntRBTree T;
-	T.AddCheck(KEY_ROOT, NoValue{});
-	T.AddCheck(KEY_RIGHT_CHILD, NoValue{});
+	T.Add(KEY_ROOT, NoValue{});
+	T.Add(KEY_RIGHT_CHILD, NoValue{});
 	BOOST_REQUIRE_EQUAL(T.Num(), 2);
 
 	BOOST_TEST_CHECKPOINT("Removing");
@@ -2955,10 +3069,10 @@ BOOST_AUTO_TEST_CASE(RemoveLeftLeaf_TwoTire)
 
 	BOOST_TEST_CHECKPOINT("Preparing");
 	IntRBTree T;
-	T.AddCheck(KEY_FIRST, NoValue{});
-	T.AddCheck(KEY_SECOND, NoValue{});
-	T.AddCheck(KEY_THIRD, NoValue{});
-	T.AddCheck(KEY_FOURTH, NoValue{});
+	T.Add(KEY_FIRST, NoValue{});
+	T.Add(KEY_SECOND, NoValue{});
+	T.Add(KEY_THIRD, NoValue{});
+	T.Add(KEY_FOURTH, NoValue{});
 	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
 
 	BOOST_TEST_CHECKPOINT("Removing");
@@ -2983,10 +3097,10 @@ BOOST_AUTO_TEST_CASE(RemoveRightLeaf_TwoTire)
 
 	BOOST_TEST_CHECKPOINT("Preparing");
 	IntRBTree T;
-	T.AddCheck(KEY_FIRST, NoValue{});
-	T.AddCheck(KEY_SECOND, NoValue{});
-	T.AddCheck(KEY_THIRD, NoValue{});
-	T.AddCheck(KEY_FOURTH, NoValue{});
+	T.Add(KEY_FIRST, NoValue{});
+	T.Add(KEY_SECOND, NoValue{});
+	T.Add(KEY_THIRD, NoValue{});
+	T.Add(KEY_FOURTH, NoValue{});
 	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
 
 	BOOST_TEST_CHECKPOINT("Removing");
@@ -3011,10 +3125,10 @@ BOOST_AUTO_TEST_CASE(RemoveInternalNode_WithOnlyLeftRedChild)
 
 	BOOST_TEST_CHECKPOINT("Preparing");
 	IntRBTree T;
-	T.AddCheck(KEY_FIRST, NoValue{});
-	T.AddCheck(KEY_SECOND, NoValue{});
-	T.AddCheck(KEY_THIRD, NoValue{});
-	T.AddCheck(KEY_FOURTH, NoValue{});
+	T.Add(KEY_FIRST, NoValue{});
+	T.Add(KEY_SECOND, NoValue{});
+	T.Add(KEY_THIRD, NoValue{});
+	T.Add(KEY_FOURTH, NoValue{});
 	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
 
 	BOOST_TEST_CHECKPOINT("Removing");
@@ -3039,10 +3153,10 @@ BOOST_AUTO_TEST_CASE(RemoveInternalNode_WithOnlyRightRedChild)
 
 	BOOST_TEST_CHECKPOINT("Preparing");
 	IntRBTree T;
-	T.AddCheck(KEY_FIRST, NoValue{});
-	T.AddCheck(KEY_SECOND, NoValue{});
-	T.AddCheck(KEY_THIRD, NoValue{});
-	T.AddCheck(KEY_FOURTH, NoValue{});
+	T.Add(KEY_FIRST, NoValue{});
+	T.Add(KEY_SECOND, NoValue{});
+	T.Add(KEY_THIRD, NoValue{});
+	T.Add(KEY_FOURTH, NoValue{});
 	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
 
 	BOOST_TEST_CHECKPOINT("Removing");
@@ -3069,11 +3183,11 @@ BOOST_AUTO_TEST_CASE(RemoveInternalNode_WithOnlyRightRedChild_OnlyLeftRedChildOf
 
 	BOOST_TEST_CHECKPOINT("Preparing");
 	IntRBTree T;
-	T.AddCheck(KEY_FIRST, NoValue{});
-	T.AddCheck(KEY_SECOND, NoValue{});
-	T.AddCheck(KEY_THIRD, NoValue{});
-	T.AddCheck(KEY_FOURTH, NoValue{});
-	T.AddCheck(KEY_FIVE, NoValue{});
+	T.Add(KEY_FIRST, NoValue{});
+	T.Add(KEY_SECOND, NoValue{});
+	T.Add(KEY_THIRD, NoValue{});
+	T.Add(KEY_FOURTH, NoValue{});
+	T.Add(KEY_FIVE, NoValue{});
 	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
 
 	BOOST_TEST_CHECKPOINT("Removing");
@@ -3101,11 +3215,11 @@ BOOST_AUTO_TEST_CASE(RemoveInternalNode_WithOnlyRightRedChild_OnlyRightRedChildO
 
 	BOOST_TEST_CHECKPOINT("Preparing");
 	IntRBTree T;
-	T.AddCheck(KEY_FIRST, NoValue{});
-	T.AddCheck(KEY_SECOND, NoValue{});
-	T.AddCheck(KEY_THIRD, NoValue{});
-	T.AddCheck(KEY_FOURTH, NoValue{});
-	T.AddCheck(KEY_FIVE, NoValue{});
+	T.Add(KEY_FIRST, NoValue{});
+	T.Add(KEY_SECOND, NoValue{});
+	T.Add(KEY_THIRD, NoValue{});
+	T.Add(KEY_FOURTH, NoValue{});
+	T.Add(KEY_FIVE, NoValue{});
 	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
 
 	BOOST_TEST_CHECKPOINT("Removing");
@@ -3134,12 +3248,12 @@ BOOST_AUTO_TEST_CASE(RemoveInternalNode_WithOnlyRightRedChild_BothRedChildrenOfB
 
 	BOOST_TEST_CHECKPOINT("Preparing");
 	IntRBTree T;
-	T.AddCheck(KEY_FIRST, NoValue{});
-	T.AddCheck(KEY_SECOND, NoValue{});
-	T.AddCheck(KEY_THIRD, NoValue{});
-	T.AddCheck(KEY_FOURTH, NoValue{});
-	T.AddCheck(KEY_FIVE, NoValue{});
-	T.AddCheck(KEY_SIX, NoValue{});
+	T.Add(KEY_FIRST, NoValue{});
+	T.Add(KEY_SECOND, NoValue{});
+	T.Add(KEY_THIRD, NoValue{});
+	T.Add(KEY_FOURTH, NoValue{});
+	T.Add(KEY_FIVE, NoValue{});
+	T.Add(KEY_SIX, NoValue{});
 	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
 
 	BOOST_TEST_CHECKPOINT("Removing");
@@ -3170,13 +3284,13 @@ BOOST_AUTO_TEST_CASE(RemoveInternalNode_FullTwoTireTree)
 
 	BOOST_TEST_CHECKPOINT("Preparing");
 	IntRBTree T;
-	T.AddCheck(KEY_FIRST, NoValue{});
-	T.AddCheck(KEY_SECOND, NoValue{});
-	T.AddCheck(KEY_THIRD, NoValue{});
-	T.AddCheck(KEY_FOURTH, NoValue{});
-	T.AddCheck(KEY_FIVE, NoValue{});
-	T.AddCheck(KEY_SIX, NoValue{});
-	T.AddCheck(KEY_SEVEN, NoValue{});
+	T.Add(KEY_FIRST, NoValue{});
+	T.Add(KEY_SECOND, NoValue{});
+	T.Add(KEY_THIRD, NoValue{});
+	T.Add(KEY_FOURTH, NoValue{});
+	T.Add(KEY_FIVE, NoValue{});
+	T.Add(KEY_SIX, NoValue{});
+	T.Add(KEY_SEVEN, NoValue{});
 	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
 
 	BOOST_TEST_CHECKPOINT("Removing");
@@ -3207,13 +3321,13 @@ BOOST_AUTO_TEST_CASE(RemoveInternalNode_WithOnlyLeftRedChild_RedBrother)
 
 	BOOST_TEST_CHECKPOINT("Preparing");
 	IntRBTree T;
-	T.AddCheck(KEY_FIRST, NoValue{});
-	T.AddCheck(KEY_SECOND, NoValue{});
-	T.AddCheck(KEY_THIRD, NoValue{});
-	T.AddCheck(KEY_FOURTH, NoValue{});
-	T.AddCheck(KEY_FIVE, NoValue{});
-	T.AddCheck(KEY_SIX, NoValue{});
-	T.AddCheck(KEY_SEVEN, NoValue{});
+	T.Add(KEY_FIRST, NoValue{});
+	T.Add(KEY_SECOND, NoValue{});
+	T.Add(KEY_THIRD, NoValue{});
+	T.Add(KEY_FOURTH, NoValue{});
+	T.Add(KEY_FIVE, NoValue{});
+	T.Add(KEY_SIX, NoValue{});
+	T.Add(KEY_SEVEN, NoValue{});
 	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
 
 	BOOST_TEST_CHECKPOINT("Removing");
@@ -3239,7 +3353,7 @@ BOOST_AUTO_TEST_CASE(RemoveInternalBlackNode_WithTwoBlackChildren_BrotherWith_Ri
 	IntRBTree T;
 	for (int i = 1; i <= INITIAL_COUNT; i++)
 	{
-		BOOST_REQUIRE(T.AddCheck(i, NoValue{}));
+		BOOST_REQUIRE(T.Add(i, NoValue{}));
 	}
 	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
 
@@ -3269,7 +3383,7 @@ BOOST_AUTO_TEST_CASE(RemoveInternalBlackNode_WithTwoBlackChildren_BrotherWith_Ri
 	IntRBTree T;
 	for (int i = INITIAL_COUNT; i >= 1; i--)
 	{
-		BOOST_REQUIRE(T.AddCheck(i, NoValue{}));
+		BOOST_REQUIRE(T.Add(i, NoValue{}));
 	}
 	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
 
@@ -3299,7 +3413,7 @@ BOOST_AUTO_TEST_CASE(RemoveInternalBlackNode_RedNode_WithTwoBlackChildren)
 	IntRBTree T;
 	for (int i = 1; i <= INITIAL_COUNT; i++)
 	{
-		BOOST_REQUIRE(T.AddCheck(i, NoValue{}));
+		BOOST_REQUIRE(T.Add(i, NoValue{}));
 	}
 	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
 
@@ -3345,8 +3459,8 @@ BOOST_AUTO_TEST_CASE
 
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Copying to buffer");
 	IntRBTree::KeyValueType DestBuf[NUM];
@@ -3372,9 +3486,9 @@ BOOST_AUTO_TEST_CASE(AddLessLess, *boost::unit_test::depends_on("Core/Container/
 
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(KEY_THREE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Copying to buffer");
 	IntRBTree::KeyValueType DestBuf[NUM];
@@ -3402,10 +3516,10 @@ BOOST_AUTO_TEST_CASE(AddLessLessLess, *boost::unit_test::depends_on("Core/Contai
 
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(KEY_FOUR, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_THREE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_FOUR, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Copying to buffer");
 	IntRBTree::KeyValueType DestBuf[NUM];
@@ -3421,7 +3535,7 @@ BOOST_AUTO_TEST_CASE(AddLessManyMany, *boost::unit_test::depends_on("Core/Contai
 	constexpr int COUNT = 40;
 	for (int i = COUNT - 1; i >= 0; i--)
 	{
-		BOOST_REQUIRE(T.AddCheck(i, NoValue{}));
+		BOOST_REQUIRE(T.Add(i, NoValue{}));
 	}
 
 	for (int i = 0; i < COUNT; i++)
@@ -3447,9 +3561,9 @@ BOOST_AUTO_TEST_CASE(AddMiddle, *boost::unit_test::depends_on("Core/Container/TR
 
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(KEY_THREE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Copying to buffer");
 	IntRBTree::KeyValueType DestBuf[NUM];
@@ -3478,8 +3592,8 @@ BOOST_AUTO_TEST_CASE
 
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Copying to buffer");
 	IntRBTree::KeyValueType DestBuf[NUM];
@@ -3505,9 +3619,9 @@ BOOST_AUTO_TEST_CASE(AddGreaterGreater, *boost::unit_test::depends_on("Core/Cont
 
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Copying to buffer");
 	IntRBTree::KeyValueType DestBuf[NUM];
@@ -3537,10 +3651,10 @@ BOOST_AUTO_TEST_CASE(AddGreaterGreaterGreater, *boost::unit_test::depends_on("Co
 
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_THREE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_FOUR, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_FOUR, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Copying to buffer");
 	IntRBTree::KeyValueType DestBuf[NUM];
@@ -3559,7 +3673,7 @@ BOOST_AUTO_TEST_CASE(AddGreaterManyMany, *boost::unit_test::depends_on("Core/Con
 	constexpr int COUNT = 40;
 	for (int i = 0; i < COUNT; i++)
 	{
-		BOOST_REQUIRE(T.AddCheck(i, NoValue{}));
+		BOOST_REQUIRE(T.Add(i, NoValue{}));
 	}
 
 	for (int i = 0; i < COUNT; i++)
@@ -3594,9 +3708,9 @@ BOOST_AUTO_TEST_CASE(AddGreaterThenMiddle, *boost::unit_test::depends_on("Core/C
 
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_THREE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Copying to buffer");
 	IntRBTree::KeyValueType DestBuf[NUM];
@@ -3639,15 +3753,15 @@ BOOST_AUTO_TEST_CASE
 
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(KEY_SIX, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_EIGHT, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_FOUR, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_SEVEN, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_NINE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_THREE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_FIVE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_SIX, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_EIGHT, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_FOUR, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_SEVEN, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_NINE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_FIVE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Copying to buffer");
 	IntRBTree::KeyValueType DestBuf[NUM];
@@ -3671,7 +3785,7 @@ BOOST_AUTO_TEST_CASE(Corner_FindRoot_InRootOnlyTree)
 
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Find");
 	const IntRBTree::KeyValueType* const pFound = T.Find(KEY_TO_FIND);
@@ -3689,8 +3803,8 @@ BOOST_AUTO_TEST_CASE(Corner_FindRoot)
 
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Find");
 	const IntRBTree::KeyValueType* const pFound = T.Find(KEY_TO_FIND);
@@ -3708,8 +3822,8 @@ BOOST_AUTO_TEST_CASE(Corner_FindRoot_Inexistent)
 
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Find");
 	const IntRBTree::KeyValueType* const pFound = T.Find(KEY_TO_FIND);
@@ -3725,7 +3839,7 @@ BOOST_AUTO_TEST_CASE(Corner_FindRoot_InRootOnlyTree_Inexistent)
 
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Find");
 	const IntRBTree::KeyValueType* const pFound = T.Find(KEY_TO_FIND);
@@ -3750,15 +3864,15 @@ BOOST_AUTO_TEST_CASE(FindDeepest)
 
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(KEY_SIX, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_EIGHT, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_FOUR, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_SEVEN, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_NINE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_THREE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_FIVE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_SIX, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_EIGHT, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_FOUR, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_SEVEN, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_NINE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_FIVE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Find");
 	const IntRBTree::KeyValueType* pFound = T.Find(KEY_TO_FIND);
@@ -3784,15 +3898,15 @@ BOOST_AUTO_TEST_CASE(FindDeepestOne)
 
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(KEY_SIX, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_EIGHT, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_FOUR, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_SEVEN, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_NINE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_THREE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_FIVE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_SIX, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_EIGHT, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_FOUR, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_SEVEN, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_NINE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_FIVE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Find");
 	const IntRBTree::KeyValueType* pFound = T.Find(KEY_TO_FIND);
@@ -3818,15 +3932,15 @@ BOOST_AUTO_TEST_CASE(FindDeepestInexistent)
 
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
-	BOOST_REQUIRE(T.AddCheck(KEY_SIX, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_EIGHT, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_FOUR, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_SEVEN, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_NINE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_TWO, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_THREE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_FIVE, NoValue{}));
-	BOOST_REQUIRE(T.AddCheck(KEY_ONE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_SIX, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_EIGHT, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_FOUR, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_SEVEN, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_NINE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_FIVE, NoValue{}));
+	BOOST_REQUIRE(T.Add(KEY_ONE, NoValue{}));
 
 	BOOST_TEST_CHECKPOINT("Find");
 	const IntRBTree::KeyValueType* pFound = T.Find(KEY_TO_FIND);

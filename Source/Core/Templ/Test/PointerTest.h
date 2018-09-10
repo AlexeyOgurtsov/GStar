@@ -5,6 +5,7 @@
 #include "Core/Mem/TSharedPtr.h"
 #include "Core/Mem/TComPtr.h"
 #include <string>
+#include <unordered_set>
 #include <boost/test/included/unit_test.hpp>
 
 BOOST_AUTO_TEST_SUITE(Core)
@@ -37,6 +38,10 @@ BOOST_AUTO_TEST_CASE(ComPtrTest)
 	BOOST_REQUIRE( ! DefaultComToConst );
 
 	BOOST_REQUIRE( DefaultCom == DefaultComToConst );
+	BOOST_REQUIRE( DefaultCom <= DefaultComToConst );
+	BOOST_REQUIRE( DefaultCom >= DefaultComToConst );
+	BOOST_REQUIRE( ! ( DefaultCom < DefaultComToConst ) );
+	BOOST_REQUIRE( ! ( DefaultCom > DefaultComToConst ) );
 
 	BOOST_TEST_CHECKPOINT("ResetForDefault test");
 	DefaultCom.Reset(nullptr);
@@ -51,6 +56,13 @@ BOOST_AUTO_TEST_CASE(ComPtrTest)
 	BOOST_TEST_CHECKPOINT("Moving NonConst to const");
 	DefaultComToConst = std::move(DefaultCom);
 	BOOST_REQUIRE(DefaultComToConst.IsNull());
+
+	BOOST_TEST_CHECKPOINT("Hash");
+	BOOST_REQUIRE(DefaultCom == DefaultComToConst);
+	std::unordered_set<TestComPtrToConst> TS;
+	TS.insert(DefaultCom);
+	TS.insert(DefaultComToConst);
+	BOOST_REQUIRE_EQUAL(TS.size(), 1);
 }
 
 BOOST_AUTO_TEST_CASE(PointerTest)

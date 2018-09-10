@@ -24,3 +24,11 @@
 * Value typically to be returned by container functions to indicate that element does not exist.
 */
 constexpr int32_t INDEX_NONE = -1;
+
+/**
+* Special tag to be passed to force capacity initialization.
+*/
+enum class EForceInitCapacity 
+{
+	Value
+};

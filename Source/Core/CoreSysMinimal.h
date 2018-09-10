@@ -9,12 +9,12 @@
 #include <initializer_list>
 
 /**
-* Assertions are to be used everywhere.
+* Assertions are to be usable everywhere.
 */
-#include <boost/assert.hpp>
+#include "Assert.h"
 
 /**
-* Serialization support is to be provided by default by any class.
+* Serialization support is to be provided by default by almost any class.
 */
 #include <boost/serialization/access.hpp>
 
@@ -22,6 +22,17 @@
 * Needed because of std::hash.
 */
 #include <functional>
+
+/**
+* Type traits are needed for almost any class.
+*/
+#include <type_traits>
+
+/**
+* Stream traits are needed almost anywhere,
+* because any class should implement operator<<.
+*/
+#include "Stream/StreamTraits.h"
 
 #include "CoreSysTypes.h"
 

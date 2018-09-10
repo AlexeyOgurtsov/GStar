@@ -4,8 +4,6 @@
 #include "UT/TKeyValueIterator.h"
 #include "../Cont/TVector.h"
 #include "../Templ/TComparer.h"
-#include <tuple> // @TODO: Refactor: Do we really used a tuple here?
-#include <type_traits>
 #include <boost/serialization/split_member.hpp>
 
 /**
@@ -91,6 +89,8 @@ template<class KVTypeArg, class ComparerArg = TComparer<typename KVTypeArg::KeyT
 class TRBTree
 {
 public:
+	static_assert(IsKVType<KVTypeArg>::Value, "TRBTree: KVTypeArg must be KVType");
+
 	friend boost::serialization::access;
 
 	/**
@@ -136,7 +136,7 @@ public:
 	using IteratorType = TGeneralIterator<ThisType>;
 	using ConstIteratorType = TGeneralIterator<const ThisType>;
 
-	using KeyIteratorType = TForwardKeyIterator<ConstIteratorType>;
+	using KeyIteratorType = TForwardKeyIterator<ConstIteratorType, /*bExposeIterator*/true>;
 
 	/**
 	* Capacity to be used for the buffer by default.
@@ -149,25 +149,21 @@ public:
 	TRBTree() : TRBTree{ DEFAULT_CAPACITY } {}
 
 	/**
-	* Constructs with the given capacity.
+	* Constructs with the given desired capacity.
 	*/
-	explicit TRBTree(int InCapacity) :
-		RootIdx{ INDEX_NONE }
-	,	Count{ 0 }
-	{
-		// @TODO: Optimize: Initialize capacity using TVector argument
-		Buffer.ReserveGrow(InCapacity);
-	}
+	explicit TRBTree(int InDesiredCapacity) :
+		Buffer(InDesiredCapacity, EForceInitCapacity::Value )
+	,	RootIdx{ INDEX_NONE }
+	,	Count{ 0 } {}
 
 	/**
 	* Constructs as a copy of another container.
 	*/
 	TRBTree(const ThisType& InOther) :
-		RootIdx{ INDEX_NONE }
+		Buffer( InOther.Count, EForceInitCapacity::Value )
+	,	RootIdx{ INDEX_NONE }
 	,	Count{ 0 }
 	{
-		// @TODO: Optimize: Initialize capacity using TVector argument
-		Buffer.ReserveGrow(InOther.Count);
 		Add(InOther);
 	}
 
@@ -176,11 +172,10 @@ public:
 	*/
 	template<class OtherComparerArg>
 	TRBTree(const TRBTree<KVTypeArg, OtherComparerArg>& InOther) :
-		RootIdx{ INDEX_NONE }
+		Buffer( InOther.Count, EForceInitCapacity::Value )
+	,	RootIdx{ INDEX_NONE }
 	,	Count{ 0 }
 	{
-		// @TODO: Optimize: Initialize capacity using TVector argument
-		Buffer.ReserveGrow(InOther.Num());
 		Add(InOther);
 	}
 
@@ -417,7 +412,7 @@ public:
 		{
 			KeyValueType KV;
 			Ar >> KV;
-			bool bAdded = AddCheck(KV.Key, KV.Value);
+			bool bAdded = Add(KV.Key, KV.Value);
 			BOOST_ASSERT_MSG(bAdded, "TRBTree: load: adding deserialized value must always succeed");
 		}
 	}
@@ -589,7 +584,7 @@ public:
 	* @UNIT-TESTED
 	*/
 	template<class Pred>
-	bool ContainsPredicate(Pred P) const
+	bool ContainsPredicate(const Pred& P) const
 	{
 		return FindIteratorByPredicate(P);
 	}
@@ -600,7 +595,7 @@ public:
 	* @UNIT-TESTED
 	*/
 	template<class Pred>
-	bool ContainsKeyPredicate(Pred P) const
+	bool ContainsKeyPredicate(const Pred& P) const
 	{
 		return FindIteratorByKeyPredicate(P);
 	}
@@ -612,7 +607,7 @@ public:
 	* @UNIT-TESTED
 	*/
 	template<class Pred>
-	bool ContainsNotKeyPredicate(Pred P) const
+	bool ContainsNotKeyPredicate(const Pred& P) const
 	{
 		return FindIteratorByNotKeyPredicate(P);
 	}
@@ -623,7 +618,7 @@ public:
 	* @UNIT-TESTED
 	*/
 	template<class Pred>
-	bool ContainsPredicate_InRange(Pred P, ConstIteratorType FirstIt, ConstIteratorType LastIt) const
+	bool ContainsPredicate_InRange(const Pred& P, ConstIteratorType FirstIt, ConstIteratorType LastIt) const
 	{
 		return FindIteratorByPredicate_InRange(P, FirstIt, LastIt);
 	}
@@ -634,7 +629,7 @@ public:
 	* @UNIT-TESTED
 	*/
 	template<class Pred>
-	bool ContainsKeyPredicate_InRange(Pred P, ConstIteratorType FirstIt, ConstIteratorType LastIt) const
+	bool ContainsKeyPredicate_InRange(const Pred& P, ConstIteratorType FirstIt, ConstIteratorType LastIt) const
 	{
 		return FindIteratorByKeyPredicate_InRange(P, FirstIt, LastIt);
 	}
@@ -645,7 +640,7 @@ public:
 	* @UNIT-TESTED
 	*/
 	template<class Pred>
-	bool ContainsNotPredicate(Pred P) const
+	bool ContainsNotPredicate(const Pred& P) const
 	{
 		return FindIteratorByNotPredicate(P);
 	}
@@ -676,7 +671,7 @@ public:
 	* @UNIT-TESTED
 	*/
 	template<class Pred>
-	bool ContainsNotPredicate_InRange(Pred P, ConstIteratorType FirstIt, ConstIteratorType LastIt) const
+	bool ContainsNotPredicate_InRange(const Pred& P, ConstIteratorType FirstIt, ConstIteratorType LastIt) const
 	{
 		return FindIteratorByNotPredicate_InRange(P, FirstIt, LastIt);
 	}
@@ -687,7 +682,7 @@ public:
 	* @UNIT-TESTED
 	*/
 	template<class Pred>
-	bool ContainsNotKeyPredicate_InRange(Pred P, ConstIteratorType FirstIt, ConstIteratorType LastIt) const
+	bool ContainsNotKeyPredicate_InRange(const Pred& P, ConstIteratorType FirstIt, ConstIteratorType LastIt) const
 	{
 		return FindIteratorByNotKeyPredicate_InRange(P, FirstIt, LastIt);
 	}
@@ -863,7 +858,7 @@ public:
 	* @UNIT-TESTED
 	*/
 	template<class Pred>
-	ConstIteratorType FindIteratorByPredicate(Pred P) const
+	ConstIteratorType FindIteratorByPredicate(const Pred& P) const
 	{
 		return FindIteratorByPredicateImpl<ConstIteratorType>(P, this);
 	}
@@ -877,7 +872,7 @@ public:
 	* @UNIT-TESTED
 	*/
 	template<class Pred>
-	ConstIteratorType FindIteratorByKeyPredicate(Pred P) const
+	ConstIteratorType FindIteratorByKeyPredicate(const Pred& P) const
 	{
 		return FindIteratorByKeyPredicateImpl<ConstIteratorType>(P, this);
 	}
@@ -891,7 +886,7 @@ public:
 	* @UNIT-TESTED
 	*/
 	template<class Pred>
-	ConstIteratorType FindIteratorByNotKeyPredicate(Pred P) const
+	ConstIteratorType FindIteratorByNotKeyPredicate(const Pred& P) const
 	{
 		return FindIteratorByNotKeyPredicateImpl<ConstIteratorType>(P, this);
 	}
@@ -905,7 +900,7 @@ public:
 	* @UNIT-TESTED
 	*/
 	template<class Pred>
-	IteratorType FindIteratorByPredicate(Pred P)
+	IteratorType FindIteratorByPredicate(const Pred& P)
 	{
 		return FindIteratorByPredicateImpl<IteratorType>(P, this);
 	}
@@ -919,7 +914,7 @@ public:
 	* @UNIT-TESTED
 	*/
 	template<class Pred>
-	IteratorType FindIteratorByKeyPredicate(Pred P)
+	IteratorType FindIteratorByKeyPredicate(const Pred& P)
 	{
 		return FindIteratorByKeyPredicateImpl<IteratorType>(P, this);
 	}
@@ -933,7 +928,7 @@ public:
 	* @UNIT-TESTED
 	*/
 	template<class Pred>
-	IteratorType FindIteratorByNotKeyPredicate(Pred P)
+	IteratorType FindIteratorByNotKeyPredicate(const Pred& P)
 	{
 		return FindIteratorByNotKeyPredicateImpl<IteratorType>(P, this);
 	}
@@ -947,7 +942,7 @@ public:
 	* @UNIT-TESTED
 	*/
 	template<class Pred>
-	IteratorType FindIteratorByNotPredicate(Pred P)
+	IteratorType FindIteratorByNotPredicate(const Pred& P)
 	{
 		return FindIteratorByPredicateImpl<IteratorType>
 		(
@@ -968,7 +963,7 @@ public:
 	* @UNIT-TESTED
 	*/
 	template<class Pred>
-	ConstIteratorType FindIteratorByNotPredicate(Pred P) const
+	ConstIteratorType FindIteratorByNotPredicate(const Pred& P) const
 	{
 		return FindIteratorByPredicateImpl<ConstIteratorType>
 		(
@@ -989,7 +984,7 @@ public:
 	* @UNIT-TESTED
 	*/
 	template<class Pred>
-	IteratorType FindIteratorByPredicate_InRange(Pred P, IteratorType FirstIt, IteratorType LastIt)
+	IteratorType FindIteratorByPredicate_InRange(const Pred& P, IteratorType FirstIt, IteratorType LastIt)
 	{
 		return FindIteratorByPredicate_InRange_Impl<IteratorType>(FirstIt, LastIt, P, this);
 	}
@@ -1003,7 +998,7 @@ public:
 	* @UNIT-TESTED
 	*/
 	template<class Pred>
-	IteratorType FindIteratorByKeyPredicate_InRange(Pred P, IteratorType FirstIt, IteratorType LastIt)
+	IteratorType FindIteratorByKeyPredicate_InRange(const Pred& P, IteratorType FirstIt, IteratorType LastIt)
 	{
 		return FindIteratorByKeyPredicate_InRange_Impl<IteratorType>(FirstIt, LastIt, P, this);
 	}
@@ -1017,7 +1012,7 @@ public:
 	* @UNIT-TESTED
 	*/
 	template<class Pred>
-	ConstIteratorType FindIteratorByPredicate_InRange(Pred P, ConstIteratorType FirstIt, ConstIteratorType LastIt) const
+	ConstIteratorType FindIteratorByPredicate_InRange(const Pred& P, ConstIteratorType FirstIt, ConstIteratorType LastIt) const
 	{
 		return FindIteratorByPredicate_InRange_Impl<ConstIteratorType>(FirstIt, LastIt, P, this);
 	}
@@ -1031,7 +1026,7 @@ public:
 	* @UNIT-TESTED
 	*/
 	template<class Pred>
-	ConstIteratorType FindIteratorByKeyPredicate_InRange(Pred P, ConstIteratorType FirstIt, ConstIteratorType LastIt) const
+	ConstIteratorType FindIteratorByKeyPredicate_InRange(const Pred& P, ConstIteratorType FirstIt, ConstIteratorType LastIt) const
 	{
 		return FindIteratorByKeyPredicate_InRange_Impl<ConstIteratorType>(FirstIt, LastIt, P, this);
 	}
@@ -1045,7 +1040,7 @@ public:
 	* @UNIT-TESTED
 	*/
 	template<class Pred>
-	IteratorType FindIteratorByNotPredicate_InRange(Pred P, IteratorType FirstIt, IteratorType LastIt)
+	IteratorType FindIteratorByNotPredicate_InRange(const Pred& P, IteratorType FirstIt, IteratorType LastIt)
 	{
 		return FindIteratorByNotPredicate_InRange_Impl<IteratorType>(FirstIt, LastIt, P, this);
 	}
@@ -1059,7 +1054,7 @@ public:
 	* @UNIT-TESTED
 	*/
 	template<class Pred>
-	IteratorType FindIteratorByNotKeyPredicate_InRange(Pred P, IteratorType FirstIt, IteratorType LastIt)
+	IteratorType FindIteratorByNotKeyPredicate_InRange(const Pred& P, IteratorType FirstIt, IteratorType LastIt)
 	{
 		return FindIteratorByNotKeyPredicate_InRange_Impl<IteratorType>(FirstIt, LastIt, P, this);
 	}
@@ -1073,7 +1068,7 @@ public:
 	* @UNIT-TESTED
 	*/
 	template<class Pred>
-	ConstIteratorType FindIteratorByNotPredicate_InRange(Pred P, ConstIteratorType FirstIt, ConstIteratorType LastIt) const
+	ConstIteratorType FindIteratorByNotPredicate_InRange(const Pred& P, ConstIteratorType FirstIt, ConstIteratorType LastIt) const
 	{
 		return FindIteratorByNotPredicate_InRange_Impl<ConstIteratorType>(FirstIt, LastIt, P, this);
 	}
@@ -1087,7 +1082,7 @@ public:
 	* @UNIT-TESTED
 	*/
 	template<class Pred>
-	ConstIteratorType FindIteratorByNotKeyPredicate_InRange(Pred P, ConstIteratorType FirstIt, ConstIteratorType LastIt) const
+	ConstIteratorType FindIteratorByNotKeyPredicate_InRange(const Pred& P, ConstIteratorType FirstIt, ConstIteratorType LastIt) const
 	{
 		return FindIteratorByNotKeyPredicate_InRange_Impl<ConstIteratorType>(FirstIt, LastIt, P, this);
 	}
@@ -1212,9 +1207,21 @@ public:
 	* @returns: true if element with the given predicate was in the container (otherwise, false)
 	*/
 	template<class Pred>
-	bool RemoveFirstPredicate(Pred P)
+	bool RemoveFirstPredicate(const Pred& P)
 	{
 		return RemoveFirstPredicate_InRange(P, Iterator(), EndIterator());
+	}
+
+	/**
+	* Removes the first key/value pair that satisfy the given predicate.
+	* The predicate must take the reference to const KeyType (const KeyType&).
+	*
+	* @returns: true if element with the given predicate was in the container (otherwise, false)
+	*/
+	template<class Pred>
+	bool RemoveFirstKeyPredicate(const Pred& P)
+	{
+		return RemoveFirstKeyPredicate_InRange(P, Iterator(), EndIterator());
 	}
 
 	/**
@@ -1238,10 +1245,47 @@ public:
 	* @returns: true if element with the given predicate was in the container (otherwise, false);
 	*/
 	template<class Pred>
-	bool RemoveFirstPredicate_InRange(Pred P, IteratorType FirstIt, IteratorType LastIt)
+	bool RemoveFirstPredicate_InRange(const Pred& P, IteratorType FirstIt, IteratorType LastIt)
 	{
 		IteratorType NextAfterRemovedIt { Iterator() };
 		return RemoveFirstPredicate_InRange(P, FirstIt, LastIt, /*Out*/NextAfterRemovedIt);
+	}
+
+	/**
+	* Removes the first key/value pair that satisfy the given predicate in the given range.
+	* The predicate must take the reference to const KeyType (const KeyType&).
+	*
+	* @returns: true if element with the given predicate was in the container (otherwise, false);
+	*/
+	template<class Pred>
+	bool RemoveFirstKeyPredicate_InRange(const Pred& P, IteratorType FirstIt, IteratorType LastIt)
+	{
+		IteratorType NextAfterRemovedIt{ Iterator() };
+		return RemoveFirstKeyPredicate_InRange(P, FirstIt, LastIt, /*Out*/NextAfterRemovedIt);
+	}
+
+	/**
+	* Removes the first key/value pair that satisfy the given predicate in the given range.
+	* The predicate must take the reference to const KeyType (const KeyType&).
+	*
+	* @returns: true if element with the given predicate was in the container (otherwise, false);
+	* @out: OutNextAfterRemovedIt:
+	*		iterator to the next element, that is immediately followed the removed element
+	*		(or End, if the last element was removed).
+	*		Valid only if element was really found and removed.
+	*/
+	template<class Pred>
+	bool RemoveFirstKeyPredicate_InRange(const Pred& P, IteratorType FirstIt, IteratorType LastIt, IteratorType& OutNextAfterRemovedIt)
+	{
+		return RemoveFirstPredicate_InRange
+		(
+			[&P](const KeyValueType& KV)
+			{
+				return P(KV.Key);
+			},
+			FirstIt, LastIt,
+			/*Out*/OutNextAfterRemovedIt
+		);
 	}
 
 	/**
@@ -1255,7 +1299,7 @@ public:
 	*		Valid only if element was really found and removed.
 	*/
 	template<class Pred>
-	bool RemoveFirstPredicate_InRange(Pred P, IteratorType FirstIt, IteratorType LastIt, IteratorType& OutNextAfterRemovedIt)
+	bool RemoveFirstPredicate_InRange(const Pred& P, IteratorType FirstIt, IteratorType LastIt, IteratorType& OutNextAfterRemovedIt)
 	{
 		IteratorType It = FindIteratorByPredicate_InRange(P, FirstIt, LastIt);
 		if ( It == EndIterator() )
@@ -1290,9 +1334,22 @@ public:
 	* @see: RemoveFirstPredicate
 	*/
 	template<class Pred>
-	int32_t RemoveAllPredicate(Pred P)
+	int32_t RemoveAllPredicate(const Pred& P)
 	{
 		return RemoveAllPredicate_InRange(P, Iterator(), EndIterator());
+	}
+
+	/**
+	* Removes all key/value pairs that satisfy the given predicate.
+	* The predicate must take the reference to const KeyValueType (const KeyValueType&).
+	*
+	* @returns: number of removed elements.
+	* @see: RemoveFirstPredicate
+	*/
+	template<class Pred>
+	int32_t RemoveAllKeyPredicate(const Pred& P)
+	{
+		return RemoveAllKeyPredicate_InRange(P, Iterator(), EndIterator());
 	}
 
 	/**
@@ -1305,6 +1362,7 @@ public:
 	{
 		return RemoveAllValues_InRange(InValue, Iterator(), EndIterator());
 	}
+
 
 	/**
 	* Removes all values equal to the given one in the given range.
@@ -1329,7 +1387,7 @@ public:
 	* @see: RemoveFirstPredicate
 	*/
 	template<class Pred>
-	int32_t RemoveAllPredicate_InRange(Pred P, IteratorType ItFirst, IteratorType ItLast)
+	int32_t RemoveAllPredicate_InRange(const Pred& P, IteratorType ItFirst, IteratorType ItLast)
 	{
 		// @TODO: Optimize
 		int32_t Count = 0;
@@ -1352,6 +1410,26 @@ public:
 			It = NextIt;
 		}
 		return Count;
+	}
+
+	/**
+	* Removes all key/value pairs that satisfy the given predicate.
+	* The predicate must take the reference to const KeyType (const KeyType&).
+	*
+	* @returns: number of removed elements.
+	* @see: RemoveFirstPredicate
+	*/
+	template<class Pred>
+	int32_t RemoveAllKeyPredicate_InRange(const Pred& P, IteratorType ItFirst, IteratorType ItLast)
+	{
+		return RemoveAllPredicate_InRange
+		(
+			[&P](const KeyValueType& KV)->bool
+			{
+				return P(KV.Key);
+			},
+			ItFirst, ItLast
+		);
 	}
 
 	/*
@@ -1382,7 +1460,7 @@ public:
 	*/
 	bool AddHint(ConstIteratorType ItPos, KeyValueType&& InKV)
 	{
-		return AddCheck(InKV);
+		return Add(InKV);
 	}
 
 	/**
@@ -1391,7 +1469,7 @@ public:
 	*/
 	bool AddHint(ConstIteratorType ItPos, const KeyValueType& InKV)
 	{
-		return AddCheck(InKV);
+		return Add(InKV);
 	}
 
 	/**
@@ -1490,9 +1568,9 @@ public:
 	*
 	* @Returns: true if was added (or false if already was in the tree).
 	*/
-	bool AddCheck(const KeyValueType& InKV)
+	bool Add(const KeyValueType& InKV)
 	{
-		static_assert(std::is_copy_constructible_v<KeyValueType>, "TRBTree: AddCheck: KeyValueType must be copy-constructible");
+		static_assert(std::is_copy_constructible_v<KeyValueType>, "TRBTree: Add: KeyValueType must be copy-constructible");
 		KeyValueType KV = InKV;
 		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
 		return AddImpl(std::move(KV), /*Out*/NodeRef);
@@ -1508,7 +1586,7 @@ public:
 		Buffer.ReserveGrow(Count + InCopiedCount);
 		for (int i = 0; i < InCopiedCount; i++) 
 		{
-			AddCheck(pInSource[i]);
+			Add(pInSource[i]);
 		}
 	}
 
@@ -1522,11 +1600,11 @@ public:
 		if (InCopiedCount == 0) { return; }
 		Buffer.ReserveGrow(Count + InCopiedCount);
 		const KeyValueType* pPrev = pInSource;
-		AddCheck(*pPrev);
+		Add(*pPrev);
 		for (int i = 1; i < InCopiedCount; i++)
 		{
 			BOOST_ASSERT_MSG(CompareLessOrEqual(ComparerArg().Compare(pPrev->Key, pInSource[i].Key)), "TRBTree: AddSorted: C-array values are not sorted by ascending key");
-			AddCheck(pInSource[i]);
+			Add(pInSource[i]);
 			pPrev = pInSource + i;
 		}
 	}
@@ -1541,7 +1619,7 @@ public:
 		Buffer.ReserveGrow(Count + InCopiedCount);
 		for (int i = 0; i < InCopiedCount; i++)
 		{
-			AddCheck(std::move(pInSource[i]));
+			Add(std::move(pInSource[i]));
 		}
 	}
 
@@ -1567,7 +1645,7 @@ public:
 		static_assert(std::is_same<std::remove_cv_t<std::remove_reference_t<decltype(*LastIt)>>, KeyValueType>::value, "TRBTree: Append iterator range: last iterator must return type convertible to KeyValue pair");
 		for (SourceIteratorType It = FirstIt; It != LastIt; ++It)
 		{
-			AddCheck(*It);
+			Add(*It);
 		}
 	}
 
@@ -1598,7 +1676,7 @@ public:
 		// @TODO: Check that iterator is NOT iterator of this particular RBTree.
 		for (SourceIteratorType CurrIt = It; CurrIt; ++CurrIt)
 		{
-			AddCheck(*CurrIt);
+			Add(*CurrIt);
 		}
 	}
 
@@ -1624,7 +1702,7 @@ public:
 	{
 		for(const KeyValueType& KV : Source)
 		{
-			AddCheck(KV);
+			Add(KV);
 		}
 	}
 
@@ -1636,7 +1714,7 @@ public:
 	{
 		for (const KeyValueType& KV : InSource)
 		{
-			AddCheck(KV);
+			Add(KV);
 		}
 	}
 
@@ -1663,7 +1741,7 @@ public:
 				NodeType* pSrcNode = &InSource.Buffer[i];
 				if (pSrcNode->Exists())
 				{
-					AddCheck(std::move(pSrcNode->GetKV()));
+					Add(std::move(pSrcNode->GetKV()));
 				}
 			}
 
@@ -1680,7 +1758,7 @@ public:
 			}
 			TRBTree<KVTypeArg, ComparerArg>::IteratorType NextIt = It;
 			++NextIt;
-			AddCheck(std::move(InSource.GetMovedByIterator(It)));
+			Add(std::move(InSource.GetMovedByIterator(It)));
 			It = NextIt;
 		}
 		*/
@@ -1704,7 +1782,7 @@ public:
 	{
 		for (const KeyValueType& KV : InSource)
 		{
-			AddCheck(KV);
+			Add(KV);
 		}
 	}
 
@@ -1725,7 +1803,7 @@ public:
 	{
 		for (KeyValueType& KV : InSource)
 		{
-			AddCheck(std::move(KV));
+			Add(std::move(KV));
 		}
 	}
 
@@ -1736,9 +1814,9 @@ public:
 	*
 	* @Returns: true if was added (or false if already was in the tree).
 	*/
-	bool AddCheck(KeyValueType&& InKV)
+	bool Add(KeyValueType&& InKV)
 	{
-		static_assert(std::is_move_constructible_v<KeyValueType>, "TRBTree: AddCheck (&&): KeyValueType must be move-constructible");
+		static_assert(std::is_move_constructible_v<KeyValueType>, "TRBTree: Add (&&): KeyValueType must be move-constructible");
 		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
 		return AddImpl(std::move(InKV), /*Out*/NodeRef);
 	}
@@ -1748,9 +1826,9 @@ public:
 	*
 	* @Returns: true if was added (or false if already was in the tree).
 	*/
-	bool AddCheck(const KeyType& InKey, const ValueType& InValue)
+	bool Add(const KeyType& InKey, const ValueType& InValue)
 	{
-		return AddCheck(KeyValueType{ InKey, InValue });
+		return Add(KeyValueType{ InKey, InValue });
 	}
 
 	/**
@@ -1758,9 +1836,9 @@ public:
 	*
 	* @Returns: true if was added (or false if already was in the tree).
 	*/
-	bool AddCheck(KeyType&& InKey, ValueType&& InValue)
+	bool Add(KeyType&& InKey, ValueType&& InValue)
 	{
-		return AddCheck(KeyValueType{ std::move(InKey), std::move(InValue) });
+		return Add(KeyValueType{ std::move(InKey), std::move(InValue) });
 	}
 
 	/**
@@ -1768,9 +1846,9 @@ public:
 	*
 	* @Returns: true if was added (or false if already was in the tree).
 	*/
-	bool AddCheck(KeyType&& InKey, const ValueType& InValue)
+	bool Add(KeyType&& InKey, const ValueType& InValue)
 	{
-		return AddCheck(KeyValueType{ std::move(InKey), InValue });
+		return Add(KeyValueType{ std::move(InKey), InValue });
 	}
 
 	/**
@@ -1778,9 +1856,9 @@ public:
 	*
 	* @Returns: true if was added (or false if already was in the tree).
 	*/
-	bool AddCheck(const KeyType& InKey, ValueType&& InValue)
+	bool Add(const KeyType& InKey, ValueType&& InValue)
 	{
-		return AddCheck(KeyValueType{ InKey, std::move(InValue) });
+		return Add(KeyValueType{ InKey, std::move(InValue) });
 	}
 
 	/**
@@ -3275,13 +3353,13 @@ private:
 	}
 
 	template<class IteratorTypeArg, class Pred, class ThisTypeArg>
-	IteratorTypeArg FindIteratorByPredicateImpl(Pred P, ThisTypeArg* pInThis) const
+	IteratorTypeArg FindIteratorByPredicateImpl(const Pred& P, ThisTypeArg* pInThis) const
 	{
 		return FindIteratorByPredicate_InRange_Impl(pInThis->Iterator(), pInThis->EndIterator(), P, pInThis);
 	}
 
 	template<class IteratorTypeArg, class Pred, class ThisTypeArg>
-	IteratorTypeArg FindIteratorByKeyPredicateImpl(Pred P, ThisTypeArg* pInThis) const
+	IteratorTypeArg FindIteratorByKeyPredicateImpl(const Pred& P, ThisTypeArg* pInThis) const
 	{
 		return FindIteratorByPredicate_InRange_Impl
 		(
@@ -3292,7 +3370,7 @@ private:
 	}
 
 	template<class IteratorTypeArg, class Pred, class ThisTypeArg>
-	IteratorTypeArg FindIteratorByNotKeyPredicateImpl(Pred P, ThisTypeArg* pInThis) const
+	IteratorTypeArg FindIteratorByNotKeyPredicateImpl(const Pred& P, ThisTypeArg* pInThis) const
 	{
 		return FindIteratorByNotPredicate_InRange_Impl
 		(
@@ -3303,7 +3381,7 @@ private:
 	}
 
 	template<class IteratorTypeArg, class Pred, class ThisTypeArg>
-	IteratorTypeArg FindIteratorByNotKeyPredicate_InRange_Impl(IteratorTypeArg FirstIt, const IteratorTypeArg LastIt, Pred P, ThisTypeArg* pInThis) const
+	IteratorTypeArg FindIteratorByNotKeyPredicate_InRange_Impl(IteratorTypeArg FirstIt, const IteratorTypeArg LastIt, const Pred& P, ThisTypeArg* pInThis) const
 	{
 		return FindIteratorByPredicate_InRange_Impl
 		(
@@ -3317,7 +3395,7 @@ private:
 	}
 
 	template<class IteratorTypeArg, class Pred, class ThisTypeArg>
-	IteratorTypeArg FindIteratorByKeyPredicate_InRange_Impl(IteratorTypeArg FirstIt, const IteratorTypeArg LastIt, Pred P, ThisTypeArg* pInThis) const
+	IteratorTypeArg FindIteratorByKeyPredicate_InRange_Impl(IteratorTypeArg FirstIt, const IteratorTypeArg LastIt, const Pred& P, ThisTypeArg* pInThis) const
 	{
 		return FindIteratorByPredicate_InRange_Impl
 		(
@@ -3331,7 +3409,7 @@ private:
 	}
 
 	template<class IteratorTypeArg, class Pred, class ThisTypeArg>
-	IteratorTypeArg FindIteratorByNotPredicate_InRange_Impl(IteratorTypeArg FirstIt, const IteratorTypeArg LastIt, Pred P, ThisTypeArg* pInThis) const
+	IteratorTypeArg FindIteratorByNotPredicate_InRange_Impl(IteratorTypeArg FirstIt, const IteratorTypeArg LastIt, const Pred& P, ThisTypeArg* pInThis) const
 	{
 		return FindIteratorByPredicate_InRange_Impl
 		(
@@ -3385,7 +3463,7 @@ private:
 	}
 
 	template<class IteratorTypeArg, class Pred, class ThisTypeArg>
-	IteratorTypeArg FindIteratorByPredicate_InRange_Impl(IteratorTypeArg FirstIt, const IteratorTypeArg LastIt, Pred P, ThisTypeArg* pInThis) const
+	IteratorTypeArg FindIteratorByPredicate_InRange_Impl(IteratorTypeArg FirstIt, const IteratorTypeArg LastIt, const Pred& P, ThisTypeArg* pInThis) const
 	{
 		for (IteratorTypeArg It = FirstIt; It != LastIt; ++It)
 		{

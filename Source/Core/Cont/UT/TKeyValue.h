@@ -56,6 +56,18 @@ struct KVType
 	using ValueType = ValueTypeArg;
 };
 
+template<class T>
+struct IsKVType
+{
+	static constexpr bool Value = false;
+};
+
+template<class KeyTypeArg, class ValueTypeArg>
+struct IsKVType<KVType<KeyTypeArg, ValueTypeArg>>
+{
+	static constexpr bool Value = true;
+};
+
 template<class KVTypeArg>
 struct TKeyValue
 {
@@ -149,14 +161,23 @@ struct TKeyValue
 	,	Value{ InValue } {}
 };
 
-/*
-// TODO: Does NOT compile: Why?
+template<class T>
+struct IsKeyValue
+{
+	static constexpr bool Value = false;
+};
+
+template<class KeyTypeArg, class ValueTypeArg>
+struct IsKeyValue<TKeyValue<KVType<KeyTypeArg, ValueTypeArg>>>
+{
+	static constexpr bool Value = true;
+};
+
 template<class KeyType, class ValueType> 
-TKeyValue<KVType<KeyType, ValueType>> MakeKeyValue(const KeyType& K, const ValueType& V)
+decltype(auto) MakeKeyValue(const KeyType& K, const ValueType& V)
 {
 	return TKeyValue<KVType<KeyType, ValueType>>(K, V);
 }
-*/
 
 template
 <

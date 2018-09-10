@@ -6,6 +6,11 @@
 #include <tuple>
 #include "Core/Mem/MemUtils.h"
 
+/**
+* TODO WARNING!!!
+* 1. Copy constructor and copy-assign implementation!!!
+*/
+
 /************************************************************************************************************
 * Default resize policy
 ************************************************************************************************************/
@@ -36,8 +41,6 @@ struct DefaultVectorResizePolicy
 			}
 		}   
 	};
-
-	enum class EForceInit {};
 
 	/************************************************************************************************************
 	* Vector
@@ -119,7 +122,7 @@ struct DefaultVectorResizePolicy
 				*this = InOther;
 			}
 
-			/**o
+			/**
 			* Copies
 			*/
 			template<class OtherContType>
@@ -344,9 +347,17 @@ struct DefaultVectorResizePolicy
 		~TVector();
 
 		/**
-		* Creates empty constructor with SBO only.
+		* Creates empty vector with SBO only.
 		*/
 		constexpr TVector() {}
+
+		/**
+		* Creates empty vector and initializes capacity for desired length.
+		*/
+		constexpr TVector(size_t InDesiredLength, EForceInitCapacity) 
+		{
+			SetupBuffer_ForDesiredLength(InDesiredLength);
+		}
 
 		/**
 		* Copy construction.
@@ -1874,9 +1885,18 @@ struct DefaultVectorResizePolicy
 		void SetupDynamicBuffer_ForDesiredLength(int32_t DesiredLength);
 
 		/**
+		* Initializes length and sets up buffer (dynamic or SBO) for the desired length.
+		*
+		* Buffer is never initialized.
+		*/
+		void SetupBufferAndLength_ForDesiredLength(int32_t DesiredLength);
+
+		/**
 		* Sets up buffer (dynamic or SBO) for the desired length.
 		*
 		* Buffer is never initialized.
+		*
+		* Length is NEVER initialized!!!
 		*/
 		void SetupBuffer_ForDesiredLength(int32_t DesiredLength);
 
@@ -2138,9 +2158,10 @@ std::string ToString(const TVector<T, ResizePolicy>& V, const char sep = ' ')
 
 template<class T, template<class> class ResizePolicy>
 template<template<class> class OtherResizePolicy>
-TVector<T, ResizePolicy>::TVector(const TVector<T, OtherResizePolicy>& Other)
+TVector<T, ResizePolicy>::TVector(const TVector<T, OtherResizePolicy>& Other) :
+	Length(Other.Length)
 {
-	if (MaxLength < Other.Len())
+	if (MaxLength < Other.MaxLen())
 	{
 		SetupBuffer_ForDesiredLength(Other.Len());
 	}
@@ -2182,6 +2203,7 @@ typename TVector<T, ResizePolicy>::ThisType& TVector<T, ResizePolicy>::operator=
 		SetupBuffer_ForDesiredLength(Other.Length);
 	}
 	CopyAssignFrom(Other);
+	Length = Other.Length;
 	return *this;
 }
 
@@ -2835,9 +2857,15 @@ void TVector<T, ResizePolicy>::SetupDynamicBuffer_ForDesiredLength(int32_t Desir
 }
 
 template<class T, template<class> class ResizePolicy>
-void TVector<T, ResizePolicy>::SetupBuffer_ForDesiredLength(int32_t DesiredLength)
+void TVector<T, ResizePolicy>::SetupBufferAndLength_ForDesiredLength(int32_t DesiredLength)
 {
 	Length = DesiredLength;
+	SetupBuffer_ForDesiredLength(DesiredLength);
+}
+
+template<class T, template<class> class ResizePolicy>
+void TVector<T, ResizePolicy>::SetupBuffer_ForDesiredLength(int32_t DesiredLength)
+{
 	if (DesiredLength <= ResizePolicy<T>::SBO_LENGTH)
 	{
 		MaxLength = ResizePolicy<T>::SBO_LENGTH;

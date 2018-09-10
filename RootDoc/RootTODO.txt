@@ -18,6 +18,8 @@ LATER:
 * Core operations:
 Neg (to avoid nasty hard-to-debug minus sign)
 * Hash provider
+* MessageBox
+* Timing (QueryPerformanceCounter etc.)
 
 BUGS:
 1. MemoryLeak after constructed boost::serialization::text_oarchive (strstream_var /*or std::cout*/) 

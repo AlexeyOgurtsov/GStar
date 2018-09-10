@@ -141,12 +141,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Core\Assert.h" />
     <ClInclude Include="..\..\Core\Cont\ContainerSystem.h" />
     <ClInclude Include="..\..\Core\Cont\Priv\TRBTreeImpl.h" />
     <ClInclude Include="..\..\Core\Cont\Test\TRBTreeTest.h" />
     <ClInclude Include="..\..\Core\Cont\Test\TSortedSetTest.h" />
     <ClInclude Include="..\..\Core\Cont\Test\TVectorTest.h" />
     <ClInclude Include="..\..\Core\Cont\TRBTree.h" />
+    <ClInclude Include="..\..\Core\Cont\TSortedMap.h" />
     <ClInclude Include="..\..\Core\Cont\TSortedSet.h" />
     <ClInclude Include="..\..\Core\Cont\TVector.h" />
     <ClInclude Include="..\..\Core\Cont\UT\IteratorUtils.h" />

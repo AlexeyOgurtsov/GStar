@@ -1,9 +1,7 @@
 #pragma once
 
+#include "Core/CoreSysMinimal.h"
 #include "Core/Templ/Pointer.h"
-#include "Core/Stream/StreamTraits.h"
-#include <type_traits>
-#include <boost/assert.hpp>
 
 /**
 * Pointer to COM object.
@@ -246,3 +244,40 @@ bool operator!=(const TComPtr<T>& A, const TComPtr<T>& B)
 {
 	return ! ( A == B );
 }
+
+template<class T>
+bool operator<(const TComPtr<T>& A, const TComPtr<T>& B)
+{
+	return A.GetPtr() < B.GetPtr();
+}
+
+template<class T>
+bool operator<=(const TComPtr<T>& A, const TComPtr<T>& B)
+{
+	return A.GetPtr() <= B.GetPtr();
+}
+
+template<class T>
+bool operator>(const TComPtr<T>& A, const TComPtr<T>& B)
+{
+	return A.GetPtr() > B.GetPtr();
+}
+
+template<class T>
+bool operator>=(const TComPtr<T>& A, const TComPtr<T>& B)
+{
+	return A.GetPtr() >= B.GetPtr();
+}
+
+namespace std
+{
+	template<class T>
+	class hash<TComPtr<T>>
+	{
+	public:
+		size_t operator() (const TComPtr<T>& InValue) const	
+		{
+			return hash<T*>() (InValue.GetPtr());
+		}
+	};
+} // std

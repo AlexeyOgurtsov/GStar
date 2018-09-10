@@ -183,6 +183,10 @@
     <ClInclude Include="..\..\Core\Mem\TComPtr.h">
       <Filter>Mem</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Core\Assert.h" />
+    <ClInclude Include="..\..\Core\Cont\TSortedMap.h">
+      <Filter>Cont</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Core\Mem\Helper\Priv\LinearAllocHelper.cpp">

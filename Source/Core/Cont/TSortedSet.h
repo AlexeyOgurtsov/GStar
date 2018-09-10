@@ -1,11 +1,12 @@
+#pragma once
+
 #include "ContainerSystem.h"
 #include "TRBTree.h"
-#include <type_traits>
 
 /************************************************************************************************************
 * Sorted Set
 ************************************************************************************************************/
-template<class T, class ComparerArg>
+template<class T, class ComparerArg = TComparer<T>>
 class TSortedSet
 {
 public:
@@ -22,15 +23,19 @@ public:
 	template<class T, class ComparerArg, class OtherComparerArg>
 	friend bool operator==(const TSortedSet<T, ComparerArg>& A, const TSortedSet<T, OtherComparerArg>& B);
 
-	/**
-	* KeyType
-	*/
 	using KeyType = T;
+	using ElementType = KeyType;
 
 private:
 	static auto GetThisTypeHelper()->std::remove_reference_t<decltype(*this)>;
 
+	using KeyValueType = TKeyValue<KVType<T, NoValue>>;
+	using ContImplType = TRBTree<KVType<T, NoValue>, ComparerArg>;
+
 public:
+	using IteratorType = typename ContImplType::KeyIteratorType;
+	using ConstIteratorType = IteratorType;
+
 	/**
 	* Type of this container.
 	*/
@@ -54,7 +59,7 @@ public:
 	/**
 	* Constructs as a copy of another container.
 	*/
-	TSortedSet(const ThisType& InOther) = default;
+	TSortedSet(const TSortedSet& InOther) = default;
 
 	/**
 	* Constructs as a copy of another container.
@@ -65,7 +70,7 @@ public:
 	/**
 	* Copy-assigns another container.
 	*/
-	ThisType& operator=(const ThisType& InOther) = default;
+	TSortedSet& operator=(const TSortedSet& InOther) = default;
 
 	/**
 	* Copy-assigns another container.
@@ -79,7 +84,7 @@ public:
 	/**
 	* Move-constructs.
 	*/
-	TSortedSet(ThisType&& InOther) = default;
+	TSortedSet(TSortedSet&& InOther) = default;
 
 	/**
 	* Move-constructs.
@@ -90,7 +95,7 @@ public:
 	/**
 	* Move-assigns another container.
 	*/
-	ThisType& operator=(ThisType&& InOther) = default;
+	TSortedSet& operator=(TSortedSet&& InOther) = default;
 
 	/**
 	* Move-assigns another container.
@@ -112,6 +117,30 @@ public:
 	*/
 	__forceinline bool Empty() const { return Cont.Empty(); }
 
+	/**
+	* Iterator to the first element.
+	*/
+	IteratorType Iterator() const { return Cont.KeyIterator(); }
+
+	/**
+	* Iterator to the after-the-last element.
+	*/
+	IteratorType EndIterator() const { return Cont.EndKeyIterator(); }
+
+	/**
+	* Iterator to the first element.
+	*/
+	ConstIteratorType ConstIterator() const { return Iterator(); }
+
+	/**
+	* Iterator to the after-the-last element.
+	*/
+	ConstIteratorType ConstEndIterator() const { return EndIterator(); }
+
+	IteratorType begin() const { return Iterator(); }
+	IteratorType end() const { return EndIterator(); }
+	IteratorType cbegin() const { return ConstIterator(); }
+	IteratorType cend() const { return ConstEndIterator(); }
 
 	/**
 	* Returns minimal key.
@@ -137,7 +166,7 @@ public:
 	* boost::serialization support.
 	*/
 	template<class Archive>
-	void serialize(Archive& Ar, const unsinged int Version)
+	void serialize(Archive& Ar, const unsigned int Version)
 	{
 		Ar & Cont;
 	}
@@ -177,11 +206,73 @@ public:
 	}
 
 	/**
+	* Makes the buffer capable to contain at least the given amount of elements.
+	*/
+	void ReserveGrow(int InNewCapacity)
+	{
+		Cont.ReserveGrow(InNewCapacity);
+	}
+
+	/**
+	* Frees extra space.
+	* Optionally rearranges the elements in the buffer, so they are linear in memory.
+	*/
+	void ShrinkToFit()
+	{
+		Cont.ShrinkToFit();
+	}
+
+	/**
 	* Returns true, if contains the given key.
 	*/
 	bool Contains(const KeyType& InKey) const
 	{
 		return Cont.Contains(InKey);
+	}
+
+	/**
+	* Returns true, if contains element satisfying the given predicate.
+	*/
+	template<class Pred>
+	bool ContainsPredicate(const Pred& P) const
+	{
+		return Cont.ContainsKeyPredicate(P);
+	}
+
+	/**
+	* Returns true, if contains element that does NOT satisfy the given predicate.
+	*/
+	template<class Pred>
+	bool ContainsNotPredicate(const Pred& P) const
+	{
+		return Cont.ContainsNotKeyPredicate(P);
+	}
+
+	/**
+	* Returns true, if contains element satisfying the given predicate in the given range.
+	*/
+	template<class Pred>
+	bool ContainsPredicate_InRange(const Pred& P, ConstIteratorType ItFirst, ConstIteratorType ItLast) const
+	{
+		return Cont.ContainsKeyPredicate_InRange(P, ItFirst.ToBaseIterator(), ItLast.ToBaseIterator());
+	}
+
+	/**
+	* Returns true, if contains element that does NOT satisfy the given predicate in the given range.
+	*/
+	template<class Pred>
+	bool ContainsNotPredicate_InRange(const Pred& P, ConstIteratorType ItFirst, ConstIteratorType ItLast) const
+	{
+		return Cont.ContainsNotKeyPredicate_InRange(P, ItFirst.ToBaseIterator(), ItLast.ToBaseIterator());
+	}
+
+	/**
+	* Checks that all elements satisfy the given predicate.
+	*/
+	template<class Pred>
+	bool All(const Pred& P) const
+	{
+		return AllKeys(P);
 	}
 
 	/*
@@ -192,6 +283,63 @@ public:
 	bool Remove(const KeyType& InKey)
 	{
 		return Cont.Remove(InKey);
+	}
+
+	/*
+	* Removes the given key from the container using the given comparer.
+	*
+	* @returns: true, if was found and removed (otherwise false).
+	*/
+	template<class SearchKeyType, class Comparer>
+	bool Remove(const SearchKeyType& InKey, Comparer InComparer)
+	{
+		return Cont.Remove(InKey, InComparer);
+	}
+
+	/**
+	* Removes the first key that satisfy the given predicate.
+	*
+	* @returns: true if element with the given predicate was in the container (otherwise, false).
+	*/
+	template<class Pred>
+	bool RemoveFirstPredicate(const Pred& P)
+	{
+		return Cont.RemoveFirstKeyPredicate(P);
+	}
+
+	/**
+	* Removes the first key that satisfy the given predicate in the given range.
+	*
+	* @returns: true if element with the given predicate was in the container (otherwise, false);
+	*/
+	template<class Pred>
+	bool RemoveFirstPredicate_InRange(const Pred& P, ConstIteratorType FirstIt, ConstIteratorType LastIt)
+	{
+		return Cont.RemoveFirstKeyPredicate_InRange(P, FirstIt.ToBaseIterator(), LastIt.ToBaseIterator());
+	}
+
+	/**
+	* Removes all elements that satisfy the given predicate.
+	*
+	* @returns: number of removed elements.
+	* @see: RemoveFirstPredicate
+	*/
+	template<class Pred>
+	int32_t RemoveAllPredicate(const Pred& P)
+	{
+		return Cont.RemoveAllKeyPredicate(P);
+	}
+
+	/**
+	* Removes all elements that satisfy the given predicate.
+	*
+	* @returns: number of removed elements.
+	* @see: RemoveFirstPredicate
+	*/
+	template<class Pred>
+	int32_t RemoveAllPredicate_InRange(const Pred& P, ConstIteratorType FirstIt, ConstIteratorType LastIt)
+	{
+		return Cont.RemoveAllKeyPredicate_InRange(P, FirstIt.ToBaseIterator(), LastIt.ToBaseIterator());
 	}
 
 	/*
@@ -212,7 +360,7 @@ public:
 	bool Add(const KeyType& InKey)
 	{
 		static_assert(std::is_copy_constructible_v<KeyType>, "TSortedSet: Add: KeyType must be copy-constructible");
-		return Cont.AddCheck(KeyValueType{InKey, NoValue{}});
+		return Cont.Add(KeyValueType{InKey, NoValue{}});
 	}
 
 
@@ -224,7 +372,7 @@ public:
 	bool Add(KeyType&& InKey)
 	{
 		static_assert(std::is_move_constructible_v<KeyType>, "TSortedSet: Add (&&): KeyType must be move-constructible");
-		return Cont.AddCheck(KeyValueType{std::move(InKey), NoValue{}});
+		return Cont.Add(KeyValueType{std::move(InKey), NoValue{}});
 	}
 
 
@@ -281,9 +429,6 @@ public:
 	}
 
 private:
-	using KeyValueType = TKeyValue<T, NoValue>;
-	using ContImplType = TRBTree<KVType<T, NoValue>, ComparerArg>;
-
 	ContImplType Cont;
 };
 
@@ -316,10 +461,20 @@ Strm& operator<<(Strm& S, const TSortedSet<T, ComparerArg>& InCont)
 * 2. Copying/Moving
 * 3. Output
 * 4. Equality
-* 5. Serialization
 * 6. Operations:
 * 6.1. Getters
 * 6.2. Add
 * 6.3. Remove
-* 7. Iterator
+* 6.3.0. 
+* 6.3.0.1. TODO: Add conversion from KeyIterator to KeyValueIterator.
+* 6.3.1. Remove by key
+* 6.3.2. Remove all
+* 6.3.3. Remove first
+* 7. Find
+*
+* DONE:
+* 1. Iterator
+* 2. Contains
+* 3. Extra:
+* 3.1. Serialize
 */
