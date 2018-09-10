@@ -181,6 +181,23 @@ public:
 	}
 
 	/**
+	* Count bytes needed to store only the minimum size required to store the given buffer.
+	*/
+	int32_t CountMinimumSizeBytes() const
+	{
+		return Cont.CountMinimumSizeBytes();
+	}
+
+	/**
+	* Counts the overhead of capacity.
+	*/
+	int32_t CountCapacityOverhead() const
+	{
+		return CountTotalBytes() - CountMinimumSizeBytes();
+	}
+
+
+	/**
 	* Count only bytes that are to be serialized.
 	*/
 	int32_t CountSerializeBytes() const
@@ -192,7 +209,7 @@ public:
 	* Size of a single element instance.
 	* NOTE: For pointers accounts only pointer size and not the size of pointed-to content.
 	*/
-	int32_t ElementSize() const
+	static constexpr int32_t ElementSize()
 	{
 		return Cont.CountElementSize();
 	}

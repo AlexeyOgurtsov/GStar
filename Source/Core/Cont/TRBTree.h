@@ -421,12 +421,28 @@ public:
 
 
 	/**
-	* Count bytes needed to store this class without overhead of capacity.
+	* Count bytes needed to store this class with overhead of capacity.
 	* Include both the class layout and dynamic memory.
 	*/
 	int32_t CountTotalBytes() const
 	{
+		return sizeof(*this) + ElementSize() * Buffer.MaxLen();
+	}
+
+	/**
+	* Count bytes needed to store only the minimum size required to store the given buffer.
+	*/
+	int32_t CountMinimumSizeBytes() const
+	{
 		return sizeof(*this) + ElementSize() * Count;
+	}
+
+	/**
+	* Counts the overhead of capacity.
+	*/
+	int32_t CountCapacityOverhead() const
+	{
+		return CountTotalBytes() - CountMinimumSizeBytes();
 	}
 
 	/**
@@ -441,7 +457,7 @@ public:
 	* Size of a single element instance.
 	* NOTE: For pointers accounts only pointer size and not the size of pointed-to content.
 	*/
-	int32_t ElementSize() const
+	static constexpr int32_t ElementSize()
 	{
 		return sizeof(NodeType);
 	}

@@ -11,11 +11,33 @@
 * 1. Copy constructor and copy-assign implementation!!!
 */
 
-/************************************************************************************************************
-* Default resize policy
-************************************************************************************************************/
+/**
+* Resize policy base class non-template part
+*/
+struct VectorResizePolicyBase
+{
+};
+
+/**
+* Resize policy base class
+*/
 template<class T>
-struct DefaultVectorResizePolicy
+struct TVectorResizePolicyBase : public VectorResizePolicyBase
+{
+};
+
+template<class T>
+struct IsVectorResizePolicy
+{
+	static constexpr bool Value = std::is_base_of<VectorResizePolicyBase, T>::value;
+};
+
+
+/**
+* Default resize policy
+*/
+template<class T>
+struct DefaultVectorResizePolicy : public TVectorResizePolicyBase<T>
 {
 	constexpr static const char Name[] = "Default";
 
@@ -49,6 +71,8 @@ struct DefaultVectorResizePolicy
 	class TVector
 	{
 	public:
+		static_assert(IsVectorResizePolicy<ResizePolicy<T>>::Value, "TVector: Resize policy must be inherited from the corresponding base class");
+
 		using ThisType = TVector<T, ResizePolicy>;
 		using ResizePolicyType = ResizePolicy<T>;
 		using ValueType = T;
@@ -450,13 +474,29 @@ struct DefaultVectorResizePolicy
 		BOOST_SERIALIZATION_SPLIT_MEMBER()
 
 		/**
-		* Count bytes needed to store this class overhead of capacity.
-		* Include both the class layout and dynamic memory.
+		* Count bytes needed to store this class and its buffer with current capacity. 
+		* Includes both the class layout and dynamic memory.
 		* TODO: Special case for pointers.
 		*/
 		int32_t CountTotalBytes() const
 		{
+			return sizeof(*this) + ElementSize() * MaxLength;
+		}
+
+		/**
+		* Count bytes needed to store only the minimum size required to store the given buffer.
+		*/
+		int32_t CountMinimumSizeBytes() const
+		{
 			return sizeof(*this) + ElementSize() * Length;
+		}
+
+		/**
+		* Counts the overhead of capacity.
+		*/
+		int32_t CountCapacityOverhead() const
+		{
+			return  CountTotalBytes() - CountMinimumSizeBytes();
 		}
 
 		/**
@@ -471,7 +511,7 @@ struct DefaultVectorResizePolicy
 		* Size of a single element instance.
 		* NOTE: For pointers accounts only pointer size and not the size of pointed-to content.
 		*/
-		int32_t ElementSize() const
+		static constexpr int32_t ElementSize()
 		{
 			return sizeof(T);
 		}
@@ -2065,22 +2105,55 @@ struct DefaultVectorResizePolicy
 
 
 /**
+* Returns string with memory info.
+*/
+template<class T, template<class> class ResizePolicy>
+std::string* AppendMemoryInfoString(std::string* pOutString, const TVector<T, ResizePolicy>& V)
+{	
+	BOOST_ASSERT(pOutString);
+
+	// Length
+	pOutString->append("Len=");
+	pOutString->append(V.Len());
+
+	// Capacity
+	pOutString->append("; MaxLen=");
+	pOutString->append(V.MaxLen());
+
+	// TotalBytes
+	pOutString->append("; TotalBytes=");
+	pOutString->append(V.CountTotalBytes());
+
+	// MinumumBytes
+	pOutString->append("; MinimumBytes=");
+	pOutString->append(V.CountMinimumSizeBytes());
+
+	return pOutString;
+}
+
+/**
 * Returns string with extra debug info
 */
 template<class T, template<class> class ResizePolicy>
 std::string* AppendExtraDebugInfoString(std::string* pOutString, const TVector<T, ResizePolicy>& V)
 {
+	BOOST_ASSERT(pOutString);
+
 	// buffer
 	pOutString->append("pBuf=");
 	pOutString->append(V.pBuf ? V.pBuf : "nullptr");
 
 	// dynamic buffer
-	pOutString->append("; pDynamicBuf=");
+	pOutString->append("; pDynBuf=");
 	pOutString->append(V.pDynamicBuf ? V.pDynamicBuf : "nullptr");
 
 	// resize policy
 	pOutString->append("; resizePolicy=");
 	pOutString->append(ResizePolicy<T>::Name);
+
+	// memory info
+	pOutString->append("; ");
+	AppendMemoryInfoString(pOutString, V);
 
 	// info about serialization
 	int32_t const countSerializeBytes = V.CountSerializeBytes();
