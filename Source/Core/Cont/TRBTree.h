@@ -43,12 +43,6 @@
 * 1. We must destruct and mark removed the node that the key was moved to in any case
 * (to avoid in to be enumerated again when using the CopyUnorderedTo etc.)
 *
-* TODO Remove:
-* 1. Remove by custom CompareArg
-* 2. Remove by predicate
-* 2.1. RemoveFirstByPredicate
-* 2.2. RemoveAllByPredicate
-*
 * TODO Adding interface:
 * 1. Hint iterator position
 * 2. Emplace
@@ -64,10 +58,6 @@
 *
 * TODO Traverse:
 * 1. Create the Stack-overflow unit-test for traverse;
-*
-* TODO Capacity:
-* 1. ShrinkToFit
-* 2. Reserve
 *
 * TODO Key extra:
 * 1. Filter keys by the given predicate
@@ -489,6 +479,234 @@ public:
 	{
 		// @TODO
 		Buffer.ShrinkToFit();
+	}
+
+	/**
+	* Counts all elements for those predicate returns true.
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	int32_t CountPredicate(const Pred& P) const
+	{
+		return CountPredicate_InRange(P, Iterator(), EndIterator());
+	}
+
+	/**
+	* Counts all keys for those predicate returns true.
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	int32_t CountKeyPredicate(const Pred& P) const
+	{
+		return CountKeyPredicate_InRange(P, Iterator(), EndIterator());
+	}
+
+	/**
+	* Counts all values for those predicate returns true.
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	int32_t CountValuePredicate(const Pred& P) const
+	{
+		return CountValuePredicate_InRange(P, Iterator(), EndIterator());
+	}
+
+	/**
+	* Counts all values equal to the given one.
+	*
+	* @UNIT-TESTED
+	*/
+	int32_t CountValues(const ValueType& InValue) const
+	{
+		return CountValues_InRange(InValue, Iterator(), EndIterator());
+	}
+
+	/**
+	* Counts all elements for those predicate does NOT return true.
+	*
+	* @see: CountPredicate
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	int32_t CountNotPredicate(const Pred& P) const
+	{
+		return CountNotPredicate_InRange(P, Iterator(), EndIterator());
+	}
+
+	/**
+	* Counts all keys for those predicate does NOT return true.
+	*
+	* @see: CountPredicate
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	int32_t CountNotKeyPredicate(const Pred& P) const
+	{
+		return CountNotKeyPredicate_InRange(P, Iterator(), EndIterator());
+	}
+
+	/**
+	* Counts all values for those predicate does NOT return true.
+	*
+	* @see: CountPredicate
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	int32_t CountNotValuePredicate(const Pred& P) const
+	{
+		return CountNotValuePredicate_InRange(P, Iterator(), EndIterator());
+	}
+
+	/**
+	* Counts all values that not equal to the given one.
+	*
+	* @see: CountPredicate
+	*
+	* @UNIT-TESTED
+	*/
+	int32_t CountOtherValues(const ValueType& InValue) const
+	{
+		return CountOtherValues_InRange(InValue, Iterator(), EndIterator());
+	}
+
+	/**
+	* Counts all elements for those predicate returns true in the given range.
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	int32_t CountPredicate_InRange(const Pred& P, ConstIteratorType ItStart, ConstIteratorType ItEnd) const
+	{
+		int32_t ResultCount = 0;
+		for(ConstIteratorType It = ItStart; It != ItEnd; ++It)
+		{
+			if( P(*It) )
+			{
+				++ResultCount;
+			}
+		}
+		return ResultCount;
+	}
+
+	/**
+	* Counts all keys for those predicate returns true in the given range.
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	int32_t CountKeyPredicate_InRange(const Pred& P, ConstIteratorType ItStart, ConstIteratorType ItEnd) const
+	{
+		return CountPredicate_InRange
+		(
+			[&P](const KeyValueType& KV)->bool { return P (KV.Key); },
+			ItStart, ItEnd
+		);
+	}
+
+	/**
+	* Counts all values for those predicate returns true in the given range.
+	*/
+	template<class Pred>
+	int32_t CountValuePredicate_InRange(const Pred& P, ConstIteratorType ItStart, ConstIteratorType ItEnd) const
+	{
+		return CountPredicate_InRange
+		(
+			[&P](const KeyValueType& KV)->bool { return P (KV.Value); },
+			ItStart, ItEnd
+		);
+	}
+
+	/**
+	* Counts all values equal to the given one in the given range.
+	*
+	* @UNIT-TESTED
+	*/
+	int32_t CountValues_InRange(const ValueType& InValue, ConstIteratorType ItStart, ConstIteratorType ItEnd) const
+	{
+		int32_t ResultCount = 0;
+		for(ConstIteratorType It = ItStart; It != ItEnd; ++It)
+		{
+			if( It.GetValue() == InValue )
+			{
+				++ResultCount;
+			}
+		}
+		return ResultCount;
+	}
+
+	/**
+	* Counts all elements for those predicate does NOT return true in the given range.
+	*
+	* @see: CountPredicate
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	int32_t CountNotPredicate_InRange(const Pred& P, ConstIteratorType ItStart, ConstIteratorType ItEnd) const
+	{
+		int32_t ResultCount = 0;
+		for(ConstIteratorType It = ItStart; It != ItEnd; ++It)
+		{
+			if( ! P(*It) )
+			{
+				++ResultCount;
+			}
+		}
+		return ResultCount;
+	}
+
+	/**
+	* Counts all keys for those predicate does NOT return true in the given range.
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	int32_t CountNotKeyPredicate_InRange(const Pred& P, ConstIteratorType ItStart, ConstIteratorType ItEnd) const
+	{
+		return CountNotPredicate_InRange
+		(
+			[&P](const KeyValueType& KV)->bool { return P (KV.Key); },
+			ItStart, ItEnd
+		);
+	}
+
+	/**
+	* Counts all values for those predicate does NOT return true in the given range.
+	*
+	* @UNIT-TESTED
+	*/
+	template<class Pred>
+	int32_t CountNotValuePredicate_InRange(const Pred& P, ConstIteratorType ItStart, ConstIteratorType ItEnd) const
+	{
+		return CountNotPredicate_InRange
+		(
+			[&P](const KeyValueType& KV)->bool { return P (KV.Value); },
+			ItStart, ItEnd
+		);
+	}
+
+	/**
+	* Counts all values not equal to the given one in the given range.
+	*
+	* @UNIT-TESTED
+	*/
+	int32_t CountOtherValues_InRange(const ValueType& InValue, ConstIteratorType ItStart, ConstIteratorType ItEnd) const
+	{
+		int32_t ResultCount = 0;
+		for(ConstIteratorType It = ItStart; It != ItEnd; ++It)
+		{
+			if( It.GetValue() != InValue )
+			{
+				++ResultCount;
+			}
+		}
+		return ResultCount;
 	}
 
 	/**
@@ -1890,9 +2108,22 @@ public:
 	void CopyTo(KeyValueType* pInBuffer)
 	{
 		KeyValueType* pCurr = pInBuffer;
-		Traverse
+		ForEach
 		(
 			[&pCurr](const KeyValueType& KV) { *pCurr = KV; pCurr++; }
+		);
+	}
+
+	/**
+	* Copies all keys to the given Buffer.
+	* Preserves order.
+	*/
+	void CopyKeysTo(KeyType* pInBuffer)
+	{
+		KeyType* pCurr = pInBuffer;
+		ForEachKeys
+		(
+			[&pCurr](const KeyType& K) { *pCurr = K; pCurr++; }
 		);
 	}
 
@@ -1916,20 +2147,80 @@ public:
 		}
 	}
 
+	/*
+	* Copies all keys to the given Buffer without preserving order.
+	*
+	* Buffer must be capable to store all the values.
+	*/
+	void CopyUnorderedKeysTo(KeyType* pInBuffer)
+	{
+		// TODO Optimization: 
+		// Iteration over all the nodes may be not the best way.
+		BOOST_ASSERT(pInBuffer);
+		for (int i = 0; i < Count; i++)
+		{
+			const NodeType* pSrcNode = GetNode(i);
+			if (pSrcNode->Exists())
+			{
+				pInBuffer[i] = pSrcNode->GetKey();
+			}
+		}
+	}
+
 	/**
 	* Traverses in the order of the keys.
 	*
 	* @param TraverseFunc: function that takes reference to key-value pair.
 	*/
 	template<class TraverseFunc>
-	void Traverse(TraverseFunc Func)
+	void ForEach(const TraverseFunc& Func)
 	{
-		if ( Empty() )
-		{
-			return;
-		}
+		return TraverseImpl(Func, this);
+	}
 
-		return TraverseSubtree(TRBTreeImpl::ChildNodeRef::RootNode(), Func);
+	/**
+	* Traverses in the order of the keys.
+	*
+	* @param TraverseFunc: function that takes reference to key-value pair.
+	*/
+	template<class TraverseFunc>
+	void ForEach(const TraverseFunc& Func) const
+	{
+		return TraverseImpl(Func, this);
+	}
+
+	/**
+	* Traverses in the order of the keys.
+	*
+	* @param TraverseFunc: function that takes reference to key pair.
+	*/
+	template<class TraverseFunc>
+	void ForEachKeys(const TraverseFunc& Func)
+	{
+		return ForEach
+		(
+			[&Func](const KeyValueType& KV)
+			{
+				return Func(KV.Key);
+			}
+		);
+	}
+
+	/**
+	* Traverses in the order of the keys.
+	*
+	* @param TraverseFunc: function that takes reference to key pair.
+	*/
+	template<class TraverseFunc>
+	void ForEachKeys(const TraverseFunc& Func) const
+	{
+		return ForEach
+		(
+			[&Func](const KeyValueType& KV)
+			{
+				return Func(KV.Key);
+			}
+		);
 	}
 
 	/**
@@ -3366,6 +3657,18 @@ private:
 		{
 			return IteratorTypeArg(InThisPtr, GetDeepestNodeRef(TRBTreeImpl::ChildNodeRef::RootNode(), TRBTreeImpl::LEFT_CHILD_IDX));
 		}
+	}
+
+
+	template<class TraverseFunc, class ThisType>
+	void TraverseImpl(const TraverseFunc& Func, ThisType pThis) const
+	{
+		if (pThis->Empty())
+		{
+			return;
+		}
+
+		return pThis->TraverseSubtree(TRBTreeImpl::ChildNodeRef::RootNode(), Func);
 	}
 
 	template<class IteratorTypeArg, class Pred, class ThisTypeArg>

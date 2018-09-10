@@ -214,6 +214,26 @@ public:
 		return Cont.CountElementSize();
 	}
 
+	/*
+	* Copies all keys to the given Buffer preserving the order.
+	*
+	* Buffer must be capable to store all the values.
+	*/
+	void CopyTo(KeyType* pInBuffer)
+	{
+		Cont.CopyKeysTo(pInBuffer);
+	}
+
+	/*
+	* Copies all keys to the given Buffer without preserving order.
+	*
+	* Buffer must be capable to store all the values.
+	*/
+	void CopyUnorderedTo(KeyType* pInBuffer)
+	{
+		Cont.CopyUnorderedKeysTo(pInBuffer);
+	}
+
 	/**
 	* Clears the container.
 	*/
@@ -237,6 +257,42 @@ public:
 	void ShrinkToFit()
 	{
 		Cont.ShrinkToFit();
+	}
+
+	/**
+	* Counts all elements for those predicate returns true.
+	*/
+	template<class Pred>
+	int32_t CountPredicate(const Pred& P) const
+	{
+		return Cont.CountKeyPredicate(P);
+	}
+
+	/**
+	* Counts all elements for those predicate does NOT return true.
+	*/
+	template<class Pred>
+	int32_t CountNotPredicate(const Pred& P) const
+	{
+		return Cont.CountNotKeyPredicate(P);
+	}
+
+	/**
+	* Counts all elements for those predicate returns true in the given range.
+	*/
+	template<class Pred>
+	int32_t CountPredicate_InRange(const Pred& P, ConstIteratorType ItFirst, ConstIteratorType ItLast) const
+	{
+		return Cont.CountKeyPredicate_InRange(P, ItFirst.GetBaseIterator(), ItLast.GetBaseIterator());
+	}
+
+	/**
+	* Counts all elements for those predicate does NOT return true in the given range.
+	*/
+	template<class Pred>
+	int32_t CountNotPredicate_InRange(const Pred& P, ConstIteratorType ItFirst, ConstIteratorType ItLast) const
+	{
+		return Cont.CountNotKeyPredicate_InRange(P, ItFirst.GetBaseIterator(), ItLast.GetBaseIterator());
 	}
 
 	/**
@@ -290,6 +346,24 @@ public:
 	bool All(const Pred& P) const
 	{
 		return AllKeys(P);
+	}
+
+	/**
+	* For each.
+	*/
+	template<class Func>
+	void ForEach(const Func& F)
+	{
+		return Cont.ForEachKeys(F);
+	}
+
+	/**
+	* For each.
+	*/
+	template<class Func>
+	void ForEach(const Func& F) const
+	{
+		return Cont.ForEachKeys(F);
 	}
 
 	/*

@@ -1021,6 +1021,115 @@ BOOST_AUTO_TEST_SUITE
 	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/RemoveSuite")
 )
 
+BOOST_AUTO_TEST_SUITE(CountTestSuite)
+
+BOOST_AUTO_TEST_CASE(CountTest)
+{
+	using TreeType = TRBTree<KVType<int, std::string>>;
+	constexpr int INITIAL_COUNT = 8;
+	constexpr int TOTAL_P_KEY_COUNT_IN_RANGE = 2;
+	constexpr int TOTAL_P_KEY_COUNT = 4;
+	constexpr int TOTAL_VALUE_TO_COUNT = 4;
+	constexpr int TOTAL_OTHER_VALUE = INITIAL_COUNT - TOTAL_VALUE_TO_COUNT;
+	std::string const VALUE_TO_COUNT = "";
+	std::string const OTHER_VALUE = "";
+
+
+	const auto P = [](const TreeType::KeyValueType& KV)
+	{
+		if (KV.Key % 2 == 0) { return true; }
+		return false;
+	};
+
+	const auto PK = [](const TreeType::KeyType& K)
+	{
+		if (K % 2 == 0) { return true; }
+		return false;
+	};
+
+	const auto PV_Empty = [](const TreeType::ValueType& V)
+	{
+		if (V.empty()) { return true; }
+		return false;
+	};
+
+	BOOST_TEST_CHECKPOINT("Empty");
+	TreeType T;
+	BOOST_REQUIRE_EQUAL(0, T.CountPredicate(P));
+	BOOST_REQUIRE_EQUAL(0, T.CountNotPredicate(P));
+	BOOST_REQUIRE_EQUAL(0, T.CountPredicate_InRange(P, T.Iterator(), T.EndIterator()));
+	BOOST_REQUIRE_EQUAL(0, T.CountNotPredicate_InRange(P, T.Iterator(), T.EndIterator()));
+	BOOST_REQUIRE_EQUAL(0, T.CountValues(0));
+	BOOST_REQUIRE_EQUAL(0, T.CountValues_InRange(0, T.Iterator(), T.EndIterator()));
+	BOOST_REQUIRE_EQUAL(0, T.CountOtherValues(0));
+	BOOST_REQUIRE_EQUAL(0, T.CountOtherValues_InRange(0, T.Iterator(), T.EndIterator()));
+	BOOST_REQUIRE_EQUAL(0, T.CountValuePredicate(PV_Empty));
+	BOOST_REQUIRE_EQUAL(0, T.CountValuePredicate_InRange(PV_Empty, T.Iterator(), T.EndIterator()));
+	BOOST_REQUIRE_EQUAL(0, T.CountNotValuePredicate(PV_Empty));
+	BOOST_REQUIRE_EQUAL(0, T.CountNotValuePredicate_InRange(PV_Empty, T.Iterator(), T.EndIterator()));
+	BOOST_REQUIRE_EQUAL(0, T.CountKeyPredicate(PK));
+	BOOST_REQUIRE_EQUAL(0, T.CountNotKeyPredicate(PK));
+	BOOST_REQUIRE_EQUAL(0, T.CountKeyPredicate_InRange(PK, T.Iterator(), T.EndIterator()));
+	BOOST_REQUIRE_EQUAL(0, T.CountNotKeyPredicate_InRange(PK, T.Iterator(), T.EndIterator()));
+
+	BOOST_TEST_CHECKPOINT("Fill");
+	T.Add(1, VALUE_TO_COUNT);
+	T.Add(2, OTHER_VALUE);
+	T.Add(3, VALUE_TO_COUNT);
+	T.Add(4, VALUE_TO_COUNT);
+	T.Add(5, OTHER_VALUE);
+	T.Add(6, OTHER_VALUE);
+	T.Add(7, VALUE_TO_COUNT);
+	T.Add(8, OTHER_VALUE);
+
+	BOOST_REQUIRE_EQUAL(T.MinKey(), 1);
+
+	TreeType::ConstIteratorType const It_Second = T.FindIteratorFor(2);
+	TreeType::ConstIteratorType const It_Sixth = T.FindIteratorFor(6);
+
+	TreeType::ConstIteratorType const It_After_ValueToCount = GetNextIt(T.FindIteratorFor(1));
+	TreeType::ConstIteratorType const It_LastValueToCount = T.FindIteratorFor(7);
+	BOOST_REQUIRE(It_LastValueToCount && It_LastValueToCount.GetValue() == VALUE_TO_COUNT);
+
+	BOOST_REQUIRE_EQUAL(T.Num(), INITIAL_COUNT);
+
+	BOOST_TEST_CHECKPOINT("Total key count");
+	int32_t const KeyCount = T.CountKeyPredicate(PK);
+	BOOST_REQUIRE_EQUAL(KeyCount, TOTAL_P_KEY_COUNT);
+	BOOST_REQUIRE_EQUAL(T.CountPredicate(P), KeyCount);
+
+	BOOST_TEST_CHECKPOINT("Total predicate count in range");
+	BOOST_REQUIRE_EQUAL(T.CountKeyPredicate_InRange(PK, It_Second, It_Sixth), (TOTAL_P_KEY_COUNT_IN_RANGE));
+	BOOST_REQUIRE_EQUAL(T.CountPredicate_InRange(P, It_Second, It_Sixth), (TOTAL_P_KEY_COUNT_IN_RANGE));
+
+	BOOST_TEST_CHECKPOINT("Total not predicate count");
+	BOOST_REQUIRE_EQUAL(T.CountNotKeyPredicate(PK), (INITIAL_COUNT - TOTAL_P_KEY_COUNT));
+	BOOST_REQUIRE_EQUAL(T.CountNotPredicate(P), (INITIAL_COUNT - TOTAL_P_KEY_COUNT));
+
+	BOOST_TEST_CHECKPOINT("Total not key predicate count in range");
+	BOOST_REQUIRE_EQUAL(T.CountNotKeyPredicate_InRange(PK, It_Second, It_Sixth), (INITIAL_COUNT - TOTAL_P_KEY_COUNT_IN_RANGE));
+	BOOST_REQUIRE_EQUAL(T.CountNotPredicate_InRange(P, It_Second, It_Sixth), (INITIAL_COUNT - TOTAL_P_KEY_COUNT_IN_RANGE));
+
+	BOOST_TEST_CHECKPOINT("Total value count");
+	BOOST_REQUIRE_EQUAL(T.CountValues(VALUE_TO_COUNT), TOTAL_VALUE_TO_COUNT);
+	BOOST_REQUIRE_EQUAL(T.CountOtherValues(VALUE_TO_COUNT), TOTAL_OTHER_VALUE);
+
+	BOOST_TEST_CHECKPOINT("Total value predicate");
+	BOOST_REQUIRE_EQUAL(T.CountValuePredicate(PV_Empty), TOTAL_VALUE_TO_COUNT);
+	BOOST_REQUIRE_EQUAL(T.CountNotValuePredicate(PV_Empty), TOTAL_OTHER_VALUE);
+
+	BOOST_TEST_CHECKPOINT("Total value count in range");
+	int32_t const ValueCountInRange = T.CountValues_InRange(VALUE_TO_COUNT, It_After_ValueToCount, It_LastValueToCount);
+	BOOST_REQUIRE_EQUAL(ValueCountInRange, (TOTAL_VALUE_TO_COUNT - 2));
+	BOOST_REQUIRE_EQUAL(T.CountOtherValues_InRange(VALUE_TO_COUNT, It_After_ValueToCount, It_LastValueToCount), (INITIAL_COUNT - ValueCountInRange) );
+
+	BOOST_TEST_CHECKPOINT("Total value predicate in range");
+	BOOST_REQUIRE_EQUAL(T.CountValuePredicate_InRange(PV_Empty, It_After_ValueToCount, It_LastValueToCount), (TOTAL_VALUE_TO_COUNT - 2));
+	BOOST_REQUIRE_EQUAL(T.CountNotValuePredicate_InRange(PV_Empty, It_After_ValueToCount, It_LastValueToCount), (INITIAL_COUNT - ValueCountInRange));
+}
+
+BOOST_AUTO_TEST_SUITE_END() // CountTestSuite
+
 BOOST_AUTO_TEST_SUITE(ExtraAddOpsSuite)
 
 struct EqualityTestStringComparer
@@ -2594,14 +2703,14 @@ BOOST_AUTO_TEST_CASE(CopyUnorderedToTest, *boost::unit_test::depends_on("Core/Co
 
 }
 
-BOOST_AUTO_TEST_CASE(TraverseEmptyTest, *boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/FirstMinimal"))
+BOOST_AUTO_TEST_CASE(ForEachEmptyTest, *boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/FirstMinimal"))
 {
 	BOOST_TEST_CHECKPOINT("Construction");
 	IntRBTree T;
 
-	BOOST_TEST_CHECKPOINT("Traverse");
+	BOOST_TEST_CHECKPOINT("ForEach");
 	std::vector<IntRBTree::KeyValueType> DestBuf;
-	T.Traverse
+	T.ForEach
 	(
 		[&DestBuf](const IntRBTree::KeyValueType& KV)
 		{
@@ -2611,7 +2720,7 @@ BOOST_AUTO_TEST_CASE(TraverseEmptyTest, *boost::unit_test::depends_on("Core/Cont
 	BOOST_REQUIRE(DestBuf.empty());
 }
 
-BOOST_AUTO_TEST_CASE(TraverseTest, *boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/FirstMinimal"))
+BOOST_AUTO_TEST_CASE(ForEachTest, *boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/FirstMinimal"))
 {
 	constexpr int NUM = 5;
 
@@ -2629,9 +2738,9 @@ BOOST_AUTO_TEST_CASE(TraverseTest, *boost::unit_test::depends_on("Core/Container
 	BOOST_REQUIRE(T.Add(KEY_SEVEN, NoValue{}));
 	BOOST_REQUIRE(T.Add(KEY_EIGHT, NoValue{}));
 
-	BOOST_TEST_CHECKPOINT("Traverse");
+	BOOST_TEST_CHECKPOINT("ForEach");
 	std::vector<IntRBTree::KeyValueType> DestBuf;
-	T.Traverse
+	T.ForEach
 	(
 		[&DestBuf](const IntRBTree::KeyValueType& KV)
 		{
