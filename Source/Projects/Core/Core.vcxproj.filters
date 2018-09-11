@@ -187,6 +187,15 @@
     <ClInclude Include="..\..\Core\Cont\TSortedMap.h">
       <Filter>Cont</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\TMap.h">
+      <Filter>Cont</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\TSet.h">
+      <Filter>Cont</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Templ\TypeTraits.h">
+      <Filter>Templ</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Core\Mem\Helper\Priv\LinearAllocHelper.cpp">

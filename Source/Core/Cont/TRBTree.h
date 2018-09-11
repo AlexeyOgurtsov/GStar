@@ -2127,6 +2127,19 @@ public:
 		);
 	}
 
+	/**
+	* Copies all value to the given Buffer.
+	* Preserves order.
+	*/
+	void CopyValuesTo(ValueType* pInBuffer)
+	{
+		ValueType* pCurr = pInBuffer;
+		ForEachValues
+		(
+			[&pCurr](const ValueType& V) { *pCurr = V; pCurr++; }
+		);
+	}
+
 	/*
 	* Copies all key-value pairs to the given Buffer without preserving order.
 	*
@@ -2149,7 +2162,6 @@ public:
 
 	/*
 	* Copies all keys to the given Buffer without preserving order.
-	*
 	* Buffer must be capable to store all the values.
 	*/
 	void CopyUnorderedKeysTo(KeyType* pInBuffer)
@@ -2163,6 +2175,25 @@ public:
 			if (pSrcNode->Exists())
 			{
 				pInBuffer[i] = pSrcNode->GetKey();
+			}
+		}
+	}
+
+	/*
+	* Copies all values to the given Buffer without preserving order.
+	* Buffer must be capable to store all the values.
+	*/
+	void CopyUnorderedValuesTo(ValueType* pInBuffer)
+	{
+		// TODO Optimization: 
+		// Iteration over all the nodes may be not the best way.
+		BOOST_ASSERT(pInBuffer);
+		for (int i = 0; i < Count; i++)
+		{
+			const NodeType* pSrcNode = GetNode(i);
+			if (pSrcNode->Exists())
+			{
+				pInBuffer[i] = pSrcNode->GetValue();
 			}
 		}
 	}
@@ -2219,6 +2250,40 @@ public:
 			[&Func](const KeyValueType& KV)
 			{
 				return Func(KV.Key);
+			}
+		);
+	}
+
+	/**
+	* Traverses in the order of the values.
+	*
+	* @param TraverseFunc: function that takes reference to key pair.
+	*/
+	template<class TraverseFunc>
+	void ForEachValue(const TraverseFunc& Func)
+	{
+		return ForEach
+		(
+			[&Func](const KeyValueType& KV)
+			{
+				return Func(KV.Value);
+			}
+		);
+	}
+
+	/**
+	* Traverses in the order of the values.
+	*
+	* @param TraverseFunc: function that takes reference to key pair.
+	*/
+	template<class TraverseFunc>
+	void ForEachValue(const TraverseFunc& Func) const
+	{
+		return ForEach
+		(
+			[&Func](const KeyValueType& KV)
+			{
+				return Func(KV.Value);
 			}
 		);
 	}

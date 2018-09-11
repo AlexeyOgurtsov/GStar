@@ -147,7 +147,9 @@
     <ClInclude Include="..\..\Core\Cont\Test\TRBTreeTest.h" />
     <ClInclude Include="..\..\Core\Cont\Test\TSortedSetTest.h" />
     <ClInclude Include="..\..\Core\Cont\Test\TVectorTest.h" />
+    <ClInclude Include="..\..\Core\Cont\TMap.h" />
     <ClInclude Include="..\..\Core\Cont\TRBTree.h" />
+    <ClInclude Include="..\..\Core\Cont\TSet.h" />
     <ClInclude Include="..\..\Core\Cont\TSortedMap.h" />
     <ClInclude Include="..\..\Core\Cont\TSortedSet.h" />
     <ClInclude Include="..\..\Core\Cont\TVector.h" />
@@ -185,6 +187,7 @@
     <ClInclude Include="..\..\Core\Templ\Test\ComparerTest.h" />
     <ClInclude Include="..\..\Core\Templ\Test\PointerTest.h" />
     <ClInclude Include="..\..\Core\Templ\Test\TemplTest.h" />
+    <ClInclude Include="..\..\Core\Templ\TypeTraits.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Core\Cont\Priv\TRBTreeImpl.cpp" />

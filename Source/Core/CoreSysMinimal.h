@@ -26,7 +26,7 @@
 /**
 * Type traits are needed for almost any class.
 */
-#include <type_traits>
+#include "Templ/TypeTraits.h"
 
 /**
 * Stream traits are needed almost anywhere,
