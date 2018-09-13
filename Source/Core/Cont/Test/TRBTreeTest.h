@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include "Core/Cont/TRBTree.h"
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
@@ -144,7 +143,7 @@ BOOST_AUTO_TEST_SUITE
 	*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal")
 )
 
-BOOST_AUTO_TEST_CASE(AddMovedKeyValueTest)
+BOOST_AUTO_TEST_CASE(AppendMovedKeyValueTest)
 {
 	BOOST_TEST_CHECKPOINT("Initialization");
 	const int KEY_CONST = 3;
@@ -1174,7 +1173,7 @@ BOOST_AUTO_TEST_CASE(EqualityTest)
 	BOOST_REQUIRE(A != B);
 }
 
-BOOST_AUTO_TEST_CASE(AddRange)
+BOOST_AUTO_TEST_CASE(AppendRange)
 {
 	const int COUNT = 6;
 
@@ -1188,7 +1187,7 @@ BOOST_AUTO_TEST_CASE(AddRange)
 	IntStringRBTree T;
 	T.Add(0, "zero");
 
-	T.AddRange(Source.Iterator(), Source.IteratorAt(Source.LastIndex()));
+	T.AppendRange(Source.Iterator(), Source.IteratorAt(Source.LastIndex()));
 
 	for (int i = 0; i < (COUNT - 1); i++)
 	{
@@ -1211,7 +1210,7 @@ BOOST_AUTO_TEST_CASE(AddAllRange)
 	T.Add(0, "zero");
 	T.Add(2, "two_second");
 
-	T.AddRange(Source.Iterator());
+	T.AppendRange(Source.Iterator());
 
 	for (int i = 0; i < COUNT; i++)
 	{
@@ -1233,7 +1232,7 @@ BOOST_AUTO_TEST_CASE(AddFromRBTreeTest)
 	T.Add(0, "zero");
 	T.Add(2, "two_second");
 
-	T.Add(Source);
+	T.Append(Source);
 
 	for (int i = 0; i < COUNT; i++)
 	{
@@ -1254,7 +1253,7 @@ BOOST_AUTO_TEST_CASE(AddMoveFromRBTreeTest)
 	IntStringRBTree T;
 	T.Add(0, "zero");
 
-	T.Add(std::move(Source));
+	T.Append(std::move(Source));
 
 	for (int i = 0; i < COUNT; i++)
 	{
@@ -1265,7 +1264,7 @@ BOOST_AUTO_TEST_CASE(AddMoveFromRBTreeTest)
 }
 
 
-BOOST_AUTO_TEST_CASE(AddSortedFromVectorTest)
+BOOST_AUTO_TEST_CASE(AppendSortedFromVectorTest)
 {
 	constexpr int COUNT = 6;
 
@@ -1285,7 +1284,7 @@ BOOST_AUTO_TEST_CASE(AddSortedFromVectorTest)
 	T.Add(1, NoValue{});
 
 	BOOST_TEST_CHECKPOINT("Adding");
-	T.AddSorted(Source);
+	T.AppendSorted(Source);
 	for (int i = 0; i < COUNT; i++)
 	{
 		BOOST_REQUIRE(T.Contains(i));
@@ -1312,14 +1311,14 @@ BOOST_AUTO_TEST_CASE(AddFromVectorTest)
 	T.Add(1, NoValue{});
 
 	BOOST_TEST_CHECKPOINT("Adding");
-	T.Add(Source);
+	T.Append(Source);
 	for (int i = 0; i < COUNT; i++)
 	{
 		BOOST_REQUIRE(T.Contains(i));
 	}
 }
 
-BOOST_AUTO_TEST_CASE(AddMovedFromVectorTest)
+BOOST_AUTO_TEST_CASE(AppendMovedFromVectorTest)
 {
 	constexpr int COUNT = 8;
 
@@ -1340,7 +1339,7 @@ BOOST_AUTO_TEST_CASE(AddMovedFromVectorTest)
 	T.Add(6, std::string{ "six" });
 
 	BOOST_TEST_CHECKPOINT("Adding");
-	T.AddMoved(Source);
+	T.AppendMoved(Source);
 	for (int i = 0; i < COUNT; i++)
 	{
 		BOOST_REQUIRE(T.Contains(i));
@@ -1369,7 +1368,7 @@ BOOST_AUTO_TEST_CASE(AddInitializeListTest)
 	T.Add(0, NoValue{});
 
 	BOOST_TEST_CHECKPOINT("Adding");
-	T.Add(lst);
+	T.Append(lst);
 
 	for (int i = 0; i <= 5; i++)
 	{
@@ -1401,14 +1400,14 @@ BOOST_AUTO_TEST_CASE(ExtraAddTest)
 	T.Add(4, NoValue{});
 
 	BOOST_TEST_CHECKPOINT("Adding elements from SourceArray");
-	T.Add(SourceArray.data(), SourceArray.size());
+	T.Append(SourceArray.data(), SourceArray.size());
 	for (int i = 0; i < COUNT; i++)
 	{
 		BOOST_REQUIRE(T.Contains(i));
 	}
 }
 
-BOOST_AUTO_TEST_CASE(ExtraAddSortedTest)
+BOOST_AUTO_TEST_CASE(ExtraAppendSortedTest)
 {
 	const int COUNT = 10;
 	// NOTE: At the end will must have all elements from ZERO to [COUNT-1] inclusively.
@@ -1432,7 +1431,7 @@ BOOST_AUTO_TEST_CASE(ExtraAddSortedTest)
 	T.Add(4, NoValue{});
 
 	BOOST_TEST_CHECKPOINT("Adding elements from SourceArray");
-	T.AddSorted(SourceArray.data(), SourceArray.size());
+	T.AppendSorted(SourceArray.data(), SourceArray.size());
 	for (int i = 0; i < COUNT; i++)
 	{
 		BOOST_REQUIRE(T.Contains(i));
@@ -1513,7 +1512,7 @@ BOOST_AUTO_TEST_CASE(MovingFromPartOfCArrayTest)
 	T.Add(4, std::string("third_fourth"));
 
 	BOOST_TEST_CHECKPOINT("Moving elements from SourceArray");
-	T.AddMoved(SourceArray.data(), SourceArray.size());
+	T.AppendMoved(SourceArray.data(), SourceArray.size());
 	for (int i = 0; i < COUNT; i++)
 	{
 		BOOST_REQUIRE(T.Contains(i));
@@ -1546,7 +1545,7 @@ BOOST_AUTO_TEST_CASE(MovingSortedFromPartOfCArrayTest)
 	T.Add(4, std::string("third_fourth"));
 
 	BOOST_TEST_CHECKPOINT("Moving elements from SourceArray");
-	T.AddMovedSorted(SourceArray.data(), SourceArray.size());
+	T.AppendMovedSorted(SourceArray.data(), SourceArray.size());
 	for (int i = 0; i < COUNT; i++)
 	{
 		BOOST_REQUIRE(T.Contains(i));

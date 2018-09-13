@@ -438,10 +438,28 @@ public:
 	*
 	* @returns: true, if was found and moved (otherwise false).
 	*/
-	//bool MoveKey(const KeyType& InKey, KeyType& OutMovedKey)
-	//{
-	//	return Cont.MoveKeyOnly(InKey, OutMovedKey);
-	//}
+	bool MoveKey(const KeyType& InKey, KeyType& OutMovedKey)
+	{
+		return Cont.RemoveAndMoveKey(InKey, OutMovedKey);
+	}
+
+	/**
+	* Emplaces a new key.
+	*/
+	template<class ... Args>
+	bool AddEmplace(Args&&... InArgs)
+	{
+		return Cont.AddEmplaceKey(NoValue{}, std::forward(InArgs)...);
+	}
+
+	/**
+	* Emplaces a new key at the given hint position.
+	*/
+	template<class ... Args>
+	bool AddEmplaceHintHint(ConstIteratorType ItPos, Args&&... InArgs)
+	{
+		return Cont.AddEmplaceHintKey(ItPos, NoValue{}, std::forward(InArgs)...);
+	}
 
 	/**
 	* Adds a new key to the container.
@@ -454,6 +472,14 @@ public:
 		return Cont.Add(KeyValueType{InKey, NoValue{}});
 	}
 
+	/**
+	* Adds a new key to the container from the given hint position.
+	* Not guaranteed that this position will be accounted, but may optimize.
+	*/
+	bool AddHint(ConstIteratorType ItPos, const KeyType& InKey)
+	{
+		return Cont.AddHint(ItPos.ToBaseIterator(), InKey);
+	}
 
 	/**
 	* Adds a new key to the container by moving.
@@ -465,17 +491,25 @@ public:
 		static_assert(std::is_move_constructible_v<KeyType>, "TSortedSet: Add (&&): KeyType must be move-constructible");
 		return Cont.Add(KeyValueType{std::move(InKey), NoValue{}});
 	}
-
+	
+	/**
+	* Adds a new key to the container from the given hint position.
+	* Not guaranteed that this position will be accounted, but may optimize.
+	*/
+	bool AddHint(ConstIteratorType ItPos, KeyType&& InKey)
+	{
+		return Cont.AddHint(ItPos.ToBaseIterator(), std::move(InKey));
+	}
 
 	/**
 	* Adds keys from C-array buffer. 
 	* Keys are copied.
 	*/
-	void Add(const KeyType* pInSource, int32_t InCopiedCount)
+	void Append(const KeyType* pInSource, int32_t InCopiedCount)
 	{
 		BOOST_REQUIRE(pInSource);
-		// @TODO: Optimize: reserve the space
-		//Cont.ReserveGrow(Count + InCopiedCount);
+		BOOST_ASSERT(InCopiedCount >= 0);
+		Cont.ReserveGrow(Count + InCopiedCount);
 		for (int i = 0; i < InCopiedCount; i++) 
 		{
 			Add(pInSource[i]);
@@ -485,20 +519,20 @@ public:
 	/**
 	* Adds the given range of keys, assuming that the range is sorted.
 	*/
-	void AddSorted(const KeyType* pInSource, int32_t InCopiedCount)
+	void AppendSorted(const KeyType* pInSource, int32_t InCopiedCount)
 	{
-		Add(pInSource, InCopiedCount);
+		Append(pInSource, InCopiedCount);
 	}
 
 	/**
 	* Adds keys from C-array buffer.
 	* Keya are moved.
 	*/
-	void AddMoved(KeyType* pInSource, int32_t InCopiedCount)
+	void AppendMoved(KeyType* pInSource, int32_t InCopiedCount)
 	{
 		BOOST_ASSERT(pInSource);
-		// @TODO: Optimize: reserve the space
-		//Buffer.ReserveGrow(Count + InCopiedCount);
+		BOOST_ASSERT(InCopiedCount >= 0);
+		Buffer.ReserveGrow(Count + InCopiedCount);
 		for (int i = 0; i < InCopiedCount; i++)
 		{
 			Add(std::move(pInSource[i]));
@@ -508,9 +542,9 @@ public:
 	/**
 	* Adds keys from C-array buffer, assuming that the range is sorted.
 	*/
-	void AddMovedSorted(KeyType* pInSource, int32_t InCopiedCount)
+	void AppendMovedSorted(KeyType* pInSource, int32_t InCopiedCount)
 	{
-		AddMoved(pInSource, InCopiedCount);
+		AppendMoved(pInSource, InCopiedCount);
 	}
 
 	template<class Strm>
@@ -556,11 +590,7 @@ Strm& operator<<(Strm& S, const TSortedSet<T, ComparerArg>& InCont)
 * 6.1. Getters
 * 6.2. Add
 * 6.3. Remove
-* 6.3.0. 
-* 6.3.0.1. TODO: Add conversion from KeyIterator to KeyValueIterator.
-* 6.3.1. Remove by key
-* 6.3.2. Remove all
-* 6.3.3. Remove first
+
 * 7. Find
 *
 * DONE:

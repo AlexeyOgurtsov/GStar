@@ -59,15 +59,27 @@
 * TODO Traverse:
 * 1. Create the Stack-overflow unit-test for traverse;
 *
-* TODO Key extra:
-* 1. Filter keys by the given predicate
-*
-* TODO Size functions:
-* 1. Should we make it static?
-*
 * TODO:
 * 1. Move key only
 * 2. Move value only
+*
+* TODO:
+* 1. Checked find functions.
+* 2. FindRef functions.
+* 3. FindOrDefault.
+*
+* TODO Extra Remove:
+* 1. FindAndRemoveChecked
+* 2. RemoveAndCopyValue
+*
+* TODO Set operations:
+* 1. Intersect:
+* 1.1. CopyIntersect (DONE)
+* 2. Union
+* 3. Difference
+*
+* TODO Not Yet Impl:
+* 1) FindIteratorForInRange Impl
 */
 
 /**
@@ -154,7 +166,7 @@ public:
 	,	RootIdx{ INDEX_NONE }
 	,	Count{ 0 }
 	{
-		Add(InOther);
+		Append(InOther);
 	}
 
 	/**
@@ -166,7 +178,7 @@ public:
 	,	RootIdx{ INDEX_NONE }
 	,	Count{ 0 }
 	{
-		Add(InOther);
+		Append(InOther);
 	}
 
 	/**
@@ -175,7 +187,7 @@ public:
 	TRBTree& operator=(const ThisType& InOther)
 	{
 		Clear();
-		Add(InOther);
+		Append(InOther);
 		return *this;
 	}
 
@@ -186,7 +198,7 @@ public:
 	TRBTree& operator=(const TRBTree<KVTypeArg, OtherComparerArg>& InOther)
 	{
 		Clear();
-		Add(InOther);
+		Append(InOther);
 		return *this;
 	}
 
@@ -226,7 +238,7 @@ public:
 	TRBTree& operator=(TRBTree<KVTypeArg, OtherComparerArg>&& InOther)
 	{
 		Clear();
-		Add(std::move(InOther));
+		Append(std::move(InOther));
 		return *this;
 	}
 
@@ -238,7 +250,7 @@ public:
 		RootIdx{ INDEX_NONE }
 	,	Count{ 0 }
 	{
-		Add(std::move(InOther));
+		Append(std::move(InOther));
 	}
 
 	/**
@@ -970,6 +982,27 @@ public:
 	}
 
 	/**
+	* Searches iterator by the given Key in the given range.
+	*
+	* @Returns: Iterator to the element (or end iterator, if NOT found)
+	*/
+	ConstIteratorType FindIteratorFor_InRange(const KeyType& InKey, ConstIteratorType ItFirst, ConstIteratorType ItLast) const
+	{
+		return FindIteratorAtInRangeImpl(InKey, ComparerArg(), ItFirst, ItLast);
+	}
+
+	/**
+	* Searches iterator by the given Key according to the given criteria in the given range.
+	*
+	* @Returns: Iterator to the element (or end iterator, if NOT found)
+	*/
+	template<class ComparerType>
+	ConstIteratorType FindIteratorFor_InRange(const KeyType& InKey, ComparerType InComparer, ConstIteratorType ItFirst, ConstIteratorType ItLast) const
+	{
+		return FindIteratorAtInRangeImpl<ConstIteratorType>(InKey, this, InComparer, ItFirst, ItLast);
+	}
+
+	/**
 	* Searches iterator by the given Key.
 	*
 	* @Returns: Iterator to the element (or end iterator, if NOT found)
@@ -1687,6 +1720,38 @@ public:
 
 		return bFound;
 	}
+
+	/**
+	* Moves the given key from the tree and removes the element.
+	*
+	* @returns: true, if was found and moved (otherwise false).
+	*/
+	bool RemoveAndMoveKey(const KeyType& InKey, KeyType& OutMovedKey)
+	{
+		KeyValueType KV;
+		bool bMoved = MoveByKey(InKey, /*OutMovedKV*/KV);
+		if (bMoved)
+		{
+			OutMovedKey = std::move(KV.Key);
+		}
+		return bMoved;
+	}
+
+	/**
+	* Moves the given key from the tree and removes the element.
+	*
+	* @returns: true, if was found and moved (otherwise false).
+	*/
+	bool RemoveAndMoveValue(const KeyType& InKey, ValueType& OutMovedValue)
+	{
+		KeyValueType KV;
+		bool bMoved = MoveByKey(InKey, /*OutMovedKV*/KV);
+		if (bMoved)
+		{
+			OutMovedValue = std::move(KV.Value);
+		}
+		return bMoved;
+	}
 	
 	/**
 	* Adds a new node from the given hint position.
@@ -1710,11 +1775,55 @@ public:
 	* Registers the given key/value.
 	* If key/value with the given key is already registered, removes it.
 	*
-	* @Returns: iterator to the element.
+	* @Returns: new iterator to the element.
 	*/
 	IteratorType Replace(KeyValueType&& InKV)
 	{
 		return ReplaceImpl(std::move(InKV));
+	}
+
+	/**
+	* Replaces the keyvalue pair corresponding the given key with other key-value.
+	* Or (if not registered) registers a new pair.
+	*
+	* @returns: new iterator to the element.
+	*/
+	IteratorType ReplaceByKey(const KeyType& InKey, KeyValueType&& InKV)
+	{
+		return ReplaceByKeyImpl(InKey, std::move(InKV));
+	}
+
+	/**
+	* Replaces the key/value pair corresponding the given key with other key-value.
+	* Or (if not registered) registers a new pair.
+	*
+	* @returns: new iterator to the element.
+	*/
+	IteratorType ReplaceByKey(const KeyType& InKey, const KeyValueType& InKV)
+	{
+		return ReplaceByKeyImpl(InKey, InKV);
+	}
+
+	/**
+	* Replaces the key/value pair that the given iterator points to with other key-value.
+	* The iterator be valid NON-end iterator.
+	*
+	* @returns: new iterator to the element.
+	*/
+	IteratorType ReplaceByIterator(ConstIteratorType It, KeyValueType&& InKV)
+	{
+		return ReplaceByIteratorImpl(It, std::move(InKV));
+	}
+
+	/**
+	* Replaces the key/value pair that the given iterator points to with other key-value.
+	* The iterator be valid NON-end iterator.
+	*
+	* @returns: new iterator to the element.
+	*/
+	IteratorType ReplaceByIterator(ConstIteratorType It, const KeyValueType& InKV)
+	{
+		return ReplaceByIteratorImpl(It, InKV);
 	}
 
 	/**
@@ -1798,6 +1907,71 @@ public:
 	}
 
 	/**
+	* Intersect key sets and returns a new set.
+	* The result set will contain only that values that are contained both in the current set and the other set.
+	* WARNING!!! The result set is not cleared and space is not reserved in the result set.
+	*/
+	void CopyIntersect(TRBTree& OutResult, const TRBTree& InOtherSet)
+	{
+		ConstIteratorType OtherIt = InOtherSet.ConstIterator();
+		for (ConstIteratorType It = Iterator(); It; ++It)
+		{
+			OtherIt = InOtherSet.FindIteratorFor_InRange(It->GetKey(), OtherIt, InOtherSet.ConstEndIterator());
+			if (OtherIt.IsEnd())
+			{
+				return;
+			}
+			
+			OutResult.Add(It.GetKeyValue());
+			
+			++OtherIt;
+			++It;
+		}
+	}
+
+	/**
+	* Emplaces a new key value to the tree.
+	*/
+	template<class ... Args>
+	bool AddEmplaceValue(const KeyType& InKey, Args&&... InValueArgs)
+	{
+		return AddEmplaceHintValue(ConstEndIterator(), InKey, std::forward<Args>(InValueArgs)...);
+	}
+
+	/**
+	* Emplaces a new key value to the tree at the given iterator position.
+	*/
+	template<class ... Args>
+	bool AddEmplaceHintValue(ConstIteratorType ItPos, const KeyType& InKey, Args&&... InValueArgs)
+	{
+		// @TODO: Optimize: Implement hint:
+		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
+		AddImpl(KeyValueType{ InKey, ValueType{std::forward<Args>(InValueArgs)...} }, /*Out*/NodeRef);
+		return IteratorType(this, NodeRef);
+	}
+
+	/**
+	* Emplaces a new key value to the tree.
+	*/
+	template<class ... Args>
+	bool AddEmplaceKey(const ValueType& InValue, Args&&... InValueArgs)
+	{
+		return AddEmplaceHintKey(ConstEndIterator(), InValue, std::forward<Args>(InValueArgs)...);
+	}
+
+	/**
+	* Emplaces a new key value to the tree at the given iterator position.
+	*/
+	template<class ... Args>
+	bool AddEmplaceHintKey(ConstIteratorType ItPos, const ValueType& InValue, Args&&... InValueArgs)
+	{
+		// @TODO: Optimize: Implement hint:
+		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
+		AddImpl(KeyValueType{ KeyType{ std::forward<Args>(InValueArgs)... }, InValue}, /*Out*/NodeRef);
+		return IteratorType(this, NodeRef);
+	}
+
+	/**
 	* Adds a new node to the tree.
 	*
 	* @Returns: true if was added (or false if already was in the tree).
@@ -1814,7 +1988,7 @@ public:
 	* Adds key/value pairs from C-array buffer. 
 	* Key/Value pairs are copied.
 	*/
-	void Add(const KeyValueType* pInSource, int32_t InCopiedCount)
+	void Append(const KeyValueType* pInSource, int32_t InCopiedCount)
 	{
 		BOOST_ASSERT(pInSource);
 		Buffer.ReserveGrow(Count + InCopiedCount);
@@ -1827,7 +2001,7 @@ public:
 	/**
 	* Adds the given range of elements, assuming that the range is sorted.
 	*/
-	void AddSorted(const KeyValueType* pInSource, int32_t InCopiedCount)
+	void AppendSorted(const KeyValueType* pInSource, int32_t InCopiedCount)
 	{
 		BOOST_ASSERT(pInSource);
 		// @TODO: optimize
@@ -1847,7 +2021,7 @@ public:
 	* Adds key/value pairs from C-array buffer.
 	* Key/Value pairs are moved.
 	*/
-	void AddMoved(KeyValueType* pInSource, int32_t InCopiedCount)
+	void AppendMoved(KeyValueType* pInSource, int32_t InCopiedCount)
 	{
 		BOOST_ASSERT(pInSource);
 		Buffer.ReserveGrow(Count + InCopiedCount);
@@ -1860,9 +2034,9 @@ public:
 	/**
 	* Adds key/value pairs from C-array buffer, assuming that the range is sorted.
 	*/
-	void AddMovedSorted(KeyValueType* pInSource, int32_t InCopiedCount)
+	void AppendMovedSorted(KeyValueType* pInSource, int32_t InCopiedCount)
 	{
-		AddMoved(pInSource, InCopiedCount);
+		AppendMoved(pInSource, InCopiedCount);
 	}
 
 	/**
@@ -1871,9 +2045,9 @@ public:
 	* Iterator must satisfy the Iterator concept requirements (see IteratorUtils.h).
 	*/
 	template<class SourceIteratorType>
-	void AddRange(SourceIteratorType FirstIt, SourceIteratorType LastIt)
+	void AppendRange(SourceIteratorType FirstIt, SourceIteratorType LastIt)
 	{
-		static_assert(IsIterator<SourceIteratorType>::Value, "RBTree: AddRange: Provided type is NOT iterator");
+		static_assert(IsIterator<SourceIteratorType>::Value, "RBTree: AppendRange: Provided type is NOT iterator");
 		// @TODO: Check that iterator is NOT iterator of this particular RBTree.
 		static_assert(std::is_same<std::remove_cv_t<std::remove_reference_t<decltype(*FirstIt)>>, KeyValueType>::value, "TRBTree: Append iterator range: first iterator must return type convertible to KeyValue pair");
 		static_assert(std::is_same<std::remove_cv_t<std::remove_reference_t<decltype(*LastIt)>>, KeyValueType>::value, "TRBTree: Append iterator range: last iterator must return type convertible to KeyValue pair");
@@ -1890,10 +2064,10 @@ public:
 	* Iterator must satisfy the Iterator concept requirements (see IteratorUtils.h).
 	*/
 	template<class SourceIteratorType>
-	void AddRangeSorted(SourceIteratorType FirstIt, SourceIteratorType LastIt)
+	void AppendRangeSorted(SourceIteratorType FirstIt, SourceIteratorType LastIt)
 	{
 		// @TODO: Optimize
-		AddRange(FirstIt, LastIt);
+		AppendRange(FirstIt, LastIt);
 	}
 
 
@@ -1904,9 +2078,9 @@ public:
 	* Iterator must satisfy the Iterator concept requirements (see IteratorUtils.h).
 	*/
 	template<class SourceIteratorType>
-	void AddRange(SourceIteratorType It)
+	void AppendRange(SourceIteratorType It)
 	{
-		static_assert(IsIterator<SourceIteratorType>::Value, "TVector: AddRange: It must be iterator");
+		static_assert(IsIterator<SourceIteratorType>::Value, "TVector: AppendRange: It must be iterator");
 		// @TODO: Check that iterator is NOT iterator of this particular RBTree.
 		for (SourceIteratorType CurrIt = It; CurrIt; ++CurrIt)
 		{
@@ -1922,9 +2096,9 @@ public:
 	* Iterator must satisfy the Iterator concept requirements (see IteratorUtils.h).
 	*/
 	template<class SourceIteratorType>
-	void AddRangeSorted(SourceIteratorType It)
+	void AppendRangeSorted(SourceIteratorType It)
 	{
-		AddRange(It);
+		AppendRange(It);
 	}
 
 	/**
@@ -1932,7 +2106,7 @@ public:
 	*
 	* Warning: All keys in the initializer list must be unique.
 	*/
-	void Add(std::initializer_list<KeyValueType> Source)
+	void Append(std::initializer_list<KeyValueType> Source)
 	{
 		for(const KeyValueType& KV : Source)
 		{
@@ -1944,7 +2118,7 @@ public:
 	* Adds the TRBTree pairs.
 	*/
 	template<class OtherComparerArg>
-	void Add(const TRBTree<KVTypeArg, OtherComparerArg>& InSource)
+	void Append(const TRBTree<KVTypeArg, OtherComparerArg>& InSource)
 	{
 		for (const KeyValueType& KV : InSource)
 		{
@@ -1956,17 +2130,17 @@ public:
 	* Adds the TRBTree Key/Value pairs by moving.
 	*/
 	template<class OtherComparerArg>
-	void Add(TRBTree<KVTypeArg, OtherComparerArg>&& InSource)
+	void Append(TRBTree<KVTypeArg, OtherComparerArg>&& InSource)
 	{
 		// @TODO: Perform real moving
-		AddMoved(InSource);
+		AppendMoved(InSource);
 	}
 
 	/**
 	* Adds the TRBTree Key/Value pairs by moving.
 	*/
 	template<class OtherComparerArg>
-	void AddMoved(TRBTree<KVTypeArg, OtherComparerArg>& InSource)
+	void AppendMoved(TRBTree<KVTypeArg, OtherComparerArg>& InSource)
 	{
 		// @NOTE: Temporary workaround while iteration does NOT work correctly when removing in the middle of iteration
 		{
@@ -2002,17 +2176,17 @@ public:
 	* Adds the TVector Key/Value pairs.
 	*/
 	template<template<class> class OtherResizePolicy>
-	void AddSorted(const TVector<KeyValueType, OtherResizePolicy>& InSource)
+	void AppendSorted(const TVector<KeyValueType, OtherResizePolicy>& InSource)
 	{
 		// @TODO: Optimize
-		Add(InSource);
+		Append(InSource);
 	}
 
 	/**
 	* Adds the TVector Key/Value pairs.
 	*/
 	template<template<class> class OtherResizePolicy>
-	void Add(const TVector<KeyValueType, OtherResizePolicy>& InSource)
+	void Append(const TVector<KeyValueType, OtherResizePolicy>& InSource)
 	{
 		for (const KeyValueType& KV : InSource)
 		{
@@ -2024,16 +2198,16 @@ public:
 	* Move the TVector Key/Value pairs.
 	*/
 	template<template<class> class OtherResizePolicy>
-	void Add(TVector<KeyValueType, OtherResizePolicy>&& Source)
+	void Append(TVector<KeyValueType, OtherResizePolicy>&& Source)
 	{
-		AddMoved(Source);
+		AppendMoved(Source);
 	}
 
 	/**
 	* Move the TVector Key/Value pairs.
 	*/
 	template<template<class> class OtherResizePolicy>
-	void AddMoved(TVector<KeyValueType, OtherResizePolicy>& InSource)
+	void AppendMoved(TVector<KeyValueType, OtherResizePolicy>& InSource)
 	{
 		for (KeyValueType& KV : InSource)
 		{
@@ -2798,6 +2972,32 @@ private:
 		TRBTreeImpl::ChildNodeRef NodeRef;
 	};
 
+	template<class InKVTypeArg>
+	IteratorType ReplaceByKeyImpl(const KeyType& InKey, InKVTypeArg&& InKV)
+	{
+		// @TODO: Optimize? GetOrAdd performs extra check
+		IteratorType It = FindIteratorFor(InKey);
+		if (It.IsEnd())
+		{
+			IteratorType It = GetOrAdd(std::forward<InKVTypeArg>(InKV));
+		}
+		else
+		{
+			IteratorType NewIt = ReplaceByIterator(It, std::forward<InKVTypeArg>(InKV));
+			return NewIt;
+		}
+	}
+
+	template<class OtherKVTypeArg>
+	IteratorType ReplaceByIteratorImpl(ConstIteratorType It, OtherKVTypeArg&& InKV)
+	{
+		BOOST_ASSERT(It);
+		RemoveAt(It);
+		// @TODO: Optimize: Doing extra check here
+		It = GetOrAdd(std::forward<KeyValueTypeArg>(InKV));
+		return It;
+	}
+
 	template<class KeyValueTypeArg>
 	IteratorType ReplaceImpl(KeyValueTypeArg&& InKV)
 	{
@@ -2807,6 +3007,7 @@ private:
 			bool bReplaced = Remove(InKV.Key);
 			BOOST_ASSERT(bReplaced);
 		}
+		// @TODO: Optimize: Doing extra check here
 		It = GetOrAdd(std::forward<KeyValueTypeArg>(InKV));
 		return It;
 	}
@@ -2852,6 +3053,21 @@ private:
 		{
 			TraverseSubtree(RightRef, Func);
 		}
+	}
+
+	/**
+	* Searches node with the given key in NON-EMPTY (!) container in the given range.
+	*
+	* Returns true, if the node is found.
+	*/
+	template<class SearchKeyType, class Comparer>
+	bool FindNode_InRange
+	(
+		const SearchKeyType& InKey, TRBTreeImpl::ChildNodeRef& OutNodeRef, Comparer InComparer,
+		ConstIteratorType ItStart, ConstIteratorType ItEnd
+	) const 
+	{
+		BOOST_ASSERT(false && "FindNode_InRange: NOT yet implemented");  return false;
 	}
 
 	/**
@@ -3859,8 +4075,29 @@ private:
 		return pInThis->EndIterator();
 	}
 
+	template<class IteratorTypeArg, class ThisTypeArg, class ComparerType> IteratorTypeArg FindIteratorAtInRangeImpl
+	(
+		const KeyType& InKey, ThisTypeArg* pInThis, ComparerType InComparer,
+		ConstIteratorType ItFirst, ConstIteratorType ItLast
+	) const
+	{
+		bool bFound = (ItFirst != ItLast);
+		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
+		if (bFound)
+		{
+			bFound = FindNode_InRange(InKey, /*OutNodeRef*/ NodeRef, InComparer, ItFirst, ItLast);
+		}
+		if (!bFound)
+		{
+			return IteratorTypeArg::EndIterator(pInThis);
+		}
+		return IteratorTypeArg(pInThis, NodeRef);
+	}
+
 	template<class IteratorTypeArg, class ThisTypeArg, class ComparerType> IteratorTypeArg FindIteratorAtImpl(const KeyType& InKey, ThisTypeArg* pInThis, ComparerType InComparer) const
 	{
+		// @TODO: Code duplication: implement via the FindIteratorAtInRangeImpl
+
 		bool bFound = !Empty();
 		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
 		if (bFound)
