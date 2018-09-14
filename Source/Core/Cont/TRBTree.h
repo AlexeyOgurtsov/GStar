@@ -80,6 +80,7 @@
 *
 * TODO Not Yet Impl:
 * 1) FindIteratorForInRange Impl
+* 2) AppendUnionTo
 */
 
 /**
@@ -1904,29 +1905,6 @@ public:
 	IteratorType GetOrAdd(const KeyType& InKey, ValueType&& InValue)
 	{
 		return GetOrAdd(KeyValueType{ InKey, std::move(InValue) });
-	}
-
-	/**
-	* Intersect key sets and returns a new set.
-	* The result set will contain only that values that are contained both in the current set and the other set.
-	* WARNING!!! The result set is not cleared and space is not reserved in the result set.
-	*/
-	void CopyIntersect(TRBTree& OutResult, const TRBTree& InOtherSet)
-	{
-		ConstIteratorType OtherIt = InOtherSet.ConstIterator();
-		for (ConstIteratorType It = Iterator(); It; ++It)
-		{
-			OtherIt = InOtherSet.FindIteratorFor_InRange(It->GetKey(), OtherIt, InOtherSet.ConstEndIterator());
-			if (OtherIt.IsEnd())
-			{
-				return;
-			}
-			
-			OutResult.Add(It.GetKeyValue());
-			
-			++OtherIt;
-			++It;
-		}
 	}
 
 	/**
@@ -4224,4 +4202,78 @@ Strm& operator<<(Strm& S, const TRBTree<KVTypeArg, ComparerArg>& InCont)
 		S << KV << std::endl;
 	}
 	return S;
+}
+
+
+/**
+* Intersect key sets and returns a new set.
+* The result set will contain only that values that are contained both in the current set and the other set.
+* WARNING!!! The result set is not cleared and space is not reserved in the result set.
+*/
+template<class KVTypeArg, class ComparerArg>
+void AppendIntersectTo(TRBTree<KVTypeArg, ComparerArg>& OutResult, const TRBTree<KVTypeArg, ComparerArg>& InSet, const TRBTree<KVTypeArg, ComparerArg>& InOtherSet)
+{
+	typename TRBTree<KVTypeArg, ComparerArg>::ConstIteratorType OtherIt = InOtherSet.ConstIterator();
+	for (typename TRBTree<KVTypeArg, ComparerArg>::ConstIteratorType It = InSet.Iterator(); It; ++It)
+	{
+		OtherIt = InOtherSet.FindIteratorFor_InRange(It->GetKey(), OtherIt, InOtherSet.ConstEndIterator());
+		if (OtherIt.IsEnd())
+		{
+			return;
+		}
+			
+		OutResult.Add(It.GetKeyValue());
+			
+		++OtherIt;
+		++It;
+	}
+}
+
+/**
+* Union key sets and return a new set.
+* The result will contain all values contained either in this or other container.
+* WARNING!!! The result set is not cleared and space is not reserved in the result set.
+*/
+template<class KVTypeArg, class ComparerArg>
+void AppendUnionTo(TRBTree<KVTypeArg, ComparerArg>& OutResult, const TRBTree<KVTypeArg, ComparerArg>& InSet, const TRBTree<KVTypeArg, ComparerArg>& InOtherSet)
+{
+	AppendUnionTo(OutResult, InSet, InOtherSet.ConstIterator(), InOtherSet.ConstEndIterator());
+}
+
+/**
+* Unions current container and the given range of key/value pairs, returns a new set as an output argument.
+* The result will contain all values contained either in this or other container.
+* WARNING!!! The result set is not cleared and space is not reserved in the result set.
+*/
+template<class KVTypeArg, class ComparerArg, class OtherIteratorArg>
+void AppendUnionTo(TRBTree<KVTypeArg, ComparerArg>& OutResult, const TRBTree<KVTypeArg, ComparerArg>& InSet, OtherIteratorArg ItFirst, OtherIteratorArg ItLast)
+{
+	AppendUnionTo(OutResult, InSet.ConstIterator(), InSet.ConstEndIterator(), ItFirst, ItLast);
+}
+
+/**
+* Unions the given subrange and the given range of key/value pairs, returns a new set as an output argument.
+* The result will contain all values contained either in this or other container.
+* WARNING!!! The result set is not cleared and space is not reserved in the result set.
+*/
+template<class KVTypeArg, class ComparerArg, class IteratorArg, class OtherIteratorArg>
+void AppendUnionTo(TRBTree<KVTypeArg, ComparerArg>& OutResult, IteratorArg ItFirst, IteratorArg ItLast, OtherIteratorArg ItOtherFirst, OtherIteratorArg ItOtherLast)
+{
+	using ElementType = typename TRBTree<KVTypeArg, ComparerArg>::ElementType;
+
+	static_assert(IsIterator<OtherIteratorArg>::Value, "TRBTree: AppendUnionTo: iterator range must be represented by iterators");
+	static_assert(TypeEqual<typename IteratorArg::ElementType, ElementType>::Value, "TRBTree: AppendUnionTo: iterator element type must correspond the result RBTree");
+	
+	static_assert(IsIterator<OtherIteratorArg>::Value, "TRBTree: AppendUnionTo: other iterator range must be represented by iterators");
+	static_assert(TypeEqual<typename OtherIteratorArg::ElementType, ElementType>::Value, "TRBTree: AppendUnionTo: other iterator element type must correspond the result RBTree");
+
+	for (IteratorArg It = ItFirst; It != ItLast; ++It)
+	{
+		OutResult.Add(*It);
+	}
+
+	for (IteratorArg ItOther = ItOtherFirst; ItOther != ItOtherLast; ++ItOther)
+	{
+		OutResult.Add(*ItOther);
+	}
 }

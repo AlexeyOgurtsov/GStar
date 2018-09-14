@@ -5,9 +5,9 @@
 /**
 * Asserts in normal conditions.
 */
-#define TODO_IMPL(InCond, InMsg) { BOOST_ASSERT_MSG((InCond), (InMsg)); } 
+#define TODO_IMPL(InMsg) { BOOST_ASSERT_MSG(false, (InMsg)); } 
 
 /**
 * Does not assert in normal conditions (if no special macros defined).
 */
-#define TODO_IMPL_SILENT(InCond, InMsg) { } 
+#define TODO_IMPL_SILENT(InMsg) { } 

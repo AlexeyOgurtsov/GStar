@@ -61,6 +61,9 @@
     <Filter Include="Math\Test">
       <UniqueIdentifier>{26bc02af-bdfb-456e-b7af-cc43afa18c4d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Templ\Priv">
+      <UniqueIdentifier>{acacba62-b5f4-4575-9d3e-dd4e9c61f442}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Core\Str\IdentStr.h">
@@ -195,6 +198,21 @@
     </ClInclude>
     <ClInclude Include="..\..\Core\Templ\TypeTraits.h">
       <Filter>Templ</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Templ\TypeTraitsMinimal.h">
+      <Filter>Templ</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Templ\Priv\TypeTraitsImpl.h">
+      <Filter>Templ\Priv</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Templ\Priv\TypeTraitsMinimalImpl.h">
+      <Filter>Templ\Priv</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\UT\InsertIterator.h">
+      <Filter>Cont\UT</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Templ\Test\TypeTraitsTest.h">
+      <Filter>Templ\Test</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -333,4 +333,7 @@ Iterator GetAdvancedIt(Iterator It, int InCount)
 * 2. IsConstIterator check.
 * 3. AtStart:
 * 3.1. Implement AtLast operation (points to the last element, NOT end).
+*
+* 4. BaseIterator: 
+* 4.1. Should we define the ElementType?
 */
