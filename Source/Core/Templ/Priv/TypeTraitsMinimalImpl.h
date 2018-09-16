@@ -27,11 +27,20 @@ namespace TypeTraitsImpl
 	};
 
 	/**
-	* Single-argument type-trait that returns type.
+	* single-argument type-trait that returns type.
 	*/
 	template<template<class> class TraitArg, class T>
 	struct WrapTypeTypeTrait
 	{
 		using Type = typename TraitArg<T>::type;
+	};
+
+	/**
+	* single-argument type-trait that takes bool value and returns type.
+	*/
+	template<template<class> class TraitArg, bool ValueArg>
+	struct WrapTypeTypeTrait_TakeBoolValue
+	{
+		using Type = typename TraitArg<ValueArg>::type;
 	};
 } // TypeTraitsImpl

@@ -23,3 +23,6 @@ struct RemoveRefCV
 {
 	using Type = typename RemoveCV<typename RemoveRef<T>::Type>::Type;
 };
+
+template<bool ValurArg>
+using EnableIf = TypeTraitsImpl::WrapTypeTypeTrait_TakeBoolValue<std::enable_if, ValueArg>;
