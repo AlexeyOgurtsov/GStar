@@ -38,7 +38,7 @@ namespace TypeTraitsImpl
 	/**
 	* single-argument type-trait that takes bool value and returns type.
 	*/
-	template<template<class> class TraitArg, bool ValueArg>
+	template<template<bool> class TraitArg, bool ValueArg>
 	struct WrapTypeTypeTrait_TakeBoolValue
 	{
 		using Type = typename TraitArg<ValueArg>::type;
