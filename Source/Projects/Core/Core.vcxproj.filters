@@ -64,6 +64,9 @@
     <Filter Include="Templ\Priv">
       <UniqueIdentifier>{acacba62-b5f4-4575-9d3e-dd4e9c61f442}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Cont\Test\TRBTree">
+      <UniqueIdentifier>{caaa32a9-90f3-4f2b-ab24-d0facae7c9c4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Core\Str\IdentStr.h">
@@ -213,6 +216,36 @@
     </ClInclude>
     <ClInclude Include="..\..\Core\Templ\Test\TypeTraitsTest.h">
       <Filter>Templ\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestExtraOps.h">
+      <Filter>Cont\Test\TRBTree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestMemorySuite.h">
+      <Filter>Cont\Test\TRBTree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestMinimalAddSuite.h">
+      <Filter>Cont\Test\TRBTree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestMinimalIterationSuite.h">
+      <Filter>Cont\Test\TRBTree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestMinimalMain.h">
+      <Filter>Cont\Test\TRBTree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestMinimalRemoveSuite.h">
+      <Filter>Cont\Test\TRBTree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestSerialization.h">
+      <Filter>Cont\Test\TRBTree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestUtils.h">
+      <Filter>Cont\Test\TRBTree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestFindSuite.h">
+      <Filter>Cont\Test\TRBTree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestSet.h">
+      <Filter>Cont\Test\TRBTree</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
