@@ -1760,7 +1760,6 @@ public:
 		return bMoved;
 	}
 
-	/*
 	void AppendRangeEnd(ConstIteratorType FirstIt, ConstIteratorType LastIt)
 	{
 		for(ConstIteratorType It = FirstIt; It != LastIt; ++It)
@@ -1768,7 +1767,6 @@ public:
 			AddEnd(*it);
 		}
 	}
-	*/
 
 	/**
 	* Adds a new node from the end of the container.
@@ -1776,12 +1774,10 @@ public:
 	*
 	* @returns: Iterator to the inserted value (must be always non-end).
 	*/
-	/*
 	IteratorType AddEnd(const KeyValueType& InKV)
 	{
 		return AddEndImpl(InKV);
 	}
-	*/
 
 	/**
 	* Adds a new node from the end of the container by moving.
@@ -1790,12 +1786,10 @@ public:
 	*
 	* @returns: Iterator to the inserted value (must be always non-end).
 	*/
-	/*
 	IteratorType AddEnd(KeyValueType&& InKV)
 	{
 		return AddEndImpl(std::move(InKV));
 	}
-	*/
 
 	/**
 	* Adds a new node before the given position of the container.
@@ -1803,13 +1797,11 @@ public:
 	*
 	* @returns: Iterator to the inserted value (must be always non-end).
 	*/
-	/*
 	IteratorType AddAfter(ConstIteratorType ItPos, const KeyValueType& InKV)
 	{
 		KeyValueType KV { InKV };
 		return AddAfterImpl(ItPos, std::move(KV));
 	}
-	*/
 
 	/**
 	* Adds a new node before the given position of the container by moving.
@@ -1817,12 +1809,10 @@ public:
 	*
 	* @returns: Iterator to the inserted value (must be always non-end).
 	*/
-	/*
 	IteratorType AddAfter(ConstIteratorType ItPos, KeyValueType&& InKV)
 	{
 		return AddAfterImpl(ItPos, std::move(InKV));
 	}
-	*/
 	
 	/**
 	* Adds a new node from the given hint position.
@@ -4213,22 +4203,20 @@ private:
 		return false;
 	}
 
-	/*
 	template<class KeyValueTypeArg>
 	IteratorType AddEndImpl(KeyValueTypeArg&& InKV)
 	{
 		return AddAfterImpl(EndIterator(), std::forward<KeyValueTypeArg>(InKV));	
 	}
-	*/
 
-	//IteratorType AddAfterImpl(ConstIteratorType ItPos, KeyValueType&& InKV)
-	//{
-	//	// @TODO: OPTIMIZE
-	//	BOOST_REQUIRE_MSG(ItPos.IsEnd() || InKV.Key < ItPos.GetKey(), "TRBTree: AddAfterImpl: Unable to insert key after this position: next key must be greater");
-	//	TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
-	//	AddImpl(std::move(InKV), /*Out*/NodeRef);
-	//	return IteratorType{this, NodeRef};
-	//}
+	IteratorType AddAfterImpl(ConstIteratorType ItPos, KeyValueType&& InKV)
+	{
+		// @TODO: OPTIMIZE
+		BOOST_REQUIRE_MSG(ItPos.IsEnd() || InKV.Key < ItPos.GetKey(), "TRBTree: AddAfterImpl: Unable to insert key after this position: next key must be greater");
+		TRBTreeImpl::ChildNodeRef NodeRef = TRBTreeImpl::ChildNodeRef::Invalid();
+		AddImpl(std::move(InKV), /*Out*/NodeRef);
+		return IteratorType{this, NodeRef};
+	}
 	
 	/**
 	* Buffer for storing nodes.
@@ -4297,7 +4285,6 @@ Strm& operator<<(Strm& S, const TRBTree<KVTypeArg, ComparerArg>& InCont)
 * The result set will contain only that values that are contained both in the current set and the other set.
 * WARNING!!! The result set is not cleared and space is not reserved in the result set.
 */
-/*
 template<class KVTypeArg, class ComparerArg>
 void AppendIntersectTo(TRBTree<KVTypeArg, ComparerArg>& OutResult, const TRBTree<KVTypeArg, ComparerArg>& InSet, const TRBTree<KVTypeArg, ComparerArg>& InOtherSet)
 {
@@ -4365,40 +4352,34 @@ void AppendDifferenceTo(TRBTree<KVTypeArg, ComparerArg>& OutResult, const TRBTre
 	// WARNING!!! We may NOT use AddRangeEnd here, because the result may already contain elements
 	OutResult.AppendRange(It, InSet.ConstEndIterator());
 }
-*/
 
 /**
 * Union key sets and return a new set.
 * The result will contain all values contained either in this or other container.
 * WARNING!!! The result set is not cleared and space is not reserved in the result set.
 */
-/*
 template<class KVTypeArg, class ComparerArg>
 void AppendUnionTo(TRBTree<KVTypeArg, ComparerArg>& OutResult, const TRBTree<KVTypeArg, ComparerArg>& InSet, const TRBTree<KVTypeArg, ComparerArg>& InOtherSet)
 {
 	AppendUnionTo(OutResult, InSet, InOtherSet.ConstIterator(), InOtherSet.ConstEndIterator());
 }
-*/
 
 /**
 * Unions current container and the given range of key/value pairs, returns a new set as an output argument.
 * The result will contain all values contained either in this or other container.
 * WARNING!!! The result set is not cleared and space is not reserved in the result set.
 */
-/*
 template<class KVTypeArg, class ComparerArg, class OtherIteratorArg>
 void AppendUnionTo(TRBTree<KVTypeArg, ComparerArg>& OutResult, const TRBTree<KVTypeArg, ComparerArg>& InSet, OtherIteratorArg ItFirst, OtherIteratorArg ItLast)
 {
 	AppendUnionTo(OutResult, InSet.ConstIterator(), InSet.ConstEndIterator(), ItFirst, ItLast);
 }
-*/
 
 /**
 * Unions the given subrange and the given range of key/value pairs, returns a new set as an output argument.
 * The result will contain all values contained either in this or other container.
 * WARNING!!! The result set is not cleared and space is not reserved in the result set.
 */
-/*
 template<class KVTypeArg, class ComparerArg, class IteratorArg, class OtherIteratorArg>
 void AppendUnionTo(TRBTree<KVTypeArg, ComparerArg>& OutResult, IteratorArg ItFirst, IteratorArg ItLast, OtherIteratorArg ItOtherFirst, OtherIteratorArg ItOtherLast)
 {
@@ -4420,4 +4401,3 @@ void AppendUnionTo(TRBTree<KVTypeArg, ComparerArg>& OutResult, IteratorArg ItFir
 		OutResult.Add(*ItOther);
 	}
 }
-*/
