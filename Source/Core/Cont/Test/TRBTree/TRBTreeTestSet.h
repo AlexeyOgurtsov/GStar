@@ -8,16 +8,15 @@ namespace
 	BOOST_AUTO_TEST_SUITE(Container)
 	BOOST_AUTO_TEST_SUITE(TRBTreeTestSuite)
 	
-		// WARNING!!! This line causes compilation failure if you uncomment it!
-		BOOST_AUTO_TEST_SUITE
-		(
-			SetOperationTestSuite,
-			*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal")
-		)
+	// WARNING!!! This line causes compilation failure if you uncomment it!
+	BOOST_AUTO_TEST_SUITE
+	(
+		SetOperationTestSuite,
+		*boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal")
+	)
 
-		/*
-		BOOST_AUTO_TEST_CASE(AppendIntersectTestCase)
-		{
+	BOOST_AUTO_TEST_CASE(AppendIntersectTestCase)
+	{
 		using TreeType = TRBTree<KVType<int, int>>;
 
 		TreeType const EmptyA, EmptyB;
@@ -107,10 +106,10 @@ namespace
 		BOOST_REQUIRE(Result_137.Contains(1));
 		BOOST_REQUIRE(Result_137.Contains(3));
 		BOOST_REQUIRE(Result_137.Contains(7));
-		}
+	}
 
-		BOOST_AUTO_TEST_CASE(AppendDifferenceTestCase)
-		{
+	BOOST_AUTO_TEST_CASE(AppendDifferenceTestCase)
+	{
 		using TreeType = TRBTree<KVType<int, int>>;
 
 		TreeType const EmptyA, EmptyB;
@@ -204,12 +203,10 @@ namespace
 		BOOST_REQUIRE_EQUAL(Tree_2_5_result.Num(), 2);
 		BOOST_REQUIRE(Tree_2_5_result.Contains(2));
 		BOOST_REQUIRE(Tree_2_5_result.Contains(5));
-		}
-		*/
+	}
 
-		/*
-		BOOST_AUTO_TEST_CASE(AppendUnionToTest)
-		{
+	BOOST_AUTO_TEST_CASE(AppendUnionToTest)
+	{
 		using TreeType = TRBTree<KVType<int, int>>;
 
 		TreeType const EmptyA, EmptyB;
@@ -315,11 +312,9 @@ namespace
 		BOOST_REQUIRE(Result_1234579AB.Contains(9));
 		BOOST_REQUIRE(Result_1234579AB.Contains(10));
 		BOOST_REQUIRE(Result_1234579AB.Contains(11));
-		}
-		*/
+	}
 
-		BOOST_AUTO_TEST_SUITE_END() // SetOperationTestSuite
-
+	BOOST_AUTO_TEST_SUITE_END() // SetOperationTestSuite
 	BOOST_AUTO_TEST_SUITE_END() // TRBTreeTestSuite
 	BOOST_AUTO_TEST_SUITE_END() // Container
 	BOOST_AUTO_TEST_SUITE_END() // Core

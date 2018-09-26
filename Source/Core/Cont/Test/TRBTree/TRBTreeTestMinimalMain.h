@@ -9,14 +9,14 @@ namespace
 	BOOST_AUTO_TEST_SUITE(TRBTreeTestSuite)
 	BOOST_AUTO_TEST_SUITE(Minimal)
 	
-		/**
-		* Tests a minimal set of operations, to make it possible to write other tests dependent on it.
-		* - Construction test;
-		* - Num, Empty tests;
-		* - Contains minimal test;
-		* - Add minimal test;
-		*/
-		BOOST_AUTO_TEST_CASE(FirstMinimal)
+	/**
+	* Tests a minimal set of operations, to make it possible to write other tests dependent on it.
+	* - Construction test;
+	* - Num, Empty tests;
+	* - Contains minimal test;
+	* - Add minimal test;
+	*/
+	BOOST_AUTO_TEST_CASE(FirstMinimal)
 	{
 		//
 		// WARNING!!! This keys are ordered (see test).
@@ -101,6 +101,123 @@ namespace
 		BOOST_TEST_CHECKPOINT("MinMax");
 		BOOST_REQUIRE_EQUAL(KEY_ONE, T.Min().Key);
 		BOOST_REQUIRE_EQUAL(KEY_SEVEN, T.Max().Key);
+	}
+
+
+	BOOST_AUTO_TEST_CASE(CopyToTest, *boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/FirstMinimal"))
+	{
+		constexpr int NUM = 5;
+
+		constexpr int KEY_TWO = 2;
+		constexpr int KEY_THREE = 3;
+		constexpr int KEY_FIVE = 5;
+		constexpr int KEY_SEVEN = 7;
+		constexpr int KEY_EIGHT = 8;
+
+		const IntRBTree::KeyValueType REFERENCE_SEQUENCE[] =
+		{
+			IntRBTree::KeyValueType(KEY_TWO, NoValue{}),
+			IntRBTree::KeyValueType(KEY_THREE, NoValue{}),
+			IntRBTree::KeyValueType(KEY_FIVE, NoValue{}),
+			IntRBTree::KeyValueType(KEY_SEVEN, NoValue{}),
+			IntRBTree::KeyValueType(KEY_EIGHT, NoValue{})
+		};
+
+		BOOST_TEST_CHECKPOINT("Construction");
+		IntRBTree T;
+		BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+		BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+		BOOST_REQUIRE(T.Add(KEY_FIVE, NoValue{}));
+		BOOST_REQUIRE(T.Add(KEY_SEVEN, NoValue{}));
+		BOOST_REQUIRE(T.Add(KEY_EIGHT, NoValue{}));
+
+		BOOST_TEST_CHECKPOINT("Copying to buffer");
+		IntRBTree::KeyValueType DestBuf[NUM];
+		T.CopyUnorderedTo(DestBuf);
+
+		BOOST_REQUIRE(ArrayEquals(DestBuf, REFERENCE_SEQUENCE, NUM));
+	}
+
+	BOOST_AUTO_TEST_CASE(CopyUnorderedToTest, *boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/FirstMinimal"))
+	{
+		constexpr int NUM = 5;
+
+		constexpr int KEY_FIVE = 5;
+		constexpr int KEY_TWO = 2;
+		constexpr int KEY_THREE = 3;
+		constexpr int KEY_SEVEN = 7;
+		constexpr int KEY_EIGHT = 8;
+
+		BOOST_TEST_CHECKPOINT("Construction");
+		IntRBTree T;
+		BOOST_REQUIRE(T.Add(KEY_FIVE, NoValue{}));
+		BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+		BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+		BOOST_REQUIRE(T.Add(KEY_SEVEN, NoValue{}));
+		BOOST_REQUIRE(T.Add(KEY_EIGHT, NoValue{}));
+
+		BOOST_TEST_CHECKPOINT("Copying to buffer");
+		IntRBTree::KeyValueType DestBuf[NUM];
+		T.CopyUnorderedTo(DestBuf);
+
+		BOOST_REQUIRE(ArrayContainsValue(DestBuf, NUM, KEY_FIVE));
+		BOOST_REQUIRE(ArrayContainsValue(DestBuf, NUM, KEY_TWO));
+		BOOST_REQUIRE(ArrayContainsValue(DestBuf, NUM, KEY_THREE));
+		BOOST_REQUIRE(ArrayContainsValue(DestBuf, NUM, KEY_SEVEN));
+		BOOST_REQUIRE(ArrayContainsValue(DestBuf, NUM, KEY_EIGHT));
+
+	}
+
+	BOOST_AUTO_TEST_CASE(ForEachEmptyTest, *boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/FirstMinimal"))
+	{
+		BOOST_TEST_CHECKPOINT("Construction");
+		IntRBTree T;
+
+		BOOST_TEST_CHECKPOINT("ForEach");
+		std::vector<IntRBTree::KeyValueType> DestBuf;
+		T.ForEach
+		(
+			[&DestBuf](const IntRBTree::KeyValueType& KV)
+		{
+			DestBuf.push_back(KV);
+		}
+		);
+		BOOST_REQUIRE(DestBuf.empty());
+	}
+
+	BOOST_AUTO_TEST_CASE(ForEachTest, *boost::unit_test::depends_on("Core/Container/TRBTreeTestSuite/Minimal/FirstMinimal"))
+	{
+		constexpr int NUM = 5;
+
+		constexpr int KEY_FIVE = 5;
+		constexpr int KEY_TWO = 2;
+		constexpr int KEY_THREE = 3;
+		constexpr int KEY_SEVEN = 7;
+		constexpr int KEY_EIGHT = 8;
+
+		BOOST_TEST_CHECKPOINT("Construction");
+		IntRBTree T;
+		BOOST_REQUIRE(T.Add(KEY_FIVE, NoValue{}));
+		BOOST_REQUIRE(T.Add(KEY_TWO, NoValue{}));
+		BOOST_REQUIRE(T.Add(KEY_THREE, NoValue{}));
+		BOOST_REQUIRE(T.Add(KEY_SEVEN, NoValue{}));
+		BOOST_REQUIRE(T.Add(KEY_EIGHT, NoValue{}));
+
+		BOOST_TEST_CHECKPOINT("ForEach");
+		std::vector<IntRBTree::KeyValueType> DestBuf;
+		T.ForEach
+		(
+			[&DestBuf](const IntRBTree::KeyValueType& KV)
+		{
+			DestBuf.push_back(KV);
+		}
+		);
+
+		BOOST_REQUIRE(ArrayContainsValue(DestBuf.data(), NUM, KEY_FIVE));
+		BOOST_REQUIRE(ArrayContainsValue(DestBuf.data(), NUM, KEY_TWO));
+		BOOST_REQUIRE(ArrayContainsValue(DestBuf.data(), NUM, KEY_THREE));
+		BOOST_REQUIRE(ArrayContainsValue(DestBuf.data(), NUM, KEY_SEVEN));
+		BOOST_REQUIRE(ArrayContainsValue(DestBuf.data(), NUM, KEY_EIGHT));
 	}
 		
 	BOOST_AUTO_TEST_SUITE_END() // Minimal	

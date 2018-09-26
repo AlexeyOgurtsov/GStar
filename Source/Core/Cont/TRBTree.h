@@ -995,7 +995,7 @@ public:
 	*/
 	ConstIteratorType FindIteratorFor_InRange(const KeyType& InKey, ConstIteratorType ItFirst, ConstIteratorType ItLast) const
 	{
-		return FindIteratorAtInRangeImpl(InKey, ComparerArg(), ItFirst, ItLast);
+		return FindIteratorAtInRangeImpl<ConstIteratorType>(InKey, this, ComparerArg(), ItFirst, ItLast);
 	}
 
 	/**
@@ -4279,11 +4279,12 @@ Strm& operator<<(Strm& S, const TRBTree<KVTypeArg, ComparerArg>& InCont)
 	return S;
 }
 
-
 /**
 * Intersect key sets and returns a new set.
 * The result set will contain only that values that are contained both in the current set and the other set.
 * WARNING!!! The result set is not cleared and space is not reserved in the result set.
+*
+* @UNIT-TESTED
 */
 template<class KVTypeArg, class ComparerArg>
 void AppendIntersectTo(TRBTree<KVTypeArg, ComparerArg>& OutResult, const TRBTree<KVTypeArg, ComparerArg>& InSet, const TRBTree<KVTypeArg, ComparerArg>& InOtherSet)
@@ -4291,7 +4292,7 @@ void AppendIntersectTo(TRBTree<KVTypeArg, ComparerArg>& OutResult, const TRBTree
 	typename TRBTree<KVTypeArg, ComparerArg>::ConstIteratorType OtherIt = InOtherSet.ConstIterator();
 	for (typename TRBTree<KVTypeArg, ComparerArg>::ConstIteratorType It = InSet.Iterator(); It; ++It)
 	{
-		OtherIt = InOtherSet.FindIteratorFor_InRange(It->GetKey(), OtherIt, InOtherSet.ConstEndIterator());
+		OtherIt = InOtherSet.FindIteratorFor_InRange(It.GetKey(), OtherIt, InOtherSet.ConstEndIterator());
 		if (OtherIt.IsEnd())
 		{
 			return;
@@ -4304,6 +4305,9 @@ void AppendIntersectTo(TRBTree<KVTypeArg, ComparerArg>& OutResult, const TRBTree
 	}
 }
 
+/**
+* @UNIT-TESTED
+*/
 template<class KVTypeArg, class ComparerArg>
 void AppendDifferenceTo(TRBTree<KVTypeArg, ComparerArg>& OutResult, const TRBTree<KVTypeArg, ComparerArg>& InSet, const TRBTree<KVTypeArg, ComparerArg>& InOtherSet)
 { 
@@ -4357,6 +4361,8 @@ void AppendDifferenceTo(TRBTree<KVTypeArg, ComparerArg>& OutResult, const TRBTre
 * Union key sets and return a new set.
 * The result will contain all values contained either in this or other container.
 * WARNING!!! The result set is not cleared and space is not reserved in the result set.
+*
+* @UNIT-TESTED
 */
 template<class KVTypeArg, class ComparerArg>
 void AppendUnionTo(TRBTree<KVTypeArg, ComparerArg>& OutResult, const TRBTree<KVTypeArg, ComparerArg>& InSet, const TRBTree<KVTypeArg, ComparerArg>& InOtherSet)
@@ -4400,4 +4406,38 @@ void AppendUnionTo(TRBTree<KVTypeArg, ComparerArg>& OutResult, IteratorArg ItFir
 	{
 		OutResult.Add(*ItOther);
 	}
+}
+
+
+/**
+* Returns intersection of two RBTrees
+*/
+template<class KVTypeArg, class ComparerArg>
+TRBTree<KVTypeArg, ComparerArg> GetIntersect(const TRBTree<KVTypeArg, ComparerArg>& InSet, const TRBTree<KVTypeArg, ComparerArg>& InOtherSet)
+{
+	TRBTree<KVTypeArg, ComaprerArg> Result;
+	AppendIntersectTo(Result, InSet, InOtherSet);
+	return Result;
+}
+
+/**
+* Returns union of two RBTrees.
+*/
+template<class KVTypeArg, class ComparerArg>
+TRBTree<KVTypeArg, ComparerArg> GetUnion(const TRBTree<KVTypeArg, ComparerArg>& InSet, const TRBTree<KVTypeArg, ComparerArg>& InOtherSet)
+{
+	TRBTree<KVTypeArg, ComaprerArg> Result;
+	AppendUnionTo(Result, InSet, InOtherSet);
+	return Result;
+}
+
+/**
+* Returns difference of two RBTrees.
+*/
+template<class KVTypeArg, class ComparerArg>
+TRBTree<KVTypeArg, ComparerArg> GetDifference(const TRBTree<KVTypeArg, ComparerArg>& InSet, const TRBTree<KVTypeArg, ComparerArg>& InOtherSet)
+{
+	TRBTree<KVTypeArg, ComaprerArg> Result;
+	AppendDifferenceTo(Result, InSet, InOtherSet);
+	return Result;
 }

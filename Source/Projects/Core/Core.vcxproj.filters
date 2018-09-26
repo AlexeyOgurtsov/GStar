@@ -247,6 +247,15 @@
     <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestSet.h">
       <Filter>Cont\Test\TRBTree</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestMinimalCopySuite.h">
+      <Filter>Cont\Test\TRBTree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestMoving.h">
+      <Filter>Cont\Test\TRBTree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestCustomCompare.h">
+      <Filter>Cont\Test\TRBTree</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Core\Mem\Helper\Priv\LinearAllocHelper.cpp">

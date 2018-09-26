@@ -26,11 +26,13 @@ public:
 	using KeyType = T;
 	using ElementType = KeyType;
 
+	using KeyValueType = TKeyValue<KVType<T, NoValue>>;
+	using RBTreeType = TRBTree<KVType<T, NoValue>, ComparerArg>;
+
 private:
 	static auto GetThisTypeHelper()->std::remove_reference_t<decltype(*this)>;
 
-	using KeyValueType = TKeyValue<KVType<T, NoValue>>;
-	using ContImplType = TRBTree<KVType<T, NoValue>, ComparerArg>;
+	using ContImplType = RBTreeType;
 
 public:
 	using IteratorType = typename ContImplType::KeyIteratorType;
@@ -55,6 +57,17 @@ public:
 	* Constructs with the given capacity.
 	*/
 	explicit TSortedSet(int InCapacity) : Cont { InCapacity } {}
+
+
+	/**
+	* Construction from RBTree with NoValue
+	*/
+	TSortedSet(const RBTreeType& InTree) : Cont{ InTree } {}
+
+	/**
+	* Construction from RBTree with NoValue by moving
+	*/
+	TSortedSet(RBTreeType&& InTree) : Cont{ std::move(InTree) } {}
 
 	/**
 	* Constructs as a copy of another container.
@@ -553,6 +566,15 @@ public:
 		S << Cont;
 	}
 
+	template<class T, class ComparerArg>
+	friend TSortedSet<T, ComparerArg> GetIntersect(const TSortedSet<T, ComparerArg>& InSet, const TSortedSet<T, ComparerArg>& InOtherSet);
+
+	template<class T, class ComparerArg>
+	friend TSortedSet<T, ComparerArg> GetUnion(const TSortedSet<T, ComparerArg>& InSet, const TSortedSet<T, ComparerArg>& InOtherSet);
+
+	template<class T, class ComparerArg>
+	friend TSortedSet<T, ComparerArg> GetDifference(const TSortedSet<T, ComparerArg>& InSet, const TSortedSet<T, ComparerArg>& InOtherSet);
+
 private:
 	ContImplType Cont;
 };
@@ -581,11 +603,14 @@ Strm& operator<<(Strm& S, const TSortedSet<T, ComparerArg>& InCont)
 }
 
 /**
+* TODO Now:
+* 1. Create constructor from RBTree.
+* 2. Make Set operations as friend of TSortedSet
+*
 * TODO:
 * 1. Constructors
 * 2. Copying/Moving
 * 3. Output
-* 4. Equality
 * 6. Operations:
 * 6.1. Getters
 * 6.2. Add
@@ -599,3 +624,30 @@ Strm& operator<<(Strm& S, const TSortedSet<T, ComparerArg>& InCont)
 * 3. Extra:
 * 3.1. Serialize
 */
+
+/**
+* Returns intersection.
+*/
+template<class T, class ComparerArg>
+TSortedSet<T, ComparerArg> GetIntersect(const TSortedSet<T, ComparerArg>& InSet, const TSortedSet<T, ComparerArg>& InOtherSet)
+{
+	return TSortedSet<T, ComparerArg>(GetIntersect(InSet.Cont, InOtherSet.Cont));
+}
+
+/**
+* Returns union.
+*/
+template<class T, class ComparerArg>
+TSortedSet<T, ComparerArg> GetUnion(const TSortedSet<T, ComparerArg>& InSet, TSortedSet<T, ComparerArg>& InOtherSet)
+{
+	return TSortedSet<T, ComparerArg>(GetUnion(InSet.Cont, InOtherSet.Cont));;
+}
+
+/**
+* Returns difference.
+*/
+template<class T, class ComparerArg>
+TSortedSet<T, ComparerArg> GetDifference(const TSortedSet<T, ComparerArg>& InSet, const TSortedSet<T, ComparerArg>& InOtherSet)
+{
+	return TSortedSet<T, ComparerArg>(GetDifference(InSet.Cont, InOtherSet.Cont));
+}

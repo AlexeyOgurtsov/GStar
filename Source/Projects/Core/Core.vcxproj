@@ -145,13 +145,16 @@
     <ClInclude Include="..\..\Core\Cont\ContainerSystem.h" />
     <ClInclude Include="..\..\Core\Cont\Priv\TRBTreeImpl.h" />
     <ClInclude Include="..\..\Core\Cont\Test\TRBTreeTest.h" />
+    <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestCustomCompare.h" />
     <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestExtraOps.h" />
     <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestFindSuite.h" />
     <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestMemorySuite.h" />
     <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestMinimalAddSuite.h" />
+    <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestMinimalCopySuite.h" />
     <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestMinimalIterationSuite.h" />
     <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestMinimalMain.h" />
     <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestMinimalRemoveSuite.h" />
+    <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestMoving.h" />
     <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestSerialization.h" />
     <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestSet.h" />
     <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestUtils.h" />
