@@ -162,6 +162,7 @@
     <ClInclude Include="..\..\Core\Cont\Test\TVectorTest.h" />
     <ClInclude Include="..\..\Core\Cont\Test\Vector\TVectorTestExtraOps.h" />
     <ClInclude Include="..\..\Core\Cont\Test\Vector\TVectorTestIteratorSuite.h" />
+    <ClInclude Include="..\..\Core\Cont\Test\Vector\TVectorTestMoveOnlyConstructOrAssign.h" />
     <ClInclude Include="..\..\Core\Cont\Test\Vector\TVectorTestMoveOnlyMain.h" />
     <ClInclude Include="..\..\Core\Cont\Test\Vector\TVectorTestPODConstructOrAssign.h" />
     <ClInclude Include="..\..\Core\Cont\Test\Vector\TVectorTestPODMain.h" />

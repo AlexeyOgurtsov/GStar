@@ -286,6 +286,9 @@
     <ClInclude Include="..\..\Core\Cont\Test\Vector\TVectorTestUtils.h">
       <Filter>Cont\Test\Vector</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Test\Vector\TVectorTestMoveOnlyConstructOrAssign.h">
+      <Filter>Cont\Test\Vector</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Core\Mem\Helper\Priv\LinearAllocHelper.cpp">

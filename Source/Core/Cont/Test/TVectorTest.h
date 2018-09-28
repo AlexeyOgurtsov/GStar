@@ -10,6 +10,7 @@
 #include "Vector/TVectorTestExtraOps.h"
 
 #include "Vector/TVectorTestMoveOnlyMain.h"
+#include "Vector/TVectorTestMoveOnlyConstructOrAssign.h"
 
 namespace
 {

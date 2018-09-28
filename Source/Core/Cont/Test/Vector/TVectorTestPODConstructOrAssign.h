@@ -69,6 +69,49 @@ BOOST_AUTO_TEST_CASE(SimplePod_SmallConstructFromArray, *boost::unit_test::depen
 	BOOST_REQUIRE_EQUAL(V[4], 5);
 }
 
+BOOST_AUTO_TEST_CASE
+(
+	SimplePod_BigToSmallCopyConstruction,
+	*boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallCopyConstruction")
+)
+{
+	constexpr int SOURCE_COUNT = 1000;
+
+	// We need this case, because we need to check that we copied NOT only the SBO, but entire buffer
+	BOOST_TEST_CHECKPOINT("Source array");
+	TVector<int> V_source;
+	for (int i = 0; i < SOURCE_COUNT; i++)
+	{
+		V_source.Add(i);
+	}
+
+	BOOST_TEST_CHECKPOINT("Destination array");
+	TVector<int> V(V_source);
+	BOOST_REQUIRE_EQUAL(V.Len(), V_source.Len());
+	BOOST_REQUIRE_EQUAL(V_source, V);
+}
+
+BOOST_AUTO_TEST_CASE
+(
+	SimplePod_BigToSmallCopyConstruction_DifferentResizePolicy,
+	*boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_BigToSmallCopyConstruction")
+)
+{
+	constexpr int SOURCE_COUNT = 1000;
+
+	// We need this case, because we need to check that we copied NOT only the SBO, but entire buffer
+	BOOST_TEST_CHECKPOINT("Source array");
+	TVector<int> V_source;
+	for (int i = 0; i < SOURCE_COUNT; i++)
+	{
+		V_source.Add(i);
+	}
+
+	BOOST_TEST_CHECKPOINT("Destination array");
+	TVector<int, TestSmallSBOResizePolicy> V(V_source);
+	BOOST_REQUIRE_EQUAL(V.Len(), V_source.Len());
+	BOOST_REQUIRE_EQUAL(V_source, V);
+}
 
 BOOST_AUTO_TEST_CASE
 (
@@ -88,6 +131,69 @@ BOOST_AUTO_TEST_CASE
 
 BOOST_AUTO_TEST_CASE
 (
+	SimplePod_SmallCopyConstruction_DifferentResizePolicy,
+	*boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallCopyConstruction")
+)
+{
+	BOOST_TEST_CHECKPOINT("Source array");
+	TVector<int> V_source{ 1, 2, 3, 4, 5 };
+
+	BOOST_TEST_CHECKPOINT("Destination array");
+	TVector<int, TestSmallSBOResizePolicy> V(V_source);
+	BOOST_REQUIRE_EQUAL(V.Len(), V_source.Len());
+	BOOST_REQUIRE_EQUAL(V_source, V);
+}
+
+BOOST_AUTO_TEST_CASE
+(
+	SimplePod_BigToSmallMoveConstruction,
+	*boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallMoveConstruction")
+)
+{
+	constexpr int SOURCE_COUNT = 1000;
+
+	// We need this case, because we need to check that we copied NOT only the SBO, but entire buffer
+	BOOST_TEST_CHECKPOINT("Source array");
+	TVector<int> V_source;
+	TVector<int> V_source2;
+	for (int i = 0; i < SOURCE_COUNT; i++)
+	{
+		V_source.Add(i);
+		V_source2.Add(i);
+	}
+
+	BOOST_TEST_CHECKPOINT("Destination array");
+	TVector<int> V(std::move(V_source));
+	BOOST_REQUIRE_EQUAL(V.Len(), V_source2.Len());
+	BOOST_REQUIRE_EQUAL(V_source2, V);
+}
+
+BOOST_AUTO_TEST_CASE
+(
+	SimplePod_BigToSmallMoveConstruction_DifferentResizePolicy,
+	*boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_BigToSmallMoveConstruction")
+)
+{
+	constexpr int SOURCE_COUNT = 1000;
+
+	// We need this case, because we need to check that we copied NOT only the SBO, but entire buffer
+	BOOST_TEST_CHECKPOINT("Source array");
+	TVector<int> V_source;
+	TVector<int> V_source2;
+	for (int i = 0; i < SOURCE_COUNT; i++)
+	{
+		V_source.Add(i);
+		V_source2.Add(i);
+	}
+
+	BOOST_TEST_CHECKPOINT("Destination array");
+	TVector<int, TestSmallSBOResizePolicy> V(std::move(V_source));
+	BOOST_REQUIRE_EQUAL(V.Len(), V_source2.Len());
+	BOOST_REQUIRE_EQUAL(V_source2, V);
+}
+
+BOOST_AUTO_TEST_CASE
+(
 	SimplePod_SmallMoveConstruction,
 	*boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallMainTest")
 	*boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallEqualityTest")
@@ -102,6 +208,93 @@ BOOST_AUTO_TEST_CASE
 	BOOST_REQUIRE_EQUAL(V.Len(), V_source2.Len());
 	BOOST_REQUIRE_EQUAL(V_source2, V);
 }
+
+BOOST_AUTO_TEST_CASE
+(
+	SimplePod_SmallMoveConstruction_DifferentResizePolicy,
+	*boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallMoveConstruction")
+)
+{
+	BOOST_TEST_CHECKPOINT("Source array");
+	TVector<int> V_source1{ 1, 2, 3, 4, 5 };
+	TVector<int> V_source2{ 1, 2, 3, 4, 5 };
+
+	BOOST_TEST_CHECKPOINT("Destination array");
+	TVector<int, TestSmallSBOResizePolicy> V(std::move(V_source1));
+	BOOST_REQUIRE_EQUAL(V.Len(), V_source2.Len());
+	BOOST_REQUIRE_EQUAL(V_source2, V);
+}
+
+BOOST_AUTO_TEST_CASE
+(
+	SimplePod_BigCopyAssign,
+	*boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallCopyAssign")
+)
+{
+	BOOST_TEST_CHECKPOINT("Source array");
+	constexpr int COUNT = 1000;
+	TVector<int> V_source;
+	for (int i = 0; i < COUNT; i++)
+	{
+		V_source.Add(i);
+	}
+
+	BOOST_TEST_CHECKPOINT("Copy to empty vector");
+	TVector<int> V_assign_to_empty;
+	V_assign_to_empty = V_source;
+	BOOST_REQUIRE_EQUAL(V_assign_to_empty, V_source);
+
+	BOOST_TEST_CHECKPOINT("Copy to lesser vector");
+	TVector<int> V_assign_to_3length{ 9, 6, 8 };
+	V_assign_to_3length = V_source;
+	BOOST_REQUIRE_EQUAL(V_assign_to_3length, V_source);
+
+	BOOST_TEST_CHECKPOINT("Copy to greater vector");
+	TVector<int> V_assign_to_greater;
+	for (int i = 0; i < 10000; i++)
+	{
+		V_assign_to_greater.Add(i);
+	}
+	V_assign_to_greater = V_source;
+	BOOST_REQUIRE_EQUAL(V_assign_to_greater, V_source);
+}
+
+/*
+// @TODO: Fails to compile
+BOOST_AUTO_TEST_CASE
+(
+	SimplePod_BigCopyAssign_DifferentResizePolicy,
+	*boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_BigCopyAssign")
+)
+{
+	BOOST_TEST_CHECKPOINT("Source array");
+	constexpr int COUNT = 1000;
+	TVector<int> V_source;
+	for (int i = 0; i < COUNT; i++)
+	{
+		V_source.Add(i);
+	}
+
+	BOOST_TEST_CHECKPOINT("Copy to empty vector");
+	TVector<int, TestSmallSBOResizePolicy> V_assign_to_empty;
+	V_assign_to_empty = V_source;
+	BOOST_REQUIRE_EQUAL(V_assign_to_empty, V_source);
+
+	BOOST_TEST_CHECKPOINT("Copy to lesser vector");
+	TVector<int, TestSmallSBOResizePolicy> V_assign_to_3length{ 9, 6, 8 };
+	V_assign_to_3length = V_source;
+	BOOST_REQUIRE_EQUAL(V_assign_to_3length, V_source);
+
+	BOOST_TEST_CHECKPOINT("Copy to greater vector");
+	TVector<int, TestSmallSBOResizePolicy> V_assign_to_greater;
+	for (int i = 0; i < 10000; i++)
+	{
+		V_assign_to_greater.Add(i);
+	}
+	V_assign_to_greater = V_source;
+	BOOST_REQUIRE_EQUAL(V_assign_to_greater, V_source);
+}
+*/
 
 BOOST_AUTO_TEST_CASE
 (
@@ -128,6 +321,34 @@ BOOST_AUTO_TEST_CASE
 	V_assign_to_7length = V_source;
 	BOOST_REQUIRE_EQUAL(V_assign_to_7length, V_source);
 }
+
+/*
+// @TODO: Fails to compile
+BOOST_AUTO_TEST_CASE
+(
+	SimplePod_SmallCopyAssign_DifferentResizePolicy,
+	*boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallCopyAssign")
+)
+{
+	BOOST_TEST_CHECKPOINT("Source array");
+	TVector<int> V_source{ 1, 2, 3, 4, 5 };
+
+	BOOST_TEST_CHECKPOINT("Copy to empty vector");
+	TVector<int, TestSmallSBOResizePolicy> V_assign_to_empty;
+	V_assign_to_empty = V_source;
+	BOOST_REQUIRE_EQUAL(V_assign_to_empty, V_source);
+
+	BOOST_TEST_CHECKPOINT("Copy to lesser vector");
+	TVector<int, TestSmallSBOResizePolicy> V_assign_to_3length{ 9, 6, 8 };
+	V_assign_to_3length = V_source;
+	BOOST_REQUIRE_EQUAL(V_assign_to_3length, V_source);
+
+	BOOST_TEST_CHECKPOINT("Copy to greater vector");
+	TVector<int, TestSmallSBOResizePolicy> V_assign_to_7length{ 9, 6, 8, 7, 6, 5, 4 };
+	V_assign_to_7length = V_source;
+	BOOST_REQUIRE_EQUAL(V_assign_to_7length, V_source);
+}
+*/
 
 BOOST_AUTO_TEST_CASE
 (
@@ -181,6 +402,93 @@ BOOST_AUTO_TEST_CASE
 
 BOOST_AUTO_TEST_CASE
 (
+	SimplePod_BigMoveAssign,
+	*boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallMoveAssign")
+)
+{
+	// WARNING!!! We should NOT check that the vector is invalidated after move, because
+	// it's not always the case (not a requirement).
+
+	BOOST_TEST_CHECKPOINT("Source arrays");
+	constexpr int COUNT = 1000;
+	TVector<int> V_source1;
+	TVector<int> V_source2;
+	TVector<int> V_source3;
+	TVector<int> V_source4;
+	for (int i = 0; i < COUNT; i++)
+	{
+		V_source1.Add(i);
+		V_source2.Add(i);
+		V_source3.Add(i);
+		V_source4.Add(i);
+	}
+
+	BOOST_TEST_CHECKPOINT("Copy to empty vector");
+	TVector<int> V_assign_to_empty;
+	V_assign_to_empty = std::move(V_source1);
+	BOOST_REQUIRE_EQUAL(V_assign_to_empty, V_source2);
+
+	BOOST_TEST_CHECKPOINT("Copy to lesser vector");
+	TVector<int> V_assign_to_3length{ 9, 6, 8 };
+	V_assign_to_3length = std::move(V_source2);
+	BOOST_REQUIRE_EQUAL(V_assign_to_3length, V_source3);
+
+	BOOST_TEST_CHECKPOINT("Copy to greater vector");
+	TVector<int> V_assign_to_greater;
+	for (int i = 0; i < 10000; i++)
+	{
+		V_assign_to_greater.Add(i);
+	}
+	V_assign_to_greater = std::move(V_source3);
+	BOOST_REQUIRE_EQUAL(V_assign_to_greater, V_source4);
+}
+
+BOOST_AUTO_TEST_CASE
+(
+	SimplePod_BigMoveAssign_DifferentResizePolicy,
+	*boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_BigMoveAssign")
+)
+{
+	// WARNING!!! We should NOT check that the vector is invalidated after move, because
+	// it's not always the case (not a requirement).
+
+	BOOST_TEST_CHECKPOINT("Source arrays");
+	constexpr int COUNT = 1000;
+	TVector<int> V_source1;
+	TVector<int> V_source2;
+	TVector<int> V_source3;
+	TVector<int> V_source4;
+	for (int i = 0; i < COUNT; i++)
+	{
+		V_source1.Add(i);
+		V_source2.Add(i);
+		V_source3.Add(i);
+		V_source4.Add(i);
+	}
+
+	BOOST_TEST_CHECKPOINT("Copy to empty vector");
+	TVector<int, TestSmallSBOResizePolicy> V_assign_to_empty;
+	V_assign_to_empty = std::move(V_source1);
+	BOOST_REQUIRE_EQUAL(V_assign_to_empty, V_source2);
+
+	BOOST_TEST_CHECKPOINT("Copy to lesser vector");
+	TVector<int, TestSmallSBOResizePolicy> V_assign_to_3length{ 9, 6, 8 };
+	V_assign_to_3length = std::move(V_source2);
+	BOOST_REQUIRE_EQUAL(V_assign_to_3length, V_source3);
+
+	BOOST_TEST_CHECKPOINT("Copy to greater vector");
+	TVector<int, TestSmallSBOResizePolicy> V_assign_to_greater;
+	for (int i = 0; i < 10000; i++)
+	{
+		V_assign_to_greater.Add(i);
+	}
+	V_assign_to_greater = std::move(V_source3);
+	BOOST_REQUIRE_EQUAL(V_assign_to_greater, V_source4);
+}
+
+
+BOOST_AUTO_TEST_CASE
+(
 	SimplePod_SmallMoveAssign,
 	*boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallMainTest")
 	*boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallEqualityTest")
@@ -213,6 +521,44 @@ BOOST_AUTO_TEST_CASE
 
 	BOOST_TEST_CHECKPOINT("Copy to dynamic vector");
 	TVector<int> V_assign_to_big_dynamic;
+	V_assign_to_big_dynamic.AddZeroed(100);
+	V_assign_to_big_dynamic = std::move(V_source4);
+	BOOST_REQUIRE_EQUAL(V_assign_to_big_dynamic, V_source5);
+}
+
+BOOST_AUTO_TEST_CASE
+(
+	SimplePod_SmallMoveAssign_DifferentResizePolicy,
+	*boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallMoveAssign")
+)
+{
+	// WARNING!!! We should NOT check that the vector is invalidated after move, because
+	// it's not always the case (not a requirement).
+
+	BOOST_TEST_CHECKPOINT("Source arrays");
+	TVector<int> V_source1{ 1, 2, 3, 4, 5 };
+	TVector<int> V_source2{ 1, 2, 3, 4, 5 };
+	TVector<int> V_source3{ 1, 2, 3, 4, 5 };
+	TVector<int> V_source4{ 1, 2, 3, 4, 5 };
+	TVector<int> V_source5{ 1, 2, 3, 4, 5 };
+
+	BOOST_TEST_CHECKPOINT("Copy to empty vector");
+	TVector<int, TestSmallSBOResizePolicy> V_assign_to_empty;
+	V_assign_to_empty = std::move(V_source1);
+	BOOST_REQUIRE_EQUAL(V_assign_to_empty, V_source2);
+
+	BOOST_TEST_CHECKPOINT("Copy to lesser vector");
+	TVector<int, TestSmallSBOResizePolicy> V_assign_to_3length{ 9, 6, 8 };
+	V_assign_to_3length = std::move(V_source2);
+	BOOST_REQUIRE_EQUAL(V_assign_to_3length, V_source3);
+
+	BOOST_TEST_CHECKPOINT("Copy to greater vector");
+	TVector<int, TestSmallSBOResizePolicy> V_assign_to_7length{ 9, 6, 8, 7, 6, 5, 4 };
+	V_assign_to_7length = std::move(V_source3);
+	BOOST_REQUIRE_EQUAL(V_assign_to_7length, V_source4);
+
+	BOOST_TEST_CHECKPOINT("Copy to dynamic vector");
+	TVector<int, TestSmallSBOResizePolicy> V_assign_to_big_dynamic;
 	V_assign_to_big_dynamic.AddZeroed(100);
 	V_assign_to_big_dynamic = std::move(V_source4);
 	BOOST_REQUIRE_EQUAL(V_assign_to_big_dynamic, V_source5);
