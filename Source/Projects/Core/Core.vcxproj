@@ -160,6 +160,15 @@
     <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestUtils.h" />
     <ClInclude Include="..\..\Core\Cont\Test\TSortedSetTest.h" />
     <ClInclude Include="..\..\Core\Cont\Test\TVectorTest.h" />
+    <ClInclude Include="..\..\Core\Cont\Test\Vector\TVectorTestExtraOps.h" />
+    <ClInclude Include="..\..\Core\Cont\Test\Vector\TVectorTestIteratorSuite.h" />
+    <ClInclude Include="..\..\Core\Cont\Test\Vector\TVectorTestMoveOnlyMain.h" />
+    <ClInclude Include="..\..\Core\Cont\Test\Vector\TVectorTestPODConstructOrAssign.h" />
+    <ClInclude Include="..\..\Core\Cont\Test\Vector\TVectorTestPODMain.h" />
+    <ClInclude Include="..\..\Core\Cont\Test\Vector\TVectorTestPODMemory.h" />
+    <ClInclude Include="..\..\Core\Cont\Test\Vector\TVectorTestPODRemove.h" />
+    <ClInclude Include="..\..\Core\Cont\Test\Vector\TVectorTestSerializationSuite.h" />
+    <ClInclude Include="..\..\Core\Cont\Test\Vector\TVectorTestUtils.h" />
     <ClInclude Include="..\..\Core\Cont\TMap.h" />
     <ClInclude Include="..\..\Core\Cont\TRBTree.h" />
     <ClInclude Include="..\..\Core\Cont\TSet.h" />

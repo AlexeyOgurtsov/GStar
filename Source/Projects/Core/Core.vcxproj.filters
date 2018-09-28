@@ -64,6 +64,9 @@
     <Filter Include="Templ\Priv">
       <UniqueIdentifier>{acacba62-b5f4-4575-9d3e-dd4e9c61f442}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Cont\Test\Vector">
+      <UniqueIdentifier>{a9f91f0b-4c98-4f9c-928e-252ec04e4e8d}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Cont\Test\TRBTree">
       <UniqueIdentifier>{caaa32a9-90f3-4f2b-ab24-d0facae7c9c4}</UniqueIdentifier>
     </Filter>
@@ -255,6 +258,33 @@
     </ClInclude>
     <ClInclude Include="..\..\Core\Cont\Test\TRBTree\TRBTreeTestCustomCompare.h">
       <Filter>Cont\Test\TRBTree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Test\Vector\TVectorTestExtraOps.h">
+      <Filter>Cont\Test\Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Test\Vector\TVectorTestIteratorSuite.h">
+      <Filter>Cont\Test\Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Test\Vector\TVectorTestMoveOnlyMain.h">
+      <Filter>Cont\Test\Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Test\Vector\TVectorTestPODConstructOrAssign.h">
+      <Filter>Cont\Test\Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Test\Vector\TVectorTestPODMain.h">
+      <Filter>Cont\Test\Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Test\Vector\TVectorTestPODMemory.h">
+      <Filter>Cont\Test\Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Test\Vector\TVectorTestPODRemove.h">
+      <Filter>Cont\Test\Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Test\Vector\TVectorTestSerializationSuite.h">
+      <Filter>Cont\Test\Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Core\Cont\Test\Vector\TVectorTestUtils.h">
+      <Filter>Cont\Test\Vector</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
