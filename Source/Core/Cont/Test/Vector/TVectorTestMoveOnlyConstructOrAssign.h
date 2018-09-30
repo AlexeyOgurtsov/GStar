@@ -49,7 +49,8 @@ BOOST_AUTO_TEST_CASE
 	{
 		std::string* pS = new std::string(std::to_string(i));
 		V_source.Add(UniqueStr(pS));
-		V_source2.Add(UniqueStr(pS));
+		std::string* pS2 = new std::string(std::to_string(i));
+		V_source2.Add(UniqueStr(pS2));
 	}
 
 	BOOST_TEST_CHECKPOINT("Destination array");
@@ -79,7 +80,8 @@ BOOST_AUTO_TEST_CASE
 	{
 		std::string* pS = new std::string(std::to_string(i));
 		V_source.Add(UniqueStr(pS));
-		V_source2.Add(UniqueStr(pS));
+		std::string* pS2 = new std::string(std::to_string(i));
+		V_source2.Add(UniqueStr(pS2));
 	}
 
 	BOOST_TEST_CHECKPOINT("Destination array");
@@ -92,6 +94,7 @@ BOOST_AUTO_TEST_CASE
 		BOOST_REQUIRE_EQUAL(*V_source2[i].get(), *V[i].get());
 	}
 }
+
 
 /*
 // @TODO: FAILS TO COMPILE!!!

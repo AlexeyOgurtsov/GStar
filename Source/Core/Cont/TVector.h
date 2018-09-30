@@ -384,23 +384,42 @@ struct DefaultVectorResizePolicy : public TVectorResizePolicyBase<T>
 		}
 
 		/**
+		* Copy constructs.
+		*/
+		TVector(const TVector<T, ResizePolicy>& Other);
+
+		/**
 		* Copy construction.
 		*/
 		template<template<class> class OtherResizePolicy>
 		TVector(const TVector<T, OtherResizePolicy>& Other);
 
 		/**
+		* Moves-constructs.
+		*/
+		TVector(TVector<T, ResizePolicy>&& Other);
+		
+		/**
 		* Moving.
 		*/
 		template<template<class> class OtherResizePolicy>
 		TVector(TVector<T, OtherResizePolicy>&& Other);
 
+		/**
+		* Copies.
+		*/
+		TVector& operator=(const TVector<T, ResizePolicy>& Other);
 
 		/**
 		* Copying.
 		*/
 		template<template<class> class OtherResizePolicy>
 		ThisType& operator=(const TVector<T, OtherResizePolicy>& Other);
+
+		/**
+		* Moving.
+		*/
+		TVector& operator=(TVector<T, ResizePolicy>&& Other);
 
 		/**
 		* Move-copying.
@@ -2065,7 +2084,66 @@ struct DefaultVectorResizePolicy : public TVectorResizePolicyBase<T>
 		* Typically used for move operation implementations.
 		*/
 		void Invalidate();
+		
 
+		template<template<class> class OtherResizePolicy>
+		void CopyConstruct(const TVector<T, OtherResizePolicy>& Other);
+
+		template<template<class> class OtherResizePolicy>
+		void MoveConstruct(TVector<T, OtherResizePolicy>&& Other);
+
+		template<class T, template<class> class OtherResizePolicy>
+		void MoveAssign(TVector<T, OtherResizePolicy>&& Other)
+		{
+			// We must destruct extra elements (Before assigning new length!!!)
+			DestructRange(pBuf, Other.Length, Length);
+
+			// Other uses dynamic buf:
+			if (Other.pDynamicBuf == Other.pBuf)
+			{
+				// Destroying the rest of the elements
+				DestructRange(pBuf, 0, Length);
+				if (pDynamicBuf)
+				{
+					free(pDynamicBuf);
+				}
+
+				// Move buffer
+				pDynamicBuf = Other.pDynamicBuf;
+				pBuf = pDynamicBuf;
+				MaxLength = Other.MaxLength;
+
+				// Length should be updated properly (it's still not updated for this particular case).
+				Length = Other.Length;
+
+				Other.Invalidate();
+				return;
+			}
+
+			// Assign new length (we must do it after handling the "other is dynamic buffer" case,
+			// because the old length is needed there to properly destruct the buffer elements.
+			Length = Other.Length;
+
+			// We must destroy dynamic buffer if it's incapable to store its length or SBO will be used
+			const bool bUseSBO = Other.Length < ResizePolicy<T>::SBO_LENGTH;
+			if (pDynamicBuf && (bUseSBO || Other.Length <= MaxLength))
+			{
+				free(pDynamicBuf);
+				pDynamicBuf = nullptr;
+			}
+
+			// Other uses SBO:
+			// We must prepare dynamic buffer if this SBO is NOT capable to store other's length
+			if (pDynamicBuf && (false == bUseSBO))
+			{
+				SetupDynamicBuffer_ForDesiredLength(Other.Length);
+			}
+			MoveFrom(Other.pBuf, Other.Length, 0);
+
+			// Warning!!! We should NOT perform invalidation of the Other here manually,
+			// because the elements will automatically invalidated during the move operation.
+		}
+		
 		int32_t                     Length              = 0;
 		unsigned char               SmallBuf            [ResizePolicy<T>::SBO_LENGTH * sizeof(T)];
 		T*                          pDynamicBuf         = nullptr;
@@ -2230,20 +2308,36 @@ std::string ToString(const TVector<T, ResizePolicy>& V, const char sep = ' ')
 }
 
 template<class T, template<class> class ResizePolicy>
-template<template<class> class OtherResizePolicy>
-TVector<T, ResizePolicy>::TVector(const TVector<T, OtherResizePolicy>& Other) :
-	Length(Other.Length)
+TVector<T, ResizePolicy>::TVector(const TVector<T, ResizePolicy>& Other)
 {
-	if (MaxLength < Other.MaxLen())
-	{
-		SetupBuffer_ForDesiredLength(Other.Len());
-	}
-	CopyConstructFrom(Other.Data(), Other.Len());
+	CopyConstruct(Other);
 }
 
 template<class T, template<class> class ResizePolicy>
 template<template<class> class OtherResizePolicy>
-TVector<T, ResizePolicy>::TVector(TVector<T, OtherResizePolicy>&& Other)
+TVector<T, ResizePolicy>::TVector(const TVector<T, OtherResizePolicy>& Other)
+{
+	CopyConstruct(Other);
+}
+		
+template<class T, template<class> class ResizePolicy>
+template<template<class> class OtherResizePolicy>
+void TVector<T,ResizePolicy>::CopyConstruct(const TVector<T, OtherResizePolicy>& Other)
+{
+	Length = Other.Length;
+	SetupBuffer_ForDesiredLength(Other.Len());
+	CopyConstructFrom(Other.Data(), Other.Len());
+}
+
+template<class T, template<class> class ResizePolicy>
+TVector<T, ResizePolicy>::TVector(TVector<T, ResizePolicy>&& Other)
+{
+	MoveConstruct(std::move(Other));
+}
+
+template<class T, template<class> class ResizePolicy>
+template<template<class> class OtherResizePolicy>
+void TVector<T, ResizePolicy>::MoveConstruct(TVector<T, OtherResizePolicy>&& Other)
 {
 	Length = Other.Length;
 	// Other uses dynamic buf
@@ -2269,6 +2363,20 @@ TVector<T, ResizePolicy>::TVector(TVector<T, OtherResizePolicy>&& Other)
 
 template<class T, template<class> class ResizePolicy>
 template<template<class> class OtherResizePolicy>
+TVector<T, ResizePolicy>::TVector(TVector<T, OtherResizePolicy>&& Other)
+{
+	MoveConstruct(std::move(Other));
+}
+
+template<class T, template<class> class ResizePolicy>
+TVector<T,ResizePolicy>& TVector<T,ResizePolicy>::operator=(const TVector<T, ResizePolicy>& Other)
+{
+	// @TODO
+	return *this;
+}
+
+template<class T, template<class> class ResizePolicy>
+template<template<class> class OtherResizePolicy>
 typename TVector<T, ResizePolicy>::ThisType& TVector<T, ResizePolicy>::operator=(const TVector<T, OtherResizePolicy>& Other)
 {
 	if (Length < Other.Length)
@@ -2289,56 +2397,17 @@ void TVector<T, ResizePolicy>::Invalidate()
 }
 
 template<class T, template<class> class ResizePolicy>
+TVector<T,ResizePolicy>& TVector<T,ResizePolicy>::operator=(TVector<T, ResizePolicy>&& Other)
+{
+	MoveAssign(std::move(Other));
+	return *this;
+}
+
+template<class T, template<class> class ResizePolicy>
 template<template<class> class OtherResizePolicy>
 typename TVector<T, ResizePolicy>::ThisType& TVector<T, ResizePolicy>::operator=(TVector<T, OtherResizePolicy>&& Other)
 {
-	// We must destruct extra elements (Before assigning new length!!!)
-	DestructRange(pBuf, Other.Length, Length);
-
-	// Other uses dynamic buf:
-	if (Other.pDynamicBuf == Other.pBuf)
-	{
-		// Destroying the rest of the elements
-		DestructRange(pBuf, 0, Length);
-		if (pDynamicBuf)
-		{
-			free(pDynamicBuf);
-		}
-
-		// Move buffer
-		pDynamicBuf      = Other.pDynamicBuf;
-		pBuf             = pDynamicBuf;
-		MaxLength        = Other.MaxLength;
-
-		// Length should be updated properly (it's still not updated for this particular case).
-		Length           = Other.Length;
-
-		Other.Invalidate();
-		return *this;
-	}
-
-	// Assign new length (we must do it after handling the "other is dynamic buffer" case,
-	// because the old length is needed there to properly destruct the buffer elements.
-	Length = Other.Length;
-
-	// We must destroy dynamic buffer if it's incapable to store its length or SBO will be used
-	const bool bUseSBO = Other.Length < ResizePolicy<T>::SBO_LENGTH;
-	if (pDynamicBuf && (bUseSBO || Other.Length <= MaxLength))
-	{
-		free(pDynamicBuf);
-		pDynamicBuf = nullptr;
-	}
-
-	// Other uses SBO:
-	// We must prepare dynamic buffer if this SBO is NOT capable to store other's length
-	if (pDynamicBuf && (false == bUseSBO))
-	{
-		SetupDynamicBuffer_ForDesiredLength(Other.Length);
-	}
-	MoveFrom(Other.pBuf, Other.Length, 0);
-
-	// Warning!!! We should NOT perform invalidation of the Other here manually,
-	// because the elements will automatically invalidated during the move operation.
+	MoveAssign(std::move(Other));
 	return *this;
 }
 

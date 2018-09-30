@@ -9,7 +9,6 @@ BOOST_AUTO_TEST_SUITE(Core)
 BOOST_AUTO_TEST_SUITE(Container)
 BOOST_AUTO_TEST_SUITE(TVectorTestSuite)
 
-
 BOOST_AUTO_TEST_CASE(SimplePod_SmallConstructInitialSize, *boost::unit_test::depends_on("Core/Container/TVectorTestSuite/SimplePod_SmallMainTest"))
 {
 	TVector<int> V(5);
@@ -168,6 +167,7 @@ BOOST_AUTO_TEST_CASE
 	BOOST_REQUIRE_EQUAL(V_source2, V);
 }
 
+
 BOOST_AUTO_TEST_CASE
 (
 	SimplePod_BigToSmallMoveConstruction_DifferentResizePolicy,
@@ -258,6 +258,7 @@ BOOST_AUTO_TEST_CASE
 	V_assign_to_greater = V_source;
 	BOOST_REQUIRE_EQUAL(V_assign_to_greater, V_source);
 }
+
 
 /*
 // @TODO: Fails to compile
