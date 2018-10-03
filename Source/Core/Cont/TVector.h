@@ -457,6 +457,11 @@ struct DefaultVectorResizePolicy : public TVectorResizePolicyBase<T>
 		TVector(const T* Ptr, int32_t InCount);
 
 		/**
+		* Move-construction from array.
+		*/
+		TVector(T* Ptr, int32_t InCount, EForceMove);
+
+		/**
 		* Equality test.
 		*/
 		template<template<class> class OtherResizePolicy>
@@ -2101,8 +2106,10 @@ struct DefaultVectorResizePolicy : public TVectorResizePolicyBase<T>
 			// Other uses dynamic buf:
 			if (Other.pDynamicBuf == Other.pBuf)
 			{
+				int32_t LastIndexToDestruct = ((Other.Length <= Length) ? Other.Length : Length);
 				// Destroying the rest of the elements
-				DestructRange(pBuf, 0, Length);
+				// NOTE: We passed Other.Length, because 
+				DestructRange(pBuf, 0, LastIndexToDestruct);
 				if (pDynamicBuf)
 				{
 					free(pDynamicBuf);
@@ -2119,6 +2126,7 @@ struct DefaultVectorResizePolicy : public TVectorResizePolicyBase<T>
 				Other.Invalidate();
 				return;
 			}
+			BOOST_ASSERT_MSG(static_cast<void*>(Other.pBuf) == &Other.SmallBuf, "TVector::MoveAssign: At this point the other buffer must use SBO");
 
 			// Assign new length (we must do it after handling the "other is dynamic buffer" case,
 			// because the old length is needed there to properly destruct the buffer elements.
@@ -2126,7 +2134,8 @@ struct DefaultVectorResizePolicy : public TVectorResizePolicyBase<T>
 
 			// We must destroy dynamic buffer if it's incapable to store its length or SBO will be used
 			const bool bUseSBO = Other.Length < ResizePolicy<T>::SBO_LENGTH;
-			if (pDynamicBuf && (bUseSBO || Other.Length <= MaxLength))
+			int32_t const NewMinimumCapacity =  CalcNewCapacity(Other.Length);
+			if (pDynamicBuf && (bUseSBO || MaxLength < NewMinimumCapacity))
 			{
 				free(pDynamicBuf);
 				pDynamicBuf = nullptr;
@@ -2134,14 +2143,33 @@ struct DefaultVectorResizePolicy : public TVectorResizePolicyBase<T>
 
 			// Other uses SBO:
 			// We must prepare dynamic buffer if this SBO is NOT capable to store other's length
-			if (pDynamicBuf && (false == bUseSBO))
+			if (nullptr == pDynamicBuf)
 			{
-				SetupDynamicBuffer_ForDesiredLength(Other.Length);
+				SetupDynamicBuffer(NewMinimumCapacity);
 			}
-			MoveFrom(Other.pBuf, Other.Length, 0);
+			MoveFrom(Other.pBuf, Other.Length);
 
 			// Warning!!! We should NOT perform invalidation of the Other here manually,
 			// because the elements will automatically invalidated during the move operation.
+		}
+
+		template<class T, template<class> class OtherResizePolicy>
+		void CopyAssign(const TVector<T, OtherResizePolicy>& Other)
+		{
+			int32_t const NewLength = Other.Length;
+			int32_t const NewDesiredCapacity = CalcNewCapacity(NewLength);
+			if (MaxLength < NewDesiredCapacity)
+			{
+				DestructAll(pBuf, Length);
+				if (pDynamicBuf)
+				{
+					free(pDynamicBuf);
+					pDynamicBuf = nullptr;
+				}
+				SetupDynamicBuffer(NewDesiredCapacity);
+			}
+			Length = NewLength;
+			CopyFrom(Other.pBuf, Other.Length);
 		}
 		
 		int32_t                     Length              = 0;
@@ -2371,7 +2399,7 @@ TVector<T, ResizePolicy>::TVector(TVector<T, OtherResizePolicy>&& Other)
 template<class T, template<class> class ResizePolicy>
 TVector<T,ResizePolicy>& TVector<T,ResizePolicy>::operator=(const TVector<T, ResizePolicy>& Other)
 {
-	// @TODO
+	CopyAssign(Other);
 	return *this;
 }
 
@@ -2379,12 +2407,7 @@ template<class T, template<class> class ResizePolicy>
 template<template<class> class OtherResizePolicy>
 typename TVector<T, ResizePolicy>::ThisType& TVector<T, ResizePolicy>::operator=(const TVector<T, OtherResizePolicy>& Other)
 {
-	if (Length < Other.Length)
-	{
-		SetupBuffer_ForDesiredLength(Other.Length);
-	}
-	CopyAssignFrom(Other);
-	Length = Other.Length;
+	CopyAssign(Other);
 	return *this;
 }
 
@@ -2453,8 +2476,19 @@ TVector<T, ResizePolicy>::TVector(const T* Ptr, int32_t InCount) :
 	Length(InCount)
 {
 	assert(Ptr);
-	SetupBuffer_ForDesiredLength(Length);
+	assert(InCount >= 0);
+	SetupBuffer_ForDesiredLength(InCount);
 	CopyConstructFrom(Ptr, InCount);
+}
+
+template<class T, template<class> class ResizePolicy>
+TVector<T, ResizePolicy>::TVector(T* Ptr, int32_t InCount, EForceMove) :
+	Length(InCount)
+{
+	assert(Ptr);
+	assert(InCount >= 0);
+	SetupBuffer_ForDesiredLength(InCount);
+	MoveFrom(Ptr, InCount);
 }
 
 template<class T, template<class> class ResizePolicy>
@@ -3022,6 +3056,7 @@ void TVector<T, ResizePolicy>::SetupBuffer_ForDesiredLength(int32_t DesiredLengt
 template<class T, template<class> class ResizePolicy>
 void TVector<T, ResizePolicy>::SetupDynamicBuffer(int32_t ExactCapacity)	
 {
+	MaxLength = ExactCapacity;
 	pDynamicBuf = static_cast<T*>(malloc(sizeof(T) * ExactCapacity));
 	pBuf = pDynamicBuf;
 }
